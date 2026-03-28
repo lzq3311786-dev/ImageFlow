@@ -1,0 +1,40 @@
+[
+  {
+    "id": "watermark-1774373931018",
+    "name": "AAA",
+    "contentType": "text",
+    "text": "ImageFlow",
+    "imageName": "",
+    "imagePath": "",
+    "imageDataUrl": "",
+    "backgroundEnabled": true,
+    "backgroundName": "",
+    "backgroundPath": "",
+    "backgroundDataUrl": "",
+    "backgroundColor": [
+      243,
+      244,
+      246
+    ],
+    "fontSize": 47,
+    "fontFamily": "Microsoft YaHei",
+    "layoutMode": "matrix",
+    "opacity": 0.49,
+    "scale": 1.76,
+    "rotation": -35,
+    "xRatio": 0.7051768079006053,
+    "yRatio": 0.18555272379738774,
+    "spacingX": 236,
+    "spacingY": 365,
+    "offsetX": -1001,
+    "offsetY": -2168,
+    "stagger": false,
+    "staggerOffset": -1988,
+    "color": [
+      255,
+      255,
+      255
+    ],
+    "backgroundMode": "preview"
+  }
+]

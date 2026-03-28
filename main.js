@@ -1,0 +1,2499 @@
+const { app, BrowserWindow, Menu, globalShortcut, ipcMain, dialog, Tray, shell } = require('electron');
+const remoteMain = require('@electron/remote/main');
+const { autoUpdater } = require('electron-updater');
+const path = require('path');
+const fs = require('fs');
+const { spawn, spawnSync } = require('child_process');
+const chokidar = require('chokidar');
+const sharp = require('sharp');
+
+remoteMain.initialize();
+
+// --- Tray ---
+let tray = null;
+let mainWindow = null;
+let autoUpdaterEventsBound = false;
+let autoUpdaterFeedUrl = '';
+let updateState = {
+    checking: false,
+    available: false,
+    downloading: false,
+    downloaded: false,
+    progress: 0,
+    status: '未检查更新',
+    latestVersion: '',
+    releaseDate: '',
+    releaseName: '',
+    error: '',
+    lastCheckedAt: ''
+};
+
+// --- Config persistence ---
+const CONFIG_FILE = path.join(app.getPath('userData'), 'compress-config.json');
+const CLASSIFY_CONFIG_FILE = path.join(app.getPath('userData'), 'classify-config.json');
+const SLICE_CONFIG_FILE = path.join(app.getPath('userData'), 'slice-config.json');
+const TEMPLATE_CONFIG_FILE = path.join(app.getPath('userData'), 'template-config.json');
+const UPDATE_CONFIG_FILE = path.join(app.getPath('userData'), 'update-config.json');
+const PACKAGE_JSON_FILE = path.join(__dirname, 'package.json');
+const LEGACY_WATERMARK_PRESETS_FILE = path.join(app.getPath('userData'), 'watermark-presets.json');
+const TEMPLATE_PARAMETER_PRESETS_FILE = path.join(app.getPath('userData'), 'template-parameter-presets.json');
+
+function loadConfig() {
+    try {
+        const cfg = JSON.parse(fs.readFileSync(CONFIG_FILE, 'utf-8'));
+        return {
+            directory: '',
+            thresholdMB: 20,
+            autoStart: false,
+            ...(cfg || {})
+        };
+    } catch {
+        return { directory: '', thresholdMB: 20, autoStart: false };
+    }
+}
+
+function saveConfig(cfg) {
+    fs.writeFileSync(CONFIG_FILE, JSON.stringify(cfg, null, 2), 'utf-8');
+}
+
+function loadClassifyConfig() {
+    try {
+        const cfg = JSON.parse(fs.readFileSync(CLASSIFY_CONFIG_FILE, 'utf-8'));
+        return {
+            sourceDir: '',
+            targetDir: '',
+            userName: '',
+            autoStart: false,
+            ...(cfg || {})
+        };
+    } catch {
+        return { sourceDir: '', targetDir: '', userName: '', autoStart: false };
+    }
+}
+
+function saveClassifyConfig(cfg) {
+    fs.writeFileSync(CLASSIFY_CONFIG_FILE, JSON.stringify(cfg, null, 2), 'utf-8');
+}
+
+function getDefaultSliceOutputDir() {
+    return path.join(app.getPath('pictures'), 'ImageFlow切片结果');
+}
+
+function loadSliceConfig() {
+    try {
+        return JSON.parse(fs.readFileSync(SLICE_CONFIG_FILE, 'utf-8'));
+    } catch {
+        return { outputDir: getDefaultSliceOutputDir() };
+    }
+}
+
+function saveSliceConfig(cfg) {
+    fs.writeFileSync(SLICE_CONFIG_FILE, JSON.stringify(cfg, null, 2), 'utf-8');
+}
+
+function ensureDir(dirPath) {
+    fs.mkdirSync(dirPath, { recursive: true });
+    return dirPath;
+}
+
+function getExternalAssetsBaseDir() {
+    return app.isPackaged ? path.dirname(process.execPath) : __dirname;
+}
+
+function getBundledTemplateRootDir() {
+    return path.join(__dirname, 'templates');
+}
+
+function getTemplateRendererScriptPath() {
+    const externalPath = path.join(getExternalAssetsBaseDir(), 'template_renderer.py');
+    if (app.isPackaged && fs.existsSync(externalPath)) {
+        return externalPath;
+    }
+    return path.join(__dirname, 'template_renderer.py');
+}
+
+function getPythonRuntimeCandidates() {
+    const externalBaseDir = getExternalAssetsBaseDir();
+    const candidatePaths = [];
+    if (app.isPackaged) {
+        candidatePaths.push(
+            path.join(externalBaseDir, 'python-runtime', 'python.exe'),
+            path.join(externalBaseDir, 'python-runtime', 'Scripts', 'python.exe')
+        );
+    }
+    candidatePaths.push(
+        path.join(__dirname, 'python-runtime', 'python.exe'),
+        path.join(__dirname, 'python-runtime', 'Scripts', 'python.exe')
+    );
+    return Array.from(new Set(candidatePaths));
+}
+
+function getDefaultTemplateRootDir() {
+    return path.join(getExternalAssetsBaseDir(), 'templates');
+}
+
+function getDefaultWatermarkDir() {
+    return path.join(getExternalAssetsBaseDir(), 'watermarks');
+}
+
+function normalizeDirectoryPath(dirPath, fallbackDir) {
+    const trimmed = String(dirPath || '').trim();
+    return path.resolve(trimmed || fallbackDir);
+}
+
+function seedTemplateRootDir(targetDir) {
+    const sourceDir = path.resolve(getBundledTemplateRootDir());
+    const resolvedTargetDir = path.resolve(targetDir);
+    if (resolvedTargetDir === sourceDir || !fs.existsSync(sourceDir)) {
+        return;
+    }
+    const existingEntries = fs.readdirSync(targetDir, { withFileTypes: true })
+        .filter((entry) => entry.name !== '.gitkeep');
+    if (existingEntries.length > 0) {
+        return;
+    }
+    for (const entry of fs.readdirSync(sourceDir, { withFileTypes: true })) {
+        if (entry.name === '.gitkeep') continue;
+        fs.cpSync(path.join(sourceDir, entry.name), path.join(targetDir, entry.name), {
+            recursive: true,
+            force: false,
+            errorOnExist: false
+        });
+    }
+}
+
+function getDefaultTemplateOutputDir() {
+    return path.join(app.getPath('pictures'), 'ImageFlow智能模板结果');
+}
+
+function loadTemplateConfig() {
+    const defaults = {
+        outputDir: getDefaultTemplateOutputDir(),
+        selectedTemplates: [],
+        templateOrder: [],
+        watermarkPresetId: '',
+        parameterPresetId: '',
+        defaultPreviewPath: '',
+        defaultPreviewName: '',
+        templateRootDir: getDefaultTemplateRootDir(),
+        watermarkDir: getDefaultWatermarkDir()
+    };
+    try {
+        const parsed = JSON.parse(fs.readFileSync(TEMPLATE_CONFIG_FILE, 'utf-8'));
+        return {
+            ...defaults,
+            ...(parsed || {}),
+            templateOrder: Array.isArray(parsed && parsed.templateOrder)
+                ? Array.from(new Set(parsed.templateOrder.map((item) => String(item || '').trim()).filter(Boolean)))
+                : defaults.templateOrder,
+            templateRootDir: normalizeDirectoryPath(parsed && parsed.templateRootDir, defaults.templateRootDir),
+            watermarkDir: normalizeDirectoryPath(parsed && parsed.watermarkDir, defaults.watermarkDir)
+        };
+    } catch {
+        return defaults;
+    }
+}
+
+function saveTemplateConfig(cfg) {
+    const defaults = loadTemplateConfig();
+    const nextCfg = {
+        ...defaults,
+        ...(cfg || {}),
+        templateOrder: Array.isArray(cfg && cfg.templateOrder)
+            ? Array.from(new Set(cfg.templateOrder.map((item) => String(item || '').trim()).filter(Boolean)))
+            : defaults.templateOrder,
+        templateRootDir: normalizeDirectoryPath(cfg && cfg.templateRootDir, defaults.templateRootDir),
+        watermarkDir: normalizeDirectoryPath(cfg && cfg.watermarkDir, defaults.watermarkDir)
+    };
+    fs.writeFileSync(TEMPLATE_CONFIG_FILE, JSON.stringify(nextCfg, null, 2), 'utf-8');
+    return nextCfg;
+}
+
+function getTemplateRootDir(cfg = loadTemplateConfig()) {
+    const templateRootDir = normalizeDirectoryPath(cfg && cfg.templateRootDir, getDefaultTemplateRootDir());
+    ensureDir(templateRootDir);
+    seedTemplateRootDir(templateRootDir);
+    return templateRootDir;
+}
+
+function getWatermarkDir(cfg = loadTemplateConfig()) {
+    const watermarkDir = normalizeDirectoryPath(cfg && cfg.watermarkDir, getDefaultWatermarkDir());
+    ensureDir(watermarkDir);
+    return watermarkDir;
+}
+
+function getWatermarkPresetsFile(cfg = loadTemplateConfig()) {
+    const watermarkDir = getWatermarkDir(cfg);
+    const presetFile = path.join(watermarkDir, 'watermark-presets.json');
+    if (!fs.existsSync(presetFile) && fs.existsSync(LEGACY_WATERMARK_PRESETS_FILE)) {
+        fs.copyFileSync(LEGACY_WATERMARK_PRESETS_FILE, presetFile);
+    }
+    return presetFile;
+}
+
+function loadWatermarkPresets() {
+    try {
+        const presets = JSON.parse(fs.readFileSync(getWatermarkPresetsFile(), 'utf-8'));
+        return Array.isArray(presets) ? presets : [];
+    } catch {
+        return [];
+    }
+}
+
+function saveWatermarkPresets(presets) {
+    fs.writeFileSync(getWatermarkPresetsFile(), JSON.stringify(Array.isArray(presets) ? presets : [], null, 2), 'utf-8');
+}
+
+function loadTemplateParameterPresets() {
+    try {
+        const presets = JSON.parse(fs.readFileSync(TEMPLATE_PARAMETER_PRESETS_FILE, 'utf-8'));
+        return Array.isArray(presets) ? presets : [];
+    } catch {
+        return [];
+    }
+}
+
+function saveTemplateParameterPresets(presets) {
+    fs.writeFileSync(TEMPLATE_PARAMETER_PRESETS_FILE, JSON.stringify(Array.isArray(presets) ? presets : [], null, 2), 'utf-8');
+}
+
+function normalizeUpdateSource(value) {
+    return String(value || '').trim().replace(/[\\/]+$/, '');
+}
+
+function parseGitHubRepoSource(value) {
+    const raw = normalizeUpdateSource(value)
+        .replace(/^git\+/, '')
+        .replace(/\.git$/i, '');
+    if (!raw) return null;
+
+    let owner = '';
+    let repo = '';
+
+    const githubUrlMatch = raw.match(/^https?:\/\/github\.com\/([^\/]+)\/([^\/?#]+)(?:[\/?#].*)?$/i);
+    if (githubUrlMatch) {
+        owner = githubUrlMatch[1];
+        repo = githubUrlMatch[2];
+    } else {
+        const shortMatch = raw.match(/^([A-Za-z0-9_.-]+)\/([A-Za-z0-9_.-]+)$/);
+        if (shortMatch) {
+            owner = shortMatch[1];
+            repo = shortMatch[2];
+        }
+    }
+
+    if (!owner || !repo) return null;
+    return {
+        provider: 'github',
+        owner,
+        repo,
+        label: `${owner}/${repo}`
+    };
+}
+
+function loadPackageRepositorySource() {
+    try {
+        const pkg = JSON.parse(fs.readFileSync(PACKAGE_JSON_FILE, 'utf-8'));
+        const repository = pkg && pkg.repository;
+        if (typeof repository === 'string') {
+            return normalizeUpdateSource(repository);
+        }
+        if (repository && typeof repository.url === 'string') {
+            return normalizeUpdateSource(repository.url);
+        }
+    } catch {
+        // ignore
+    }
+    return '';
+}
+
+function resolveUpdateSource(cfg = {}) {
+    const rawSource = normalizeUpdateSource(cfg.source !== undefined ? cfg.source : cfg.feedUrl);
+    const githubFromSource = parseGitHubRepoSource(rawSource);
+    if (githubFromSource) {
+        return githubFromSource;
+    }
+
+    if (/^https?:\/\//i.test(rawSource)) {
+        return {
+            provider: 'generic',
+            url: rawSource,
+            label: rawSource
+        };
+    }
+
+    const packageRepoSource = loadPackageRepositorySource();
+    const githubFromPackage = parseGitHubRepoSource(packageRepoSource);
+    if (githubFromPackage) {
+        return githubFromPackage;
+    }
+
+    return null;
+}
+
+function loadUpdateConfig() {
+    const defaults = {
+        source: '',
+        feedUrl: '',
+        autoCheckOnStartup: false
+    };
+    try {
+        const cfg = JSON.parse(fs.readFileSync(UPDATE_CONFIG_FILE, 'utf-8'));
+        const source = normalizeUpdateSource((cfg && (cfg.source !== undefined ? cfg.source : cfg.feedUrl)) || '');
+        return {
+            ...defaults,
+            ...(cfg || {}),
+            source,
+            feedUrl: source,
+            autoCheckOnStartup: Boolean(cfg && cfg.autoCheckOnStartup)
+        };
+    } catch {
+        return defaults;
+    }
+}
+
+function saveUpdateConfig(cfg) {
+    const current = loadUpdateConfig();
+    const nextSource = normalizeUpdateSource(
+        cfg && cfg.source !== undefined
+            ? cfg.source
+            : (cfg && cfg.feedUrl !== undefined ? cfg.feedUrl : current.source)
+    );
+    const nextCfg = {
+        ...current,
+        ...(cfg || {}),
+        source: nextSource,
+        feedUrl: nextSource,
+        autoCheckOnStartup: Boolean(cfg && cfg.autoCheckOnStartup !== undefined ? cfg.autoCheckOnStartup : current.autoCheckOnStartup)
+    };
+    fs.writeFileSync(UPDATE_CONFIG_FILE, JSON.stringify(nextCfg, null, 2), 'utf-8');
+    return nextCfg;
+}
+
+const TEMPLATE_REQUIRED_FILES = ['base.png', 'mask.png', 'config.json'];
+const TEMPLATE_LAYER_REQUIREMENT_TEXT = 'texture.png + highlight.png';
+
+function toTemplateRelativePath(targetPath) {
+    return path.relative(getTemplateRootDir(), targetPath).split(path.sep).join('/');
+}
+
+function getTemplatePreviewPath(templateDir) {
+    const previewCandidates = ['preview.png', 'preview.jpg', 'preview.jpeg', 'base.png'];
+    const previewFile = previewCandidates.find((fileName) => fs.existsSync(path.join(templateDir, fileName)));
+    return previewFile ? path.join(templateDir, previewFile) : '';
+}
+
+function getTemplatePlacement(config = {}) {
+    const placement = config && typeof config === 'object' && config.placement && typeof config.placement === 'object'
+        ? config.placement
+        : {};
+    return {
+        scale: Number.isFinite(Number(placement.scale)) ? Number(placement.scale) : 1,
+        offsetX: Number.isFinite(Number(placement.offsetX)) ? Number(placement.offsetX) : 0,
+        offsetY: Number.isFinite(Number(placement.offsetY)) ? Number(placement.offsetY) : 0,
+        rotation: Number.isFinite(Number(placement.rotation)) ? Number(placement.rotation) : 0
+    };
+}
+
+function getTemplateEffects(config = {}) {
+    const effects = config && typeof config === 'object' && config.effects && typeof config.effects === 'object'
+        ? config.effects
+        : {};
+    const designBlendMode = String(effects.designBlendMode || '').trim().toLowerCase() === 'normal'
+        ? 'normal'
+        : 'multiply';
+    return {
+        designBlendMode,
+        designOpacity: Number.isFinite(Number(effects.designOpacity)) ? Number(effects.designOpacity) : 1,
+        designBrightness: Number.isFinite(Number(effects.designBrightness)) ? Number(effects.designBrightness) : 1,
+        textureOpacity: Number.isFinite(Number(effects.textureOpacity)) ? Number(effects.textureOpacity) : 1,
+        highlightOpacity: Number.isFinite(Number(effects.highlightOpacity)) ? Number(effects.highlightOpacity) : 1
+    };
+}
+
+function parseTemplatePoint(item) {
+    if (Array.isArray(item) && item.length >= 2) {
+        return {
+            x: Number(item[0]) || 0,
+            y: Number(item[1]) || 0
+        };
+    }
+    if (item && typeof item === 'object') {
+        return {
+            x: Number(item.x) || 0,
+            y: Number(item.y) || 0
+        };
+    }
+    return { x: 0, y: 0 };
+}
+
+function getTemplatePoints(config = {}) {
+    let candidate = null;
+    for (const key of ['points', 'vertices', 'corners', 'quad']) {
+        if (Array.isArray(config[key])) {
+            candidate = config[key];
+            break;
+        }
+    }
+
+    if (!candidate && ['topLeft', 'topRight', 'bottomRight', 'bottomLeft'].every((key) => config[key])) {
+        candidate = ['topLeft', 'topRight', 'bottomRight', 'bottomLeft'].map((key) => config[key]);
+    }
+
+    if (!Array.isArray(candidate) || candidate.length !== 4) {
+        return [];
+    }
+
+    return candidate.map(parseTemplatePoint);
+}
+
+function describeTemplateScene(templateDir, groupName, sceneName) {
+    const configPath = path.join(templateDir, 'config.json');
+    const missing = TEMPLATE_REQUIRED_FILES.filter((fileName) => !fs.existsSync(path.join(templateDir, fileName)));
+    const hasTextureStack = fs.existsSync(path.join(templateDir, 'texture.png'))
+        && fs.existsSync(path.join(templateDir, 'highlight.png'));
+    if (!hasTextureStack) {
+        missing.push(TEMPLATE_LAYER_REQUIREMENT_TEXT);
+    }
+
+    let config = {};
+    if (fs.existsSync(configPath)) {
+        try {
+            config = JSON.parse(fs.readFileSync(configPath, 'utf-8'));
+        } catch {
+            missing.push('config.json 解析失败');
+        }
+    }
+
+    return {
+        name: sceneName,
+        groupName,
+        relativePath: toTemplateRelativePath(templateDir),
+        previewPath: getTemplatePreviewPath(templateDir),
+        basePath: fs.existsSync(path.join(templateDir, 'base.png')) ? path.join(templateDir, 'base.png') : '',
+        maskPath: fs.existsSync(path.join(templateDir, 'mask.png')) ? path.join(templateDir, 'mask.png') : '',
+        texturePath: fs.existsSync(path.join(templateDir, 'texture.png')) ? path.join(templateDir, 'texture.png') : '',
+        highlightPath: fs.existsSync(path.join(templateDir, 'highlight.png')) ? path.join(templateDir, 'highlight.png') : '',
+        placement: getTemplatePlacement(config),
+        effects: getTemplateEffects(config),
+        points: getTemplatePoints(config),
+        missing: Array.from(new Set(missing)),
+        valid: missing.length === 0
+    };
+}
+
+function listTemplateFolders() {
+    const cfg = loadTemplateConfig();
+    const templateRootDir = getTemplateRootDir(cfg);
+    ensureDir(templateRootDir);
+    const groups = fs.readdirSync(templateRootDir, { withFileTypes: true })
+        .filter((entry) => entry.isDirectory())
+        .map((entry) => {
+            const groupDir = path.join(templateRootDir, entry.name);
+            const childDirs = fs.readdirSync(groupDir, { withFileTypes: true })
+                .filter((item) => item.isDirectory())
+                .map((item) => ({
+                    name: item.name,
+                    dir: path.join(groupDir, item.name)
+                }));
+
+            const directLooksLikeScene = TEMPLATE_REQUIRED_FILES.some((fileName) => fs.existsSync(path.join(groupDir, fileName)))
+                || (fs.existsSync(path.join(groupDir, 'texture.png')) && fs.existsSync(path.join(groupDir, 'highlight.png')));
+
+            let scenes = [];
+            if (childDirs.length > 0 && !directLooksLikeScene) {
+                scenes = childDirs.map((item) => describeTemplateScene(item.dir, entry.name, item.name));
+            } else if (directLooksLikeScene) {
+                scenes = [describeTemplateScene(groupDir, entry.name, entry.name)];
+            } else {
+                scenes = [];
+            }
+
+            const validScenes = scenes.filter((item) => item.valid);
+            const missing = validScenes.length > 0
+                ? []
+                : Array.from(new Set(scenes.flatMap((item) => item.missing)));
+
+            return {
+                name: entry.name,
+                previewPath: (scenes.find((item) => item.previewPath) || {}).previewPath || '',
+                sceneCount: scenes.length,
+                scenes,
+                missing,
+                valid: validScenes.length > 0
+            };
+        });
+    const orderMap = new Map((Array.isArray(cfg.templateOrder) ? cfg.templateOrder : []).map((name, index) => [name, index]));
+    return groups.sort((a, b) => {
+        const aOrder = orderMap.has(a.name) ? orderMap.get(a.name) : Number.MAX_SAFE_INTEGER;
+        const bOrder = orderMap.has(b.name) ? orderMap.get(b.name) : Number.MAX_SAFE_INTEGER;
+        if (aOrder !== bOrder) {
+            return aOrder - bOrder;
+        }
+        return String(a.name || '').localeCompare(String(b.name || ''), 'zh-CN');
+    });
+}
+
+function moveTemplateGroupOrder(groupName, direction) {
+    const name = String(groupName || '').trim();
+    const move = String(direction || '').trim().toLowerCase();
+    if (!name) {
+        throw new Error('缺少模板名称');
+    }
+    if (!['up', 'down'].includes(move)) {
+        throw new Error('无效的移动方向');
+    }
+    const groups = listTemplateFolders();
+    const groupNames = groups.map((item) => item.name);
+    if (!groupNames.includes(name)) {
+        throw new Error('当前模板不存在');
+    }
+    const nextOrder = groupNames.slice();
+    const index = nextOrder.indexOf(name);
+    const targetIndex = move === 'up' ? index - 1 : index + 1;
+    if (targetIndex < 0 || targetIndex >= nextOrder.length) {
+        return {
+            config: saveTemplateConfig({
+                ...loadTemplateConfig(),
+                templateOrder: nextOrder
+            }),
+            templates: groups
+        };
+    }
+    const [moved] = nextOrder.splice(index, 1);
+    nextOrder.splice(targetIndex, 0, moved);
+    const nextCfg = saveTemplateConfig({
+        ...loadTemplateConfig(),
+        templateOrder: nextOrder
+    });
+    return {
+        config: nextCfg,
+        templates: listTemplateFolders()
+    };
+}
+
+function resolveTemplateSceneDir(relativePath) {
+    const normalized = String(relativePath || '').replace(/[\\/]+/g, path.sep);
+    const templateRootDir = getTemplateRootDir();
+    const rootDir = path.resolve(templateRootDir);
+    const resolvedPath = path.resolve(templateRootDir, normalized);
+    if (resolvedPath !== rootDir && !resolvedPath.startsWith(`${rootDir}${path.sep}`)) {
+        throw new Error('模板场景路径无效');
+    }
+    return resolvedPath;
+}
+
+function sanitizeTemplateSegment(value, fallback = '未命名模板') {
+    const trimmed = String(value || '').trim();
+    const sanitized = trimmed
+        .replace(/[<>:"/\\|?*\x00-\x1F]/g, ' ')
+        .replace(/\s+/g, ' ')
+        .replace(/\.+$/g, '')
+        .trim();
+    return sanitized || fallback;
+}
+
+async function getDefaultTemplateScenePoints(basePath, maskPath = '') {
+    try {
+        const resolvedMaskPath = String(maskPath || '').trim();
+        if (resolvedMaskPath && fs.existsSync(resolvedMaskPath)) {
+            const { data, info } = await sharp(resolvedMaskPath)
+                .ensureAlpha()
+                .raw()
+                .toBuffer({ resolveWithObject: true });
+            const width = Number(info.width) || 0;
+            const height = Number(info.height) || 0;
+            if (width > 0 && height > 0) {
+                let minX = width;
+                let minY = height;
+                let maxX = -1;
+                let maxY = -1;
+                for (let y = 0; y < height; y += 1) {
+                    for (let x = 0; x < width; x += 1) {
+                        const offset = (y * width + x) * 4;
+                        const alpha = data[offset + 3];
+                        const red = data[offset];
+                        const green = data[offset + 1];
+                        const blue = data[offset + 2];
+                        const luminance = (red + green + blue) / 3;
+                        if (alpha <= 8 || luminance <= 12) continue;
+                        if (x < minX) minX = x;
+                        if (y < minY) minY = y;
+                        if (x > maxX) maxX = x;
+                        if (y > maxY) maxY = y;
+                    }
+                }
+                if (maxX >= minX && maxY >= minY) {
+                    const points = [
+                        { x: minX, y: minY },
+                        { x: maxX, y: minY },
+                        { x: maxX, y: maxY },
+                        { x: minX, y: maxY }
+                    ];
+                    const centerX = points.reduce((sum, point) => sum + point.x, 0) / points.length;
+                    const centerY = points.reduce((sum, point) => sum + point.y, 0) / points.length;
+                    return points.map((point) => ({
+                        x: Math.round(centerX + (point.x - centerX) * 1.05),
+                        y: Math.round(centerY + (point.y - centerY) * 1.05)
+                    }));
+                }
+            }
+        }
+
+        const meta = await sharp(basePath).metadata();
+        const width = Number(meta.width);
+        const height = Number(meta.height);
+        if (Number.isFinite(width) && Number.isFinite(height) && width > 0 && height > 0) {
+            const insetX = Math.round(width * 0.18);
+            const insetY = Math.round(height * 0.18);
+            return [
+                { x: insetX, y: insetY },
+                { x: width - insetX, y: insetY },
+                { x: width - insetX, y: height - insetY },
+                { x: insetX, y: height - insetY }
+            ];
+        }
+    } catch {}
+    return [
+        { x: 240, y: 240 },
+        { x: 1808, y: 240 },
+        { x: 1808, y: 1808 },
+        { x: 240, y: 1808 }
+    ];
+}
+
+function runTemplatePreviewJob(jobPayload) {
+    return new Promise((resolve, reject) => {
+        const scriptPath = getTemplateRendererScriptPath();
+        const pythonRuntime = getPythonRuntime(scriptPath);
+        if (!pythonRuntime) {
+            reject(new Error('未检测到可用 Python 运行环境，请安装 Python 或 py 启动器'));
+            return;
+        }
+
+        const child = spawn(pythonRuntime.command, pythonRuntime.scriptArgs, {
+            cwd: path.dirname(scriptPath),
+            windowsHide: true,
+            stdio: ['pipe', 'pipe', 'pipe'],
+            env: {
+                ...process.env,
+                PYTHONUTF8: '1'
+            }
+        });
+
+        let stdoutBuffer = '';
+        let stderrBuffer = '';
+        let resolved = false;
+
+        child.stdout.on('data', (chunk) => {
+            stdoutBuffer += chunk.toString('utf-8');
+            const lines = stdoutBuffer.split(/\r?\n/);
+            stdoutBuffer = lines.pop() || '';
+            lines.forEach((line) => {
+                const text = line.trim();
+                if (!text) return;
+                try {
+                    const message = JSON.parse(text);
+                    if (message.type === 'done' && message.outputPath) {
+                        resolved = true;
+                        resolve(message);
+                    }
+                } catch {}
+            });
+        });
+
+        child.stderr.on('data', (chunk) => {
+            stderrBuffer += chunk.toString('utf-8');
+        });
+
+        child.on('error', (error) => {
+            reject(error);
+        });
+
+        child.on('close', (code) => {
+            if (resolved) return;
+            if (stdoutBuffer.trim()) {
+                try {
+                    const message = JSON.parse(stdoutBuffer.trim());
+                    if (message.type === 'done' && message.outputPath) {
+                        resolve(message);
+                        return;
+                    }
+                    if (message.message) {
+                        reject(new Error(message.message));
+                        return;
+                    }
+                } catch {}
+            }
+            reject(new Error(stderrBuffer.trim() || `预览生成失败 (code=${code ?? 'null'})`));
+        });
+
+        child.stdin.end(JSON.stringify(jobPayload), 'utf-8');
+    });
+}
+
+function getPythonRuntimeForScript(scriptPath) {
+    const candidates = [
+        ...getPythonRuntimeCandidates().map((pythonPath) => ({
+            command: pythonPath,
+            versionArgs: ['--version'],
+            scriptArgs: ['-u', scriptPath]
+        })),
+        { command: 'python', versionArgs: ['--version'], scriptArgs: ['-u', scriptPath] },
+        { command: 'py', versionArgs: ['-3', '--version'], scriptArgs: ['-3', '-u', scriptPath] },
+        { command: 'python3', versionArgs: ['--version'], scriptArgs: ['-u', scriptPath] }
+    ];
+
+    for (const candidate of candidates) {
+        try {
+            if (candidate.command.endsWith('.exe') && !fs.existsSync(candidate.command)) {
+                continue;
+            }
+            const result = spawnSync(candidate.command, candidate.versionArgs, {
+                encoding: 'utf-8',
+                windowsHide: true
+            });
+            if (!result.error && result.status === 0) {
+                return candidate;
+            }
+        } catch {}
+    }
+
+    return null;
+}
+
+function getPythonRuntime(scriptPath = getTemplateRendererScriptPath()) {
+    return getPythonRuntimeForScript(scriptPath);
+}
+
+function sanitizePathSegment(value, fallback = 'item') {
+    const cleaned = String(value || '')
+        .replace(/[<>:"/\\|?*\u0000-\u001F]/g, '_')
+        .replace(/\s+/g, ' ')
+        .trim()
+        .replace(/[. ]+$/g, '');
+    return cleaned || fallback;
+}
+
+// --- DirectoryWatcher ---
+class DirectoryWatcher {
+    constructor(dir, onFile) {
+        this.dir = dir;
+        this.onFile = onFile;
+        this.processing = new Set();
+        this.pending = new Map();
+        this.closed = false;
+        this.watcher = null;
+    }
+
+    start() {
+        this.closed = false;
+        this.watcher = chokidar.watch(this.dir, {
+            depth: 0,
+            ignoreInitial: false,
+            awaitWriteFinish: {
+                stabilityThreshold: 1500,
+                pollInterval: 250
+            }
+        });
+        this.watcher.on('add', (fp) => {
+            console.log('[Watcher] File added:', fp);
+            this._queue(fp);
+        });
+        this.watcher.on('change', (fp) => {
+            console.log('[Watcher] File changed:', fp);
+            this._queue(fp);
+        });
+        this.watcher.on('ready', () => {
+            console.log('[Watcher] Ready, watching:', this.dir);
+        });
+        this.watcher.on('error', (err) => {
+            console.error('[Watcher] Error:', err);
+        });
+    }
+
+    _shouldSkip(fp) {
+        const baseName = path.basename(fp).toLowerCase();
+        return (
+            baseName.startsWith('~$') ||
+            baseName.endsWith('.tmp') ||
+            baseName.endsWith('.temp') ||
+            baseName.endsWith('.part') ||
+            baseName.endsWith('.crdownload') ||
+            baseName.endsWith('.download')
+        );
+    }
+
+    _queue(fp) {
+        if (this.closed || this._shouldSkip(fp)) {
+            return;
+        }
+        const existing = this.pending.get(fp);
+        if (existing) {
+            clearTimeout(existing);
+        }
+        const timer = setTimeout(() => {
+            this.pending.delete(fp);
+            this._handle(fp);
+        }, 900);
+        this.pending.set(fp, timer);
+    }
+
+    async _waitForFileStable(fp) {
+        let lastSignature = '';
+        let stableCount = 0;
+        const deadline = Date.now() + 45000;
+
+        while (!this.closed && Date.now() < deadline) {
+            try {
+                const stat = await fs.promises.stat(fp);
+                if (!stat.isFile()) {
+                    return false;
+                }
+                const signature = `${stat.size}:${Math.floor(stat.mtimeMs)}`;
+                if (signature === lastSignature) {
+                    stableCount += 1;
+                    if (stableCount >= 2) {
+                        return true;
+                    }
+                } else {
+                    lastSignature = signature;
+                    stableCount = 0;
+                }
+            } catch (error) {
+                if (error && error.code !== 'ENOENT') {
+                    console.warn('[Watcher] Waiting for stable file failed:', fp, error.message);
+                }
+                lastSignature = '';
+                stableCount = 0;
+            }
+
+            await new Promise(resolve => setTimeout(resolve, 600));
+        }
+
+        console.warn('[Watcher] File did not stabilize in time, skip:', fp);
+        return false;
+    }
+
+    async _handle(fp) {
+        if (this.closed) return;
+        if (this.processing.has(fp)) {
+            this._queue(fp);
+            return;
+        }
+        this.processing.add(fp);
+        try {
+            const stable = await this._waitForFileStable(fp);
+            if (!stable || this.closed) {
+                return;
+            }
+            await this.onFile(fp);
+        } finally {
+            this.processing.delete(fp);
+        }
+    }
+
+    stop() {
+        this.closed = true;
+        for (const timer of this.pending.values()) {
+            clearTimeout(timer);
+        }
+        this.pending.clear();
+        if (this.watcher) {
+            this.watcher.close();
+            this.watcher = null;
+        }
+    }
+}
+
+// --- Compression engine ---
+const IMAGE_EXTS = new Set(['.jpg', '.jpeg', '.png', '.webp', '.tiff', '.tif']);
+
+async function binarySearchQuality(inputBuffer, targetBytes, format) {
+    let lo = 1, hi = 100, bestBuf = null;
+    while (lo <= hi) {
+        const mid = Math.floor((lo + hi) / 2);
+        let buf;
+        if (format === 'jpeg') {
+            buf = await sharp(inputBuffer).jpeg({ quality: mid }).toBuffer();
+        } else {
+            buf = await sharp(inputBuffer).webp({ quality: mid }).toBuffer();
+        }
+        if (buf.length <= targetBytes) {
+            bestBuf = buf;
+            lo = mid + 1;
+        } else {
+            hi = mid - 1;
+        }
+    }
+    return bestBuf;
+}
+
+async function compressImage(filePath, thresholdBytes, sendLog) {
+    console.log('[Compress] Processing:', filePath, 'threshold:', thresholdBytes);
+    const ext = path.extname(filePath).toLowerCase();
+    console.log('[Compress] Extension:', ext);
+    if (!IMAGE_EXTS.has(ext)) {
+        console.log('[Compress] Not an image file, skipping');
+        return;
+    }
+
+    let stat;
+    try { stat = fs.statSync(filePath); } catch (err) {
+        console.log('[Compress] Cannot stat file:', err.message);
+        return;
+    }
+    console.log('[Compress] File size:', stat.size, 'bytes');
+    if (stat.size <= thresholdBytes) {
+        console.log('[Compress] File size below threshold, skipping');
+        return;
+    }
+
+    const fileName = path.basename(filePath);
+    const originalMB = (stat.size / 1024 / 1024).toFixed(2);
+    sendLog('info', `检测到 ${fileName} (${originalMB} MB)，开始压缩...`);
+
+    try {
+        const inputBuffer = fs.readFileSync(filePath);
+        const meta = await sharp(inputBuffer).metadata();
+
+        // Determine output format
+        let outFormat = 'jpeg';
+        if (ext === '.webp') outFormat = 'webp';
+        // PNG -> convert to JPEG for effective compression
+        if (ext === '.png') {
+            sendLog('info', `PNG 格式将转为 JPEG 进行压缩`);
+        }
+
+        // Try binary search on quality
+        let result = await binarySearchQuality(inputBuffer, thresholdBytes, outFormat);
+
+        // Fallback: if quality=1 still too large, scale down
+        if (!result) {
+            sendLog('info', `质量调整不足，尝试缩小尺寸...`);
+            let scale = 0.9;
+            while (scale > 0.1) {
+                const w = Math.round(meta.width * scale);
+                const h = Math.round(meta.height * scale);
+                let buf;
+                if (outFormat === 'jpeg') {
+                    buf = await sharp(inputBuffer).resize(w, h).jpeg({ quality: 50 }).toBuffer();
+                } else {
+                    buf = await sharp(inputBuffer).resize(w, h).webp({ quality: 50 }).toBuffer();
+                }
+                if (buf.length <= thresholdBytes) {
+                    result = buf;
+                    break;
+                }
+                scale -= 0.1;
+            }
+        }
+
+        if (!result) {
+            sendLog('error', `${fileName} 无法压缩到目标大小以内`);
+            return;
+        }
+
+        // Write back — change extension to .jpg if was .png
+        let outPath = filePath;
+        if (ext === '.png') {
+            outPath = filePath.replace(/\.png$/i, '.jpg');
+        }
+        fs.writeFileSync(outPath, result);
+        // Remove original .png if converted
+        if (ext === '.png' && outPath !== filePath) {
+            fs.unlinkSync(filePath);
+        }
+
+        const newMB = (result.length / 1024 / 1024).toFixed(2);
+        sendLog('success', `${fileName} 压缩完成: ${originalMB} MB → ${newMB} MB`);
+    } catch (err) {
+        sendLog('error', `${fileName} 压缩失败: ${err.message}`);
+    }
+}
+
+// --- Safe IPC send (prevents EPIPE crash) ---
+function safeSend(sender, channel, data) {
+    try {
+        if (sender && !sender.isDestroyed()) {
+            sender.send(channel, data);
+        }
+    } catch (e) {
+        // ignore broken pipe
+    }
+}
+
+function getUpdateSnapshot() {
+    const cfg = loadUpdateConfig();
+    const resolvedSource = resolveUpdateSource(cfg);
+    return {
+        currentVersion: app.getVersion(),
+        packaged: app.isPackaged,
+        updateSource: cfg.source,
+        updateSourceDisplay: resolvedSource ? resolvedSource.label : '',
+        updateProvider: resolvedSource ? resolvedSource.provider : '',
+        autoCheckOnStartup: Boolean(cfg.autoCheckOnStartup),
+        ...updateState
+    };
+}
+
+function broadcastUpdateState() {
+    if (!mainWindow || mainWindow.isDestroyed()) return;
+    safeSend(mainWindow.webContents, 'app-update:state', getUpdateSnapshot());
+}
+
+function markUpdateState(patch = {}) {
+    updateState = {
+        ...updateState,
+        ...(patch || {})
+    };
+    broadcastUpdateState();
+}
+
+function bindAutoUpdaterEvents() {
+    if (autoUpdaterEventsBound) return;
+    autoUpdaterEventsBound = true;
+    autoUpdater.autoDownload = false;
+    autoUpdater.autoInstallOnAppQuit = false;
+
+    autoUpdater.on('checking-for-update', () => {
+        markUpdateState({
+            checking: true,
+            available: false,
+            downloading: false,
+            downloaded: false,
+            progress: 0,
+            error: '',
+            status: '正在检查更新...',
+            lastCheckedAt: new Date().toISOString()
+        });
+    });
+
+    autoUpdater.on('update-available', (info) => {
+        markUpdateState({
+            checking: false,
+            available: true,
+            downloading: false,
+            downloaded: false,
+            progress: 0,
+            error: '',
+            latestVersion: String(info?.version || ''),
+            releaseDate: String(info?.releaseDate || ''),
+            releaseName: String(info?.releaseName || ''),
+            status: `发现新版本 ${String(info?.version || '')}`.trim()
+        });
+    });
+
+    autoUpdater.on('update-not-available', () => {
+        markUpdateState({
+            checking: false,
+            available: false,
+            downloading: false,
+            downloaded: false,
+            progress: 0,
+            error: '',
+            latestVersion: '',
+            releaseDate: '',
+            releaseName: '',
+            status: '当前已经是最新版本'
+        });
+    });
+
+    autoUpdater.on('error', (error) => {
+        markUpdateState({
+            checking: false,
+            downloading: false,
+            error: error?.message || '检查更新失败',
+            status: error?.message || '检查更新失败'
+        });
+    });
+
+    autoUpdater.on('download-progress', (progress) => {
+        markUpdateState({
+            checking: false,
+            available: true,
+            downloading: true,
+            downloaded: false,
+            progress: Number(progress?.percent || 0),
+            error: '',
+            status: `正在下载更新 ${Math.round(Number(progress?.percent || 0))}%`
+        });
+    });
+
+    autoUpdater.on('update-downloaded', (info) => {
+        markUpdateState({
+            checking: false,
+            available: true,
+            downloading: false,
+            downloaded: true,
+            progress: 100,
+            error: '',
+            latestVersion: String(info?.version || updateState.latestVersion || ''),
+            releaseDate: String(info?.releaseDate || updateState.releaseDate || ''),
+            releaseName: String(info?.releaseName || updateState.releaseName || ''),
+            status: '更新已下载完成，点击安装更新'
+        });
+    });
+}
+
+function ensureUpdateFeedConfigured() {
+    const cfg = loadUpdateConfig();
+    const resolvedSource = resolveUpdateSource(cfg);
+    if (!resolvedSource) {
+        throw new Error('请先在关于中填写 GitHub 仓库或更新地址');
+    }
+    bindAutoUpdaterEvents();
+    const feedKey = resolvedSource.provider === 'github'
+        ? `github:${resolvedSource.owner}/${resolvedSource.repo}`
+        : `generic:${resolvedSource.url}`;
+    if (autoUpdaterFeedUrl !== feedKey) {
+        if (resolvedSource.provider === 'github') {
+            autoUpdater.setFeedURL({
+                provider: 'github',
+                owner: resolvedSource.owner,
+                repo: resolvedSource.repo,
+                private: false
+            });
+        } else {
+            autoUpdater.setFeedURL({
+                provider: 'generic',
+                url: resolvedSource.url
+            });
+        }
+        autoUpdaterFeedUrl = feedKey;
+    }
+    return resolvedSource;
+}
+
+async function checkForAppUpdates() {
+    if (!app.isPackaged) {
+        throw new Error('开发环境不支持在线更新，请使用安装版测试');
+    }
+    ensureUpdateFeedConfigured();
+    return autoUpdater.checkForUpdates();
+}
+
+async function downloadAppUpdate() {
+    if (!app.isPackaged) {
+        throw new Error('开发环境不支持在线更新，请使用安装版测试');
+    }
+    ensureUpdateFeedConfigured();
+    if (!updateState.available && !updateState.downloaded) {
+        throw new Error('当前没有可下载的更新');
+    }
+    if (updateState.downloaded) {
+        return getUpdateSnapshot();
+    }
+    await autoUpdater.downloadUpdate();
+    return getUpdateSnapshot();
+}
+
+function installAppUpdate() {
+    if (!app.isPackaged) {
+        throw new Error('开发环境不支持在线更新，请使用安装版测试');
+    }
+    if (!updateState.downloaded) {
+        throw new Error('当前没有已下载完成的更新');
+    }
+    app.isQuitting = true;
+    autoUpdater.quitAndInstall(false, true);
+}
+
+function sendTemplateLog(sender, level, message, extra = {}) {
+    safeSend(sender, 'template:log', {
+        level,
+        message,
+        time: new Date().toLocaleTimeString(),
+        ...extra
+    });
+}
+
+function notifyTemplateStatus(sender, running, extra = {}) {
+    safeSend(sender, 'template:status', {
+        running,
+        ...extra
+    });
+}
+
+function cleanupTemplateProcess() {
+    templateProcess = null;
+    templateProcessSender = null;
+    templateCancelRequested = false;
+}
+
+function stopTemplateProcess() {
+    if (!templateProcess) {
+        return false;
+    }
+
+    templateCancelRequested = true;
+    try {
+        templateProcess.kill();
+        return true;
+    } catch {
+        return false;
+    }
+}
+
+// --- Watcher state ---
+let activeWatcher = null;
+let classifyWatcher = null;
+let templateProcess = null;
+let templateProcessSender = null;
+let templateCancelRequested = false;
+
+// --- Product mapping ---
+let PRODUCT_MAP = {
+    'ZBDZ': '桌布定制',
+    'ZB': '桌布',
+    'SBDDZ': '鼠标垫定制',
+    'SBD': '鼠标垫',
+    'DDDZ': '地垫定制',
+    'DD': '地垫',
+    'SJTDZ': '浴室三件套定制',
+    'SJT': '浴室三件套',
+    'KFJDDZ': '咖啡垫定制',
+    'KFJD': '咖啡垫',
+    'GTDZ': '挂毯定制',
+    'GT': '挂毯',
+    'TXDZ': 'T恤定制',
+    'TX': 'T恤'
+};
+
+// Sorted by length descending for priority matching
+let PRODUCT_PREFIXES = Object.keys(PRODUCT_MAP).sort((a, b) => b.length - a.length);
+
+function updateProductRules(newRules) {
+    PRODUCT_MAP = newRules;
+    PRODUCT_PREFIXES = Object.keys(PRODUCT_MAP).sort((a, b) => b.length - a.length);
+    console.log('[Rules] Updated product rules:', PRODUCT_MAP);
+}
+
+function matchProductPrefix(filename) {
+    const nameLower = filename.toLowerCase();
+    for (const prefix of PRODUCT_PREFIXES) {
+        if (nameLower.startsWith(prefix.toLowerCase())) {
+            return { prefix: prefix, productName: PRODUCT_MAP[prefix] };
+        }
+    }
+    return null;
+}
+
+function getDateFolders() {
+    const now = new Date();
+    const year = now.getFullYear();
+    const month = String(now.getMonth() + 1).padStart(2, '0');
+    const day = String(now.getDate()).padStart(2, '0');
+    return {
+        l1: `${year}${month}`,
+        l2: `${year}${month}${day}`
+    };
+}
+
+function findNextIndex(targetDir, productName, dateStr, userName) {
+    for (let i = 1; i < 1000; i++) {
+        const baseName = `${productName}_${dateStr}_${userName}_${i}`;
+        const exists = ['.png', '.jpg', '.jpeg'].some(ext =>
+            fs.existsSync(path.join(targetDir, baseName + ext))
+        );
+        if (!exists) return i;
+    }
+    return 1;
+}
+
+async function classifyFile(filePath, targetBaseDir, userName, sendLog, force = false) {
+    const fileName = path.basename(filePath);
+    const nameLower = fileName.toLowerCase();
+
+    if (!force) {
+        // Check file size - skip if >= 20MB
+        try {
+            const stat = fs.statSync(filePath);
+            const sizeMB = stat.size / 1024 / 1024;
+            if (sizeMB >= 20) {
+                sendLog('oversize', `${fileName} (${sizeMB.toFixed(1)}MB) 超过20MB，跳过归类`);
+                return { skipped: true, reason: 'oversize', fileName };
+            }
+        } catch (err) {
+            return { skipped: true, reason: 'stat_error', fileName };
+        }
+
+        // Skip files with 'gai'
+        if (nameLower.includes('gai')) {
+            console.log('[Classify] Skipping file with gai:', fileName);
+            sendLog('warn', `${fileName} 包含 gai，跳过归类`);
+            return { skipped: true, reason: 'gai', fileName };
+        }
+    }
+
+    // Match product prefix
+    const match = matchProductPrefix(fileName);
+    if (!match) {
+        sendLog('error', `${fileName} 无法识别产品前缀`);
+        return { skipped: true, reason: 'no_prefix', fileName };
+    }
+
+    const { productName } = match;
+    const { l1, l2 } = getDateFolders();
+    const ext = path.extname(filePath);
+
+    // Create target directory structure
+    const targetDir = path.join(targetBaseDir, l1, l2, productName);
+    try {
+        fs.mkdirSync(targetDir, { recursive: true });
+    } catch (err) {
+        sendLog('error', `创建目录失败: ${err.message}`);
+        return { skipped: true, reason: 'mkdir_error', fileName };
+    }
+
+    // Find next available index
+    const index = findNextIndex(targetDir, productName, l2, userName);
+    const newName = `${productName}_${l2}_${userName}_${index}${ext}`;
+    const targetPath = path.join(targetDir, newName);
+
+    try {
+        fs.renameSync(filePath, targetPath);
+        sendLog('success', `${fileName} → ${newName}`);
+        return { success: true, fileName, newName };
+    } catch (err) {
+        sendLog('error', `${fileName} 归类失败: ${err.message}`);
+        return { skipped: true, reason: 'move_error', fileName };
+    }
+}
+
+function createWindow() {
+    // 隐藏默认菜单栏
+    Menu.setApplicationMenu(null);
+
+    mainWindow = new BrowserWindow({
+        width: 1500,
+        height: 900,
+        minWidth: 1200,
+        minHeight: 700,
+        icon: path.join(__dirname, 'logo.png'),
+        webPreferences: {
+            nodeIntegration: true,
+            contextIsolation: false
+        },
+        frame: false,
+        transparent: true,
+        backgroundColor: '#00000000',
+        show: false
+    });
+
+    remoteMain.enable(mainWindow.webContents);
+
+    mainWindow.loadFile('图片工作台.html');
+
+    // 窗口准备好后显示
+    mainWindow.once('ready-to-show', () => {
+        mainWindow.show();
+    });
+
+    // 关闭窗口时隐藏到托盘
+    mainWindow.on('close', (event) => {
+        if (!app.isQuitting) {
+            event.preventDefault();
+            mainWindow.hide();
+        }
+    });
+
+    // 注册快捷键
+    mainWindow.webContents.on('before-input-event', (event, input) => {
+        if (input.control && input.key === 'r') {
+            mainWindow.reload();
+        }
+        if (input.control && input.shift && input.key === 'I') {
+            mainWindow.webContents.toggleDevTools();
+        }
+    });
+}
+
+function createTray() {
+    const iconPath = path.join(__dirname, 'logo.png');
+    console.log('[Tray] Creating tray with icon:', iconPath);
+
+    try {
+        tray = new Tray(iconPath);
+        console.log('[Tray] Tray created successfully');
+    } catch (err) {
+        console.error('[Tray] Failed to create tray:', err);
+        return;
+    }
+
+    const contextMenu = Menu.buildFromTemplate([
+        {
+            label: '显示窗口',
+            click: () => {
+                console.log('[Tray] Show window clicked');
+                mainWindow.show();
+            }
+        },
+        {
+            label: '退出',
+            click: () => {
+                console.log('[Tray] Quit clicked');
+                app.isQuitting = true;
+                app.quit();
+            }
+        }
+    ]);
+
+    tray.setToolTip('图片工作台');
+    tray.setContextMenu(contextMenu);
+
+    // 双击托盘图标显示窗口
+    tray.on('double-click', () => {
+        console.log('[Tray] Double clicked');
+        mainWindow.show();
+    });
+}
+
+app.whenReady().then(() => {
+    createWindow();
+    createTray();
+    bindAutoUpdaterEvents();
+    broadcastUpdateState();
+
+    const updateCfg = loadUpdateConfig();
+    if (app.isPackaged && updateCfg.autoCheckOnStartup && resolveUpdateSource(updateCfg)) {
+        setTimeout(() => {
+            checkForAppUpdates().catch((error) => {
+                markUpdateState({
+                    checking: false,
+                    error: error?.message || '检查更新失败',
+                    status: error?.message || '检查更新失败'
+                });
+            });
+        }, 2200);
+    }
+
+    // --- IPC handlers ---
+    ipcMain.handle('app-update:load-config', () => {
+        return getUpdateSnapshot();
+    });
+
+    ipcMain.handle('app-update:save-config', (event, cfg) => {
+        const saved = saveUpdateConfig(cfg || {});
+        const resolvedSavedSource = resolveUpdateSource(saved);
+        const savedFeedKey = resolvedSavedSource
+            ? (resolvedSavedSource.provider === 'github'
+                ? `github:${resolvedSavedSource.owner}/${resolvedSavedSource.repo}`
+                : `generic:${resolvedSavedSource.url}`)
+            : '';
+        if (autoUpdaterFeedUrl && savedFeedKey !== autoUpdaterFeedUrl) {
+            autoUpdaterFeedUrl = '';
+        }
+        broadcastUpdateState();
+        return getUpdateSnapshot();
+    });
+
+    ipcMain.handle('app-update:check', async () => {
+        await checkForAppUpdates();
+        return getUpdateSnapshot();
+    });
+
+    ipcMain.handle('app-update:download', async () => {
+        return downloadAppUpdate();
+    });
+
+    ipcMain.handle('app-update:install', () => {
+        installAppUpdate();
+        return { accepted: true };
+    });
+
+    ipcMain.handle('compress:load-config', () => {
+        return loadConfig();
+    });
+
+    ipcMain.handle('compress:save-config', (event, cfg) => {
+        const current = loadConfig();
+        const nextCfg = {
+            ...current,
+            ...(cfg || {})
+        };
+        saveConfig(nextCfg);
+        return nextCfg;
+    });
+
+    ipcMain.on('compress:start', (event, { directory, thresholdMB }) => {
+        if (activeWatcher) {
+            activeWatcher.stop();
+            activeWatcher = null;
+        }
+
+        const thresholdBytes = thresholdMB * 1024 * 1024;
+        const sender = event.sender;
+
+        const sendLog = (type, msg) => {
+            safeSend(sender, 'compress:log', { type, msg, time: new Date().toLocaleTimeString() });
+        };
+
+        saveConfig({
+            ...loadConfig(),
+            directory,
+            thresholdMB
+        });
+
+        activeWatcher = new DirectoryWatcher(directory, async (fp) => {
+            await compressImage(fp, thresholdBytes, sendLog);
+        });
+        activeWatcher.start();
+
+        sendLog('info', `开始监控: ${directory} (阈值: ${thresholdMB} MB)`);
+        safeSend(sender, 'compress:status', true);
+    });
+
+    ipcMain.on('compress:stop', (event) => {
+        if (activeWatcher) {
+            activeWatcher.stop();
+            activeWatcher = null;
+        }
+        const sender = event.sender;
+        safeSend(sender, 'compress:log', { type: 'info', msg: '已停止监控', time: new Date().toLocaleTimeString() });
+        safeSend(sender, 'compress:status', false);
+    });
+
+    ipcMain.on('compress:manual', async (event, { directory, thresholdMB }) => {
+        const sender = event.sender;
+        const thresholdBytes = thresholdMB * 1024 * 1024;
+
+        const sendLog = (type, msg) => {
+            safeSend(sender, 'compress:log', { type, msg, time: new Date().toLocaleTimeString() });
+        };
+
+        sendLog('info', '开始手动压缩...');
+
+        try {
+            const files = fs.readdirSync(directory);
+            let count = 0;
+
+            for (const file of files) {
+                const filePath = path.join(directory, file);
+                const stat = fs.statSync(filePath);
+                if (!stat.isFile()) continue;
+
+                await compressImage(filePath, thresholdBytes, sendLog);
+                count++;
+            }
+
+            sendLog('success', `手动压缩完成，共处理 ${count} 个文件`);
+        } catch (err) {
+            sendLog('error', `手动压缩失败: ${err.message}`);
+        }
+    });
+
+    // --- Classify IPC handlers ---
+    ipcMain.handle('classify:load-config', () => {
+        return loadClassifyConfig();
+    });
+
+    ipcMain.handle('classify:save-config', (event, cfg) => {
+        const current = loadClassifyConfig();
+        const nextCfg = {
+            ...current,
+            ...(cfg || {})
+        };
+        saveClassifyConfig(nextCfg);
+        return nextCfg;
+    });
+
+    ipcMain.handle('slice:load-config', () => {
+        return loadSliceConfig();
+    });
+
+    ipcMain.handle('slice:save-config', (event, cfg) => {
+        saveSliceConfig(cfg);
+        return loadSliceConfig();
+    });
+
+    ipcMain.handle('slice:select-output-dir', async () => {
+        const currentCfg = loadSliceConfig();
+        const result = await dialog.showOpenDialog(mainWindow, {
+            properties: ['openDirectory', 'createDirectory'],
+            defaultPath: currentCfg.outputDir || getDefaultSliceOutputDir(),
+            title: '选择切片输出目录'
+        });
+
+        if (result.canceled || result.filePaths.length === 0) {
+            return currentCfg;
+        }
+
+        const nextCfg = {
+            ...currentCfg,
+            outputDir: result.filePaths[0]
+        };
+        saveSliceConfig(nextCfg);
+        return nextCfg;
+    });
+
+    ipcMain.handle('slice:save-results', async (event, payload) => {
+        const { fileName, outputDir, files, taskDir: existingTaskDir, overwrite } = payload || {};
+        if (!Array.isArray(files) || files.length === 0) {
+            throw new Error('没有可保存的切片结果');
+        }
+
+        const cfg = loadSliceConfig();
+        const baseOutputDir = outputDir || cfg.outputDir || getDefaultSliceOutputDir();
+        fs.mkdirSync(baseOutputDir, { recursive: true });
+
+        const baseName = sanitizePathSegment(path.basename(fileName || 'slice-task', path.extname(fileName || '')));
+        let taskDir = '';
+
+        if (overwrite && existingTaskDir) {
+            taskDir = existingTaskDir;
+            fs.mkdirSync(taskDir, { recursive: true });
+            fs.readdirSync(taskDir).forEach((name) => {
+                const target = path.join(taskDir, name);
+                const stat = fs.statSync(target);
+                if (stat.isFile()) {
+                    fs.unlinkSync(target);
+                }
+            });
+        } else {
+            const stamp = new Date().toISOString().replace(/[-:]/g, '').replace(/\..+$/, '').replace('T', '_');
+            taskDir = path.join(baseOutputDir, `${baseName}_${stamp}`);
+            fs.mkdirSync(taskDir, { recursive: true });
+        }
+
+        const savedFiles = [];
+
+        files.forEach((item, index) => {
+            const ext = path.extname(item.name || '').toLowerCase() || '.png';
+            const safeName = sanitizePathSegment(path.basename(item.name || `${baseName}_${index + 1}${ext}`, ext), `${baseName}_${index + 1}`);
+            const targetPath = path.join(taskDir, `${safeName}${ext}`);
+            const base64Data = String(item.dataUrl || '').replace(/^data:.+;base64,/, '');
+
+            if (!base64Data) {
+                throw new Error(`切片 ${index + 1} 缺少图像数据`);
+            }
+
+            fs.writeFileSync(targetPath, Buffer.from(base64Data, 'base64'));
+            savedFiles.push(targetPath);
+        });
+
+        saveSliceConfig({
+            ...cfg,
+            outputDir: baseOutputDir
+        });
+
+        return {
+            outputDir: baseOutputDir,
+            taskDir,
+            files: savedFiles
+        };
+    });
+
+    ipcMain.handle('slice:overwrite-result-file', async (event, payload) => {
+        const filePath = String(payload?.filePath || '').trim();
+        const dataUrl = String(payload?.dataUrl || '').trim();
+        if (!filePath) {
+            throw new Error('缺少切片文件路径');
+        }
+        if (!dataUrl) {
+            throw new Error('缺少切片图像数据');
+        }
+        const base64Data = dataUrl.replace(/^data:.+;base64,/, '');
+        if (!base64Data) {
+            throw new Error('切片图像数据无效');
+        }
+        fs.mkdirSync(path.dirname(filePath), { recursive: true });
+        fs.writeFileSync(filePath, Buffer.from(base64Data, 'base64'));
+        return { filePath };
+    });
+
+    ipcMain.handle('template:load-config', () => {
+        return loadTemplateConfig();
+    });
+
+    ipcMain.handle('template:save-config', (event, cfg) => {
+        return saveTemplateConfig({
+            ...loadTemplateConfig(),
+            ...(cfg || {})
+        });
+    });
+
+    ipcMain.handle('template:list-templates', () => {
+        const cfg = loadTemplateConfig();
+        return {
+            templateRootDir: getTemplateRootDir(cfg),
+            watermarkDir: getWatermarkDir(cfg),
+            templates: listTemplateFolders()
+        };
+    });
+
+    ipcMain.handle('template:save-scene-config', (event, payload) => {
+        const relativePath = String(payload && payload.relativePath ? payload.relativePath : '').trim();
+        if (!relativePath) {
+            throw new Error('缺少模板场景路径');
+        }
+
+        const sceneDir = resolveTemplateSceneDir(relativePath);
+        const configPath = path.join(sceneDir, 'config.json');
+        if (!fs.existsSync(configPath)) {
+            throw new Error('当前模板场景缺少 config.json');
+        }
+
+        const currentConfig = JSON.parse(fs.readFileSync(configPath, 'utf-8'));
+        const nextConfig = {
+            ...currentConfig
+        };
+        if (payload && Object.prototype.hasOwnProperty.call(payload, 'placement')) {
+            nextConfig.placement = getTemplatePlacement({ placement: payload.placement || {} });
+        }
+        if (payload && Object.prototype.hasOwnProperty.call(payload, 'effects')) {
+            nextConfig.effects = getTemplateEffects({ effects: payload.effects || {} });
+        }
+        if (payload && Object.prototype.hasOwnProperty.call(payload, 'points')) {
+            const nextPoints = getTemplatePoints({ points: payload.points || [] });
+            if (nextPoints.length !== 4) {
+                throw new Error('模板坐标必须为 4 个点');
+            }
+            nextConfig.points = nextPoints;
+        }
+        fs.writeFileSync(configPath, JSON.stringify(nextConfig, null, 2), 'utf-8');
+
+        const allGroups = listTemplateFolders();
+        for (const group of allGroups) {
+            const scene = (group.scenes || []).find((item) => item.relativePath === toTemplateRelativePath(sceneDir));
+            if (scene) {
+                return {
+                    group,
+                    scene
+                };
+            }
+        }
+
+        return {
+            scene: describeTemplateScene(sceneDir, path.basename(path.dirname(sceneDir)), path.basename(sceneDir))
+        };
+    });
+
+    ipcMain.handle('template:create-group', async (event, payload) => {
+        const groupName = sanitizeTemplateSegment(payload && payload.groupName, '新产品');
+        const templateRootDir = getTemplateRootDir();
+        ensureDir(templateRootDir);
+        ensureDir(path.join(templateRootDir, groupName));
+        const currentCfg = loadTemplateConfig();
+        const nextOrder = (Array.isArray(currentCfg.templateOrder) ? currentCfg.templateOrder : [])
+            .filter((name) => name !== groupName)
+            .concat(groupName);
+        saveTemplateConfig({
+            ...currentCfg,
+            templateOrder: nextOrder
+        });
+        const allGroups = listTemplateFolders();
+        return {
+            templateRootDir,
+            templates: allGroups,
+            group: allGroups.find((item) => item.name === groupName) || null
+        };
+    });
+
+    ipcMain.handle('template:delete-group', async (event, payload) => {
+        const groupName = sanitizeTemplateSegment(payload && payload.groupName, '');
+        if (!groupName) {
+            throw new Error('缺少模板名称');
+        }
+        const templateRootDir = getTemplateRootDir();
+        const groupDir = path.join(templateRootDir, groupName);
+        if (!fs.existsSync(groupDir)) {
+            throw new Error('当前模板不存在');
+        }
+        fs.rmSync(groupDir, { recursive: true, force: true });
+        const currentCfg = loadTemplateConfig();
+        saveTemplateConfig({
+            ...currentCfg,
+            templateOrder: (Array.isArray(currentCfg.templateOrder) ? currentCfg.templateOrder : [])
+                .filter((name) => name !== groupName)
+        });
+        const allGroups = listTemplateFolders();
+        return {
+            templateRootDir,
+            templates: allGroups,
+            deletedGroupName: groupName
+        };
+    });
+
+    ipcMain.handle('template:reorder-groups', async (event, payload) => {
+        const groupName = sanitizeTemplateSegment(payload && payload.groupName, '');
+        const direction = String(payload && payload.direction ? payload.direction : '').trim().toLowerCase();
+        const { templates, config } = moveTemplateGroupOrder(groupName, direction);
+        return {
+            templateRootDir: getTemplateRootDir(config),
+            watermarkDir: getWatermarkDir(config),
+            templates
+        };
+    });
+
+    ipcMain.handle('template:create-scene', async (event, payload) => {
+        const groupName = sanitizeTemplateSegment(payload && payload.groupName, '新模板组');
+        const sceneName = sanitizeTemplateSegment(payload && payload.sceneName, '新场景');
+        const files = payload && payload.files && typeof payload.files === 'object' ? payload.files : {};
+        const basePath = String(files.basePath || '').trim();
+        const maskPath = String(files.maskPath || '').trim();
+        const texturePath = String(files.texturePath || '').trim();
+        const highlightPath = String(files.highlightPath || '').trim();
+        if (!basePath || !fs.existsSync(basePath)) {
+            throw new Error('请先上传 base.png 底图');
+        }
+        if (!maskPath || !fs.existsSync(maskPath)) {
+            throw new Error('请先上传 mask.png 蒙版');
+        }
+        const hasTextureStack = texturePath && highlightPath && fs.existsSync(texturePath) && fs.existsSync(highlightPath);
+        if (!hasTextureStack) {
+            throw new Error('请同时上传 texture.png 和 highlight.png');
+        }
+
+        const templateRootDir = getTemplateRootDir();
+        ensureDir(templateRootDir);
+        const groupDir = ensureDir(path.join(templateRootDir, groupName));
+        const sceneDir = path.join(groupDir, sceneName);
+        ensureDir(sceneDir);
+
+        const copyAsset = (sourcePath, targetName) => {
+            if (!sourcePath) return;
+            fs.copyFileSync(sourcePath, path.join(sceneDir, targetName));
+        };
+
+        copyAsset(basePath, 'base.png');
+        copyAsset(maskPath, 'mask.png');
+        if (hasTextureStack) {
+            copyAsset(texturePath, 'texture.png');
+            copyAsset(highlightPath, 'highlight.png');
+            if (fs.existsSync(path.join(sceneDir, 'shadow.png'))) {
+                fs.unlinkSync(path.join(sceneDir, 'shadow.png'));
+            }
+        }
+
+        const configPath = path.join(sceneDir, 'config.json');
+        const defaultPoints = await getDefaultTemplateScenePoints(path.join(sceneDir, 'base.png'), path.join(sceneDir, 'mask.png'));
+        const nextConfig = {
+            points: defaultPoints,
+            placement: getTemplatePlacement({}),
+            effects: getTemplateEffects({})
+        };
+        fs.writeFileSync(configPath, JSON.stringify(nextConfig, null, 2), 'utf-8');
+
+        const allGroups = listTemplateFolders();
+        const createdGroup = allGroups.find((item) => item.name === groupName) || null;
+        const createdScene = createdGroup
+            ? (createdGroup.scenes || []).find((item) => item.relativePath === toTemplateRelativePath(sceneDir)) || null
+            : null;
+
+        return {
+            group: createdGroup,
+            scene: createdScene,
+            relativePath: toTemplateRelativePath(sceneDir),
+            templateRootDir,
+            templates: allGroups
+        };
+    });
+
+    ipcMain.handle('template:update-scene-assets', async (event, payload) => {
+        const relativePath = String(payload && payload.relativePath ? payload.relativePath : '').trim();
+        if (!relativePath) {
+            throw new Error('缺少模板场景路径');
+        }
+        const files = payload && payload.files && typeof payload.files === 'object' ? payload.files : {};
+        const sceneDir = resolveTemplateSceneDir(relativePath);
+        const copyAsset = (sourcePath, targetName) => {
+            const resolved = String(sourcePath || '').trim();
+            if (!resolved) return false;
+            if (!fs.existsSync(resolved)) {
+                throw new Error(`素材文件不存在：${targetName}`);
+            }
+            fs.copyFileSync(resolved, path.join(sceneDir, targetName));
+            return true;
+        };
+
+        const changedBase = copyAsset(files.basePath, 'base.png');
+        const changedMask = copyAsset(files.maskPath, 'mask.png');
+        const changedTexture = copyAsset(files.texturePath, 'texture.png');
+        const changedHighlight = copyAsset(files.highlightPath, 'highlight.png');
+
+        if ((changedTexture || changedHighlight) && fs.existsSync(path.join(sceneDir, 'shadow.png'))) {
+            fs.unlinkSync(path.join(sceneDir, 'shadow.png'));
+        }
+
+        const configPath = path.join(sceneDir, 'config.json');
+        if ((changedBase || changedMask) && fs.existsSync(configPath)) {
+            const currentConfig = JSON.parse(fs.readFileSync(configPath, 'utf-8'));
+            if (!Array.isArray(getTemplatePoints(currentConfig)) || getTemplatePoints(currentConfig).length !== 4) {
+                currentConfig.points = await getDefaultTemplateScenePoints(path.join(sceneDir, 'base.png'), path.join(sceneDir, 'mask.png'));
+                fs.writeFileSync(configPath, JSON.stringify(currentConfig, null, 2), 'utf-8');
+            }
+        }
+
+        const allGroups = listTemplateFolders();
+        for (const group of allGroups) {
+            const scene = (group.scenes || []).find((item) => item.relativePath === toTemplateRelativePath(sceneDir));
+            if (scene) {
+                return { group, scene, templates: allGroups };
+            }
+        }
+        throw new Error('模板场景刷新失败');
+    });
+
+    ipcMain.handle('template:delete-scene', async (event, payload) => {
+        const relativePath = String(payload && payload.relativePath ? payload.relativePath : '').trim();
+        if (!relativePath) {
+            throw new Error('缺少模板场景路径');
+        }
+        const sceneDir = resolveTemplateSceneDir(relativePath);
+        if (!fs.existsSync(sceneDir)) {
+            throw new Error('当前模板场景不存在');
+        }
+        fs.rmSync(sceneDir, { recursive: true, force: true });
+        const allGroups = listTemplateFolders();
+        return {
+            templateRootDir: getTemplateRootDir(),
+            templates: allGroups,
+            deletedRelativePath: relativePath
+        };
+    });
+
+    ipcMain.handle('template:open-templates-dir', async () => {
+        const templateRootDir = getTemplateRootDir();
+        ensureDir(templateRootDir);
+        await shell.openPath(templateRootDir);
+        return { templateRootDir };
+    });
+
+    ipcMain.handle('template:select-root-dir', async () => {
+        const currentCfg = loadTemplateConfig();
+        const result = await dialog.showOpenDialog(mainWindow, {
+            properties: ['openDirectory', 'createDirectory'],
+            defaultPath: currentCfg.templateRootDir || getDefaultTemplateRootDir(),
+            title: '选择模板存放目录'
+        });
+        if (result.canceled || result.filePaths.length === 0) {
+            return {
+                ...currentCfg,
+                templateRootDir: getTemplateRootDir(currentCfg),
+                templates: listTemplateFolders()
+            };
+        }
+        const nextCfg = saveTemplateConfig({
+            ...currentCfg,
+            templateRootDir: result.filePaths[0]
+        });
+        return {
+            ...nextCfg,
+            templateRootDir: getTemplateRootDir(nextCfg),
+            templates: listTemplateFolders()
+        };
+    });
+
+    ipcMain.handle('template:select-watermark-dir', async () => {
+        const currentCfg = loadTemplateConfig();
+        const result = await dialog.showOpenDialog(mainWindow, {
+            properties: ['openDirectory', 'createDirectory'],
+            defaultPath: currentCfg.watermarkDir || getDefaultWatermarkDir(),
+            title: '选择水印存放目录'
+        });
+        if (result.canceled || result.filePaths.length === 0) {
+            const nextCfg = {
+                ...currentCfg,
+                watermarkDir: getWatermarkDir(currentCfg)
+            };
+            return {
+                ...nextCfg,
+                watermarks: loadWatermarkPresets()
+            };
+        }
+        const nextCfg = saveTemplateConfig({
+            ...currentCfg,
+            watermarkDir: result.filePaths[0]
+        });
+        return {
+            ...nextCfg,
+            watermarks: loadWatermarkPresets()
+        };
+    });
+
+    ipcMain.handle('template:list-watermarks', () => {
+        return loadWatermarkPresets();
+    });
+
+    ipcMain.handle('template:save-watermarks', (event, presets) => {
+        saveWatermarkPresets(presets);
+        return loadWatermarkPresets();
+    });
+
+    ipcMain.handle('template:list-parameter-presets', () => {
+        return loadTemplateParameterPresets();
+    });
+
+    ipcMain.handle('template:save-parameter-presets', (event, presets) => {
+        saveTemplateParameterPresets(presets);
+        return loadTemplateParameterPresets();
+    });
+
+    ipcMain.handle('template:select-output-dir', async () => {
+        const currentCfg = loadTemplateConfig();
+        const result = await dialog.showOpenDialog(mainWindow, {
+            properties: ['openDirectory', 'createDirectory'],
+            defaultPath: currentCfg.outputDir || getDefaultTemplateOutputDir(),
+            title: '选择智能模板导出目录'
+        });
+
+        if (result.canceled || result.filePaths.length === 0) {
+            return currentCfg;
+        }
+
+        const nextCfg = {
+            ...currentCfg,
+            outputDir: result.filePaths[0]
+        };
+        saveTemplateConfig(nextCfg);
+        return nextCfg;
+    });
+
+    ipcMain.handle('template:open-output-dir', async (event, outputDir) => {
+        const targetDir = outputDir || loadTemplateConfig().outputDir || getDefaultTemplateOutputDir();
+        ensureDir(targetDir);
+        await shell.openPath(targetDir);
+        return { outputDir: targetDir };
+    });
+
+    ipcMain.handle('template:reveal-output-file', async (event, filePath) => {
+        if (!filePath || !fs.existsSync(filePath)) {
+            throw new Error('结果文件不存在');
+        }
+        shell.showItemInFolder(filePath);
+        return { filePath };
+    });
+
+    ipcMain.handle('template:open-result-file', async (event, filePath) => {
+        if (!filePath || !fs.existsSync(filePath)) {
+            throw new Error('结果文件不存在');
+        }
+        await shell.openPath(filePath);
+        return { filePath };
+    });
+
+    ipcMain.handle('template:render-preview', async (event, payload) => {
+        const {
+            designPath = '',
+            designName = '',
+            sceneRelativePath = '',
+            sceneName = '',
+            placement = {},
+            effects = null,
+            previewKey = '',
+            watermarkPresetId = '',
+            watermarkPreset = null
+        } = payload || {};
+
+        if (!designPath || !fs.existsSync(designPath)) {
+            throw new Error('预览设计图不存在');
+        }
+
+        const sceneDir = resolveTemplateSceneDir(sceneRelativePath);
+        if (!fs.existsSync(sceneDir)) {
+            throw new Error('预览模板场景不存在');
+        }
+
+        const savedPresets = loadWatermarkPresets();
+        const selectedPreset = watermarkPreset
+            || savedPresets.find((item) => item.id === watermarkPresetId)
+            || null;
+
+        const previewRoot = path.join(app.getPath('temp'), 'ImageFlow-template-preview');
+        ensureDir(previewRoot);
+
+        const message = await runTemplatePreviewJob({
+            mode: 'preview',
+            outputDir: previewRoot,
+            templateRootDir: getTemplateRootDir(),
+            designs: [
+                {
+                    name: designName || path.basename(designPath),
+                    path: designPath
+                }
+            ],
+            preview: {
+                relativePath: toTemplateRelativePath(sceneDir),
+                name: sceneName || path.basename(sceneDir),
+                placement: getTemplatePlacement({ placement }),
+                effects: getTemplateEffects({ effects: effects || {} }),
+                previewKey: String(previewKey || '').trim()
+            },
+            watermarkPreset: selectedPreset
+        });
+
+        return {
+            previewPath: message.outputPath || '',
+            sceneRelativePath: toTemplateRelativePath(sceneDir)
+        };
+    });
+
+    ipcMain.handle('template:start-generation', async (event, payload) => {
+        if (templateProcess) {
+            throw new Error('智能模板任务正在运行');
+        }
+
+        const sender = event.sender;
+        const {
+            designs = [],
+            selectedTemplates = [],
+            outputDir,
+            watermarkPresetId = '',
+            watermarkPreset = null,
+            parameterPresetId = '',
+            effectPreset = null
+        } = payload || {};
+
+        if (!Array.isArray(designs) || designs.length === 0) {
+            throw new Error('请先导入设计图');
+        }
+
+        const templateRendererScript = getTemplateRendererScriptPath();
+        if (!fs.existsSync(templateRendererScript)) {
+            throw new Error('缺少 template_renderer.py');
+        }
+
+        const templateGroups = listTemplateFolders();
+        const activeTemplateGroups = Array.isArray(selectedTemplates)
+            ? selectedTemplates
+                .map((item) => String(item || '').trim())
+                .filter(Boolean)
+            : [];
+
+        if (activeTemplateGroups.length === 0) {
+            throw new Error('请先勾选至少一个模板套组');
+        }
+
+        const resolvedTemplateGroups = activeTemplateGroups
+            .map((name) => templateGroups.find((item) => item.name === name))
+            .filter(Boolean)
+            .map((group) => ({
+                name: group.name,
+                scenes: (group.scenes || []).filter((scene) => scene.valid).map((scene) => ({
+                    name: scene.name,
+                    relativePath: scene.relativePath
+                }))
+            }))
+            .filter((group) => group.scenes.length > 0);
+
+        if (resolvedTemplateGroups.length === 0) {
+            throw new Error('当前所选模板组不存在');
+        }
+
+        const cfg = loadTemplateConfig();
+        const resolvedOutputDir = outputDir || cfg.outputDir || getDefaultTemplateOutputDir();
+        ensureDir(resolvedOutputDir);
+
+        saveTemplateConfig({
+            ...cfg,
+            outputDir: resolvedOutputDir,
+            selectedTemplates: resolvedTemplateGroups.map((item) => item.name),
+            watermarkPresetId,
+            parameterPresetId
+        });
+
+        const pythonRuntime = getPythonRuntime(templateRendererScript);
+        if (!pythonRuntime) {
+            throw new Error('未检测到可用 Python 运行环境，请安装 Python 或 py 启动器');
+        }
+
+        const savedPresets = loadWatermarkPresets();
+        const selectedPreset = watermarkPreset
+            || savedPresets.find((item) => item.id === watermarkPresetId)
+            || null;
+        const parameterPresets = loadTemplateParameterPresets();
+        const selectedParameterPreset = effectPreset
+            || (parameterPresetId ? (parameterPresets.find((item) => item.id === parameterPresetId) || {}).effects : null)
+            || null;
+
+        const jobPayload = {
+            outputDir: resolvedOutputDir,
+            templateRootDir: getTemplateRootDir(),
+            templateGroups: resolvedTemplateGroups,
+            designs: designs.map((item) => ({
+                name: item.name,
+                path: item.path
+            })),
+            watermarkPreset: selectedPreset,
+            effectPreset: selectedParameterPreset
+        };
+
+        templateCancelRequested = false;
+        templateProcessSender = sender;
+        notifyTemplateStatus(sender, true, { outputDir: resolvedOutputDir });
+        sendTemplateLog(
+            sender,
+            'info',
+            `开始生成，共 ${designs.length} 张设计图，${resolvedTemplateGroups.length} 个模板组，${resolvedTemplateGroups.reduce((sum, group) => sum + group.scenes.length, 0)} 个场景`
+        );
+
+        const child = spawn(pythonRuntime.command, pythonRuntime.scriptArgs, {
+            cwd: path.dirname(templateRendererScript),
+            windowsHide: true,
+            stdio: ['pipe', 'pipe', 'pipe'],
+            env: {
+                ...process.env,
+                PYTHONUTF8: '1'
+            }
+        });
+
+        templateProcess = child;
+
+        let stdoutBuffer = '';
+        child.stdout.on('data', (chunk) => {
+            stdoutBuffer += chunk.toString('utf-8');
+            const lines = stdoutBuffer.split(/\r?\n/);
+            stdoutBuffer = lines.pop() || '';
+
+            lines.forEach((line) => {
+                const text = line.trim();
+                if (!text) return;
+                try {
+                    const message = JSON.parse(text);
+                    if (message.type === 'log') {
+                        sendTemplateLog(sender, message.level || 'info', message.message || '', message);
+                    } else if (message.type === 'done') {
+                        safeSend(sender, 'template:done', message);
+                    } else if (message.type === 'progress') {
+                        safeSend(sender, 'template:progress', message);
+                    }
+                } catch {
+                    sendTemplateLog(sender, 'info', text);
+                }
+            });
+        });
+
+        child.stderr.on('data', (chunk) => {
+            const lines = chunk.toString('utf-8').split(/\r?\n/).map((line) => line.trim()).filter(Boolean);
+            lines.forEach((line) => sendTemplateLog(sender, 'error', line));
+        });
+
+        child.on('error', (error) => {
+            sendTemplateLog(sender, 'error', `智能模板启动失败: ${error.message}`);
+            notifyTemplateStatus(sender, false, { outputDir: resolvedOutputDir });
+            cleanupTemplateProcess();
+        });
+
+        child.on('close', (code, signal) => {
+            if (stdoutBuffer.trim()) {
+                try {
+                    const message = JSON.parse(stdoutBuffer.trim());
+                    if (message.type === 'log') {
+                        sendTemplateLog(sender, message.level || 'info', message.message || '', message);
+                    }
+                } catch {
+                    sendTemplateLog(sender, 'info', stdoutBuffer.trim());
+                }
+            }
+
+            if (templateCancelRequested) {
+                sendTemplateLog(sender, 'warn', '已停止智能模板任务');
+            } else if (code !== 0) {
+                sendTemplateLog(sender, 'error', `智能模板任务异常结束 (code=${code ?? 'null'}, signal=${signal ?? 'null'})`);
+            } else {
+                sendTemplateLog(sender, 'success', '智能模板任务已完成');
+            }
+
+            notifyTemplateStatus(sender, false, {
+                outputDir: resolvedOutputDir,
+                canceled: templateCancelRequested,
+                exitCode: code,
+                signal
+            });
+            cleanupTemplateProcess();
+        });
+
+        child.stdin.end(JSON.stringify(jobPayload), 'utf-8');
+
+        return {
+            started: true,
+            outputDir: resolvedOutputDir
+        };
+    });
+
+    ipcMain.handle('template:cancel-generation', () => {
+        const stopped = stopTemplateProcess();
+        return { stopped };
+    });
+
+    ipcMain.on('classify:start-auto', (event, { sourceDir, targetDir, userName }) => {
+        if (classifyWatcher) {
+            classifyWatcher.stop();
+            classifyWatcher = null;
+        }
+
+        const sender = event.sender;
+        const sendLog = (type, msg) => {
+            safeSend(sender, 'classify:log', { type, msg, time: new Date().toLocaleTimeString() });
+        };
+
+        saveClassifyConfig({
+            ...loadClassifyConfig(),
+            sourceDir,
+            targetDir,
+            userName
+        });
+
+        classifyWatcher = new DirectoryWatcher(sourceDir, async (fp) => {
+            await classifyFile(fp, targetDir, userName, sendLog);
+        });
+        classifyWatcher.start();
+
+        sendLog('info', `开始自动归类: ${sourceDir}`);
+        safeSend(sender, 'classify:status', true);
+    });
+
+    ipcMain.on('classify:stop-auto', (event) => {
+        if (classifyWatcher) {
+            classifyWatcher.stop();
+            classifyWatcher = null;
+        }
+        const sender = event.sender;
+        safeSend(sender, 'classify:log', { type: 'info', msg: '已停止自动归类', time: new Date().toLocaleTimeString() });
+        safeSend(sender, 'classify:status', false);
+    });
+
+    ipcMain.on('classify:manual', async (event, { sourceDir, targetDir, userName }) => {
+        console.log('[Classify Manual] Received request:', { sourceDir, targetDir, userName });
+
+        const sender = event.sender;
+        const sendLog = (type, msg) => {
+            console.log('[Classify Manual] Sending log:', type, msg);
+            safeSend(sender, 'classify:log', { type, msg, time: new Date().toLocaleTimeString() });
+        };
+
+        sendLog('info', '开始手动归类...');
+
+        try {
+            const files = fs.readdirSync(sourceDir);
+            console.log('[Classify Manual] Found files:', files.length);
+            const needFix = [];
+            let successCount = 0;
+            let skipCount = 0;
+
+            for (const file of files) {
+                const filePath = path.join(sourceDir, file);
+                const stat = fs.statSync(filePath);
+                if (!stat.isFile()) continue;
+
+                console.log('[Classify Manual] Processing:', file);
+                const result = await classifyFile(filePath, targetDir, userName, sendLog);
+                console.log('[Classify Manual] Result:', result);
+
+                if (result.success) {
+                    successCount++;
+                } else if (result.skipped) {
+                    skipCount++;
+                    if (result.reason === 'gai') {
+                        needFix.push(result.fileName);
+                    }
+                }
+            }
+
+            sendLog('success', `手动归类完成: ${successCount} 个成功, ${skipCount} 个跳过`);
+            if (needFix.length > 0) {
+                safeSend(sender, 'classify:need-fix-list', needFix);
+            }
+        } catch (err) {
+            console.error('[Classify Manual] Error:', err);
+            sendLog('error', `手动归类失败: ${err.message}`);
+        }
+    });
+
+    ipcMain.on('scan-fix-items', (event, sourceDir) => {
+        const sender = event.sender;
+        try {
+            const files = fs.readdirSync(sourceDir);
+            const gaiFiles = files.filter(f => {
+                const stat = fs.statSync(path.join(sourceDir, f));
+                return stat.isFile() && f.toLowerCase().includes('gai');
+            });
+            console.log('[Scan] Found gai files:', gaiFiles);
+            safeSend(sender, 'classify:log', { type: 'info', msg: `扫描完成，找到 ${gaiFiles.length} 个包含 gai 的文件`, time: new Date().toLocaleTimeString() });
+            safeSend(sender, 'scan-fix-items-result', gaiFiles);
+        } catch (err) {
+            console.error('[Scan] Error:', err);
+            safeSend(sender, 'classify:log', { type: 'error', msg: `扫描失败: ${err.message}`, time: new Date().toLocaleTimeString() });
+        }
+    });
+
+    ipcMain.on('classify:fix-items', async (event, { sourceDir, targetDir, userName, fileNames }) => {
+        const sender = event.sender;
+        const sendLog = (type, msg) => {
+            safeSend(sender, 'classify:log', { type, msg, time: new Date().toLocaleTimeString() });
+        };
+
+        sendLog('info', `开始归类修改项 (${fileNames.length} 个文件)...`);
+        let successCount = 0;
+        let skipCount = 0;
+
+        for (const fileName of fileNames) {
+            const filePath = path.join(sourceDir, fileName);
+            if (!fs.existsSync(filePath)) {
+                sendLog('warn', `${fileName} 不存在，可能已被重命名或移动`);
+                skipCount++;
+                continue;
+            }
+            const result = await classifyFile(filePath, targetDir, userName, sendLog, true);
+            if (result.success) {
+                successCount++;
+            } else {
+                skipCount++;
+            }
+        }
+
+        sendLog('success', `归类修改项完成: ${successCount} 个成功, ${skipCount} 个跳过`);
+        // 通知前端清理已成功归类的项
+        safeSend(sender, 'classify:fix-items-done', { successCount });
+    });
+
+    ipcMain.on('update-product-rules', (event, rules) => {
+        updateProductRules(rules);
+    });
+
+    ipcMain.on('open-folder', (event, dir) => {
+        shell.openPath(dir);
+    });
+
+    ipcMain.on('open-folder-select-first-gai', (event, dir) => {
+        try {
+            const files = fs.readdirSync(dir);
+            const gaiFile = files.find(f => {
+                const stat = fs.statSync(path.join(dir, f));
+                return stat.isFile() && f.toLowerCase().includes('gai');
+            });
+            if (gaiFile) {
+                shell.showItemInFolder(path.join(dir, gaiFile));
+            } else {
+                shell.openPath(dir);
+            }
+        } catch (err) {
+            shell.openPath(dir);
+        }
+    });
+
+    app.on('activate', () => {
+        if (BrowserWindow.getAllWindows().length === 0) {
+            createWindow();
+        }
+    });
+});
+
+app.on('window-all-closed', () => {
+    // Windows 下不退出，保持托盘运行
+    // macOS 下也不退出
+});
+
+app.on('will-quit', () => {
+    if (activeWatcher) {
+        activeWatcher.stop();
+        activeWatcher = null;
+    }
+    if (classifyWatcher) {
+        classifyWatcher.stop();
+        classifyWatcher = null;
+    }
+    stopTemplateProcess();
+    cleanupTemplateProcess();
+});

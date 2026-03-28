@@ -1,0 +1,32 @@
+{
+  "points": [
+    {
+      "x": 703,
+      "y": 501
+    },
+    {
+      "x": 2037,
+      "y": 1036
+    },
+    {
+      "x": 1627,
+      "y": 2037
+    },
+    {
+      "x": 73,
+      "y": 1206
+    }
+  ],
+  "effects": {
+    "designOpacity": 1,
+    "designBrightness": 1,
+    "textureOpacity": 1,
+    "highlightOpacity": 1
+  },
+  "placement": {
+    "scale": 1,
+    "offsetX": 0,
+    "offsetY": 0,
+    "rotation": 0
+  }
+}

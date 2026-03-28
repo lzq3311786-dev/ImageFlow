@@ -1,0 +1,15 @@
+node_modules/
+dist/
+__pycache__/
+*.pyc
+
+_debug_slice_manual/
+_debug_slice_manual2/
+_slice_method_compare/
+_slice_method_compare_666/
+_slice_method_compare_wechat_346_31/
+_template_backups/
+sample-output/
+tmp_slice_compare_wechat_346_31.js
+
+python-runtime/

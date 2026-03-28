@@ -1,0 +1,33 @@
+{
+  "points": [
+    {
+      "x": 34,
+      "y": 484
+    },
+    {
+      "x": 2096,
+      "y": 484
+    },
+    {
+      "x": 2096,
+      "y": 1972
+    },
+    {
+      "x": 34,
+      "y": 1972
+    }
+  ],
+  "placement": {
+    "scale": 1,
+    "offsetX": 0,
+    "offsetY": 0,
+    "rotation": 0
+  },
+  "effects": {
+    "designBlendMode": "multiply",
+    "designOpacity": 1,
+    "designBrightness": 1,
+    "textureOpacity": 1,
+    "highlightOpacity": 1
+  }
+}
