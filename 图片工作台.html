@@ -2200,32 +2200,19 @@
 
         .template-preview-list-item.active {
             border-color: rgba(37, 99, 235, 0.24);
-            background: linear-gradient(180deg, #F3F8FF 0%, #FFFFFF 100%);
+            background: #EEF4FF;
             box-shadow: 0 10px 20px rgba(37, 99, 235, 0.08);
         }
 
         .template-preview-list-item.checked {
             border-color: rgba(16, 185, 129, 0.24);
-            background: linear-gradient(180deg, #F0FDF4 0%, #FFFFFF 100%);
+            background: #ECFDF5;
             box-shadow: 0 10px 20px rgba(16, 185, 129, 0.08);
         }
 
         .template-preview-list-item.with-check.active.checked {
             border-color: rgba(56, 189, 248, 0.30);
-            background:
-                linear-gradient(90deg,
-                    #F0FDF4 0%,
-                    #EBFCF2 10%,
-                    #E4FAEF 20%,
-                    #DCF8EC 30%,
-                    #D7F5EC 40%,
-                    #D7F3F0 50%,
-                    #D8F0F5 60%,
-                    #DAEDF9 70%,
-                    #DDEBFD 82%,
-                    #E4EEFF 92%,
-                    #EFF6FF 100%
-                ) !important;
+            background: #E6F8EE !important;
             box-shadow: 0 10px 20px rgba(56, 189, 248, 0.10);
         }
 
@@ -5127,13 +5114,41 @@
 
             <div class="nav">
                 <div class="nav-section">
-                    <div class="nav-item active" onclick="switchTab('compress')">
+                    <div class="nav-item active" onclick="switchTab('slice')">
                         <span class="nav-item-icon">
-                            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                                <polyline points="4 14 10 14 10 20"></polyline>
-                                <polyline points="20 10 14 10 14 4"></polyline>
-                                <line x1="14" y1="10" x2="21" y2="3"></line>
-                                <line x1="3" y1="21" x2="10" y2="14"></line>
+                            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round">
+                                <path d="M7 4H4v3"></path>
+                                <path d="M17 4h3v3"></path>
+                                <path d="M4 17v3h3"></path>
+                                <path d="M20 17v3h-3"></path>
+                                <rect x="6" y="6" width="12" height="12" rx="2"></rect>
+                                <path d="M12 6v12"></path>
+                                <path d="M6 12h12"></path>
+                            </svg>
+                        </span>
+                        <span>智能切片</span>
+                    </div>
+                    <div class="nav-item" onclick="switchTab('template')">
+                        <span class="nav-item-icon">
+                            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round">
+                                <rect x="5" y="4.5" width="9" height="11" rx="1.9"></rect>
+                                <rect x="10" y="8.5" width="9" height="11" rx="1.9"></rect>
+                                <path d="M8 8.5h3"></path>
+                                <path d="M12.5 12.5h3.5"></path>
+                                <path d="M12.5 15.5h2.5"></path>
+                            </svg>
+                        </span>
+                        <span>智能模板</span>
+                    </div>
+                    <div class="nav-item" onclick="switchTab('compress')">
+                        <span class="nav-item-icon">
+                            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round">
+                                <path d="M5 8.5 12 4l7 4.5v7L12 20l-7-4.5v-7Z"></path>
+                                <path d="M12 4v16"></path>
+                                <path d="M5 8.5 12 13l7-4.5"></path>
+                                <path d="M12 7.5h.01"></path>
+                                <path d="M12 9.5h.01"></path>
+                                <path d="M12 11.5h.01"></path>
                             </svg>
                         </span>
                         <span>压缩导出</span>
@@ -5141,35 +5156,16 @@
                     </div>
                     <div class="nav-item" onclick="switchTab('classify')">
                         <span class="nav-item-icon">
-                            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                                <path d="M22 19a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5l2 3h9a2 2 0 0 1 2 2z"></path>
+                            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round">
+                                <path d="M4 7.5h7"></path>
+                                <path d="M4 12h10"></path>
+                                <path d="M4 16.5h7"></path>
+                                <rect x="14.5" y="5" width="5.5" height="5.5" rx="1.2"></rect>
+                                <rect x="14.5" y="13.5" width="5.5" height="5.5" rx="1.2"></rect>
                             </svg>
                         </span>
                         <span>一键归类</span>
                         <span class="nav-status-dot" id="classifyStatusDot"></span>
-                    </div>
-                    <div class="nav-item" onclick="switchTab('slice')">
-                        <span class="nav-item-icon">
-                            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                                <rect x="3" y="3" width="7" height="7"></rect>
-                                <rect x="14" y="3" width="7" height="7"></rect>
-                                <rect x="3" y="14" width="7" height="7"></rect>
-                                <rect x="14" y="14" width="7" height="7"></rect>
-                            </svg>
-                        </span>
-                        <span>智能切片</span>
-                    </div>
-                    <div class="nav-item" onclick="switchTab('template')">
-                        <span class="nav-item-icon">
-                            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                                <path d="M4 5h16v14H4z"></path>
-                                <path d="M8 9h8"></path>
-                                <path d="M8 13h5"></path>
-                                <path d="M16 16l2 2"></path>
-                                <circle cx="15" cy="15" r="3"></circle>
-                            </svg>
-                        </span>
-                        <span>智能模板</span>
                     </div>
                 </div>
 
@@ -5191,7 +5187,7 @@
         <div class="main">
             <div class="content">
                 <!-- 压缩导出页面 -->
-                <div id="compress" class="tab-content active">
+                <div id="compress" class="tab-content">
                     <div class="card">
                         <div class="card-header">
                             <div style="display:flex;align-items:center;gap:16px;">
@@ -5304,7 +5300,7 @@
                 </div>
 
                 <!-- 智能切片页面 -->
-                <div id="slice" class="tab-content">
+                <div id="slice" class="tab-content active">
                     <div class="slice-page">
                         <div class="card template-card template-card-hero">
                             <div class="card-header">
