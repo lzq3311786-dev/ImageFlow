@@ -108,7 +108,23 @@ function getExternalAssetsBaseDir() {
 }
 
 function getBundledTemplateRootDir() {
+    if (app.isPackaged) {
+        const externalTemplateRoot = path.join(path.dirname(process.execPath), 'templates');
+        if (fs.existsSync(externalTemplateRoot)) {
+            return externalTemplateRoot;
+        }
+    }
     return path.join(__dirname, 'templates');
+}
+
+function getBundledWatermarkRootDir() {
+    if (app.isPackaged) {
+        const externalWatermarkRoot = path.join(path.dirname(process.execPath), 'watermarks');
+        if (fs.existsSync(externalWatermarkRoot)) {
+            return externalWatermarkRoot;
+        }
+    }
+    return path.join(__dirname, 'watermarks');
 }
 
 function getTemplateRendererScriptPath() {
@@ -136,16 +152,54 @@ function getPythonRuntimeCandidates() {
 }
 
 function getDefaultTemplateRootDir() {
-    return path.join(getExternalAssetsBaseDir(), 'templates');
+    return app.isPackaged
+        ? path.join(app.getPath('userData'), 'templates')
+        : path.join(getExternalAssetsBaseDir(), 'templates');
 }
 
 function getDefaultWatermarkDir() {
-    return path.join(getExternalAssetsBaseDir(), 'watermarks');
+    return app.isPackaged
+        ? path.join(app.getPath('userData'), 'watermarks')
+        : path.join(getExternalAssetsBaseDir(), 'watermarks');
 }
 
 function normalizeDirectoryPath(dirPath, fallbackDir) {
     const trimmed = String(dirPath || '').trim();
     return path.resolve(trimmed || fallbackDir);
+}
+
+function copyMissingDirectoryContents(sourceDir, targetDir) {
+    if (!fs.existsSync(sourceDir)) {
+        return;
+    }
+    ensureDir(targetDir);
+    for (const entry of fs.readdirSync(sourceDir, { withFileTypes: true })) {
+        if (entry.name === '.gitkeep') continue;
+        const sourcePath = path.join(sourceDir, entry.name);
+        const targetPath = path.join(targetDir, entry.name);
+        if (fs.existsSync(targetPath)) {
+            continue;
+        }
+        fs.cpSync(sourcePath, targetPath, {
+            recursive: true,
+            force: false,
+            errorOnExist: false
+        });
+    }
+}
+
+function isLegacyPackagedTemplateRoot(dirPath) {
+    if (!app.isPackaged) {
+        return false;
+    }
+    return path.resolve(dirPath) === path.resolve(path.join(path.dirname(process.execPath), 'templates'));
+}
+
+function isLegacyPackagedWatermarkRoot(dirPath) {
+    if (!app.isPackaged) {
+        return false;
+    }
+    return path.resolve(dirPath) === path.resolve(path.join(path.dirname(process.execPath), 'watermarks'));
 }
 
 function seedTemplateRootDir(targetDir) {
@@ -154,19 +208,16 @@ function seedTemplateRootDir(targetDir) {
     if (resolvedTargetDir === sourceDir || !fs.existsSync(sourceDir)) {
         return;
     }
-    const existingEntries = fs.readdirSync(targetDir, { withFileTypes: true })
-        .filter((entry) => entry.name !== '.gitkeep');
-    if (existingEntries.length > 0) {
+    copyMissingDirectoryContents(sourceDir, resolvedTargetDir);
+}
+
+function seedWatermarkDir(targetDir) {
+    const sourceDir = path.resolve(getBundledWatermarkRootDir());
+    const resolvedTargetDir = path.resolve(targetDir);
+    if (resolvedTargetDir === sourceDir || !fs.existsSync(sourceDir)) {
         return;
     }
-    for (const entry of fs.readdirSync(sourceDir, { withFileTypes: true })) {
-        if (entry.name === '.gitkeep') continue;
-        fs.cpSync(path.join(sourceDir, entry.name), path.join(targetDir, entry.name), {
-            recursive: true,
-            force: false,
-            errorOnExist: false
-        });
-    }
+    copyMissingDirectoryContents(sourceDir, resolvedTargetDir);
 }
 
 function getDefaultTemplateOutputDir() {
@@ -217,15 +268,30 @@ function saveTemplateConfig(cfg) {
 }
 
 function getTemplateRootDir(cfg = loadTemplateConfig()) {
-    const templateRootDir = normalizeDirectoryPath(cfg && cfg.templateRootDir, getDefaultTemplateRootDir());
+    let templateRootDir = normalizeDirectoryPath(cfg && cfg.templateRootDir, getDefaultTemplateRootDir());
+    if (isLegacyPackagedTemplateRoot(templateRootDir)) {
+        templateRootDir = getDefaultTemplateRootDir();
+        saveTemplateConfig({
+            ...(cfg || {}),
+            templateRootDir
+        });
+    }
     ensureDir(templateRootDir);
     seedTemplateRootDir(templateRootDir);
     return templateRootDir;
 }
 
 function getWatermarkDir(cfg = loadTemplateConfig()) {
-    const watermarkDir = normalizeDirectoryPath(cfg && cfg.watermarkDir, getDefaultWatermarkDir());
+    let watermarkDir = normalizeDirectoryPath(cfg && cfg.watermarkDir, getDefaultWatermarkDir());
+    if (isLegacyPackagedWatermarkRoot(watermarkDir)) {
+        watermarkDir = getDefaultWatermarkDir();
+        saveTemplateConfig({
+            ...(cfg || {}),
+            watermarkDir
+        });
+    }
     ensureDir(watermarkDir);
+    seedWatermarkDir(watermarkDir);
     return watermarkDir;
 }
 
