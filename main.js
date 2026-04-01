@@ -168,6 +168,10 @@ function normalizeDirectoryPath(dirPath, fallbackDir) {
     return path.resolve(trimmed || fallbackDir);
 }
 
+function hasSavedTemplateConfig() {
+    return fs.existsSync(TEMPLATE_CONFIG_FILE);
+}
+
 function copyMissingDirectoryContents(sourceDir, targetDir) {
     if (!fs.existsSync(sourceDir)) {
         return;
@@ -219,6 +223,14 @@ function seedTemplateRootDir(targetDir) {
     if (resolvedTargetDir === sourceDir || !fs.existsSync(sourceDir)) {
         return;
     }
+    const existingEntries = fs.readdirSync(resolvedTargetDir, { withFileTypes: true })
+        .filter((entry) => entry.name !== '.gitkeep');
+    if (existingEntries.length > 0) {
+        return;
+    }
+    if (app.isPackaged && hasSavedTemplateConfig()) {
+        return;
+    }
     copyMissingDirectoryContents(sourceDir, resolvedTargetDir);
 }
 
@@ -226,6 +238,14 @@ function seedWatermarkDir(targetDir) {
     const sourceDir = path.resolve(getBundledWatermarkRootDir());
     const resolvedTargetDir = path.resolve(targetDir);
     if (resolvedTargetDir === sourceDir || !fs.existsSync(sourceDir)) {
+        return;
+    }
+    const existingEntries = fs.readdirSync(resolvedTargetDir, { withFileTypes: true })
+        .filter((entry) => entry.name !== '.gitkeep');
+    if (existingEntries.length > 0) {
+        return;
+    }
+    if (app.isPackaged && hasSavedTemplateConfig()) {
         return;
     }
     copyMissingDirectoryContents(sourceDir, resolvedTargetDir);
@@ -283,10 +303,6 @@ function getTemplateRootDir(cfg = loadTemplateConfig()) {
     let templateRootDir = savedTemplateRootDir;
     if (isLegacyPackagedTemplateRoot(savedTemplateRootDir)) {
         templateRootDir = getDefaultTemplateRootDir();
-        if (fs.existsSync(savedTemplateRootDir) && path.resolve(savedTemplateRootDir) !== path.resolve(templateRootDir)) {
-            ensureDir(templateRootDir);
-            copyMissingDirectoryContents(savedTemplateRootDir, templateRootDir);
-        }
         persistTemplateConfigMigration({ templateRootDir });
     }
     ensureDir(templateRootDir);
@@ -299,10 +315,6 @@ function getWatermarkDir(cfg = loadTemplateConfig()) {
     let watermarkDir = savedWatermarkDir;
     if (isLegacyPackagedWatermarkRoot(savedWatermarkDir)) {
         watermarkDir = getDefaultWatermarkDir();
-        if (fs.existsSync(savedWatermarkDir) && path.resolve(savedWatermarkDir) !== path.resolve(watermarkDir)) {
-            ensureDir(watermarkDir);
-            copyMissingDirectoryContents(savedWatermarkDir, watermarkDir);
-        }
         persistTemplateConfigMigration({ watermarkDir });
     }
     ensureDir(watermarkDir);
