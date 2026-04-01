@@ -3,9 +3,12 @@ const remoteMain = require('@electron/remote/main');
 const { autoUpdater } = require('electron-updater');
 const path = require('path');
 const fs = require('fs');
+const https = require('https');
+const crypto = require('crypto');
 const { spawn, spawnSync } = require('child_process');
 const chokidar = require('chokidar');
 const sharp = require('sharp');
+const XLSX = require('xlsx');
 
 remoteMain.initialize();
 
@@ -33,10 +36,14 @@ const CONFIG_FILE = path.join(app.getPath('userData'), 'compress-config.json');
 const CLASSIFY_CONFIG_FILE = path.join(app.getPath('userData'), 'classify-config.json');
 const SLICE_CONFIG_FILE = path.join(app.getPath('userData'), 'slice-config.json');
 const TEMPLATE_CONFIG_FILE = path.join(app.getPath('userData'), 'template-config.json');
+const PRODUCT_PUBLISH_CONFIG_FILE = path.join(app.getPath('userData'), 'product-publish-config.json');
+const PRODUCT_PUBLISH_DATA_FILE = path.join(app.getPath('userData'), 'product-publish-data.json');
 const UPDATE_CONFIG_FILE = path.join(app.getPath('userData'), 'update-config.json');
 const PACKAGE_JSON_FILE = path.join(__dirname, 'package.json');
 const LEGACY_WATERMARK_PRESETS_FILE = path.join(app.getPath('userData'), 'watermark-presets.json');
 const TEMPLATE_PARAMETER_PRESETS_FILE = path.join(app.getPath('userData'), 'template-parameter-presets.json');
+const PRODUCT_PUBLISH_IMAGE_EXTS = new Set(['.jpg', '.jpeg', '.png', '.webp', '.bmp']);
+const PRODUCT_PUBLISH_TEMU_TEMPLATE_NAME = '妙手Temu导入模板-非服饰类模板.xlsx';
 
 function loadConfig() {
     try {
@@ -255,6 +262,882 @@ function loadTemplateParameterPresets() {
 
 function saveTemplateParameterPresets(presets) {
     fs.writeFileSync(TEMPLATE_PARAMETER_PRESETS_FILE, JSON.stringify(Array.isArray(presets) ? presets : [], null, 2), 'utf-8');
+}
+
+function createDefaultProductPublishConfig() {
+    return {
+        aiProvider: 'auto',
+        aiApiUrl: '',
+        aiApiKey: '',
+        aiModel: '',
+        aiModelHistory: [],
+        titlePromptDoc: '请根据我提供的产品图片与指定产品类型（如有）生成适合跨境电商发布的中英双标题。优先识别图片内容；如果指定了产品类型，必须严格按该产品类型生成。保留 1pc / [2D Flat Print]1pc 等前缀规则，过滤敏感词，不要解释，不要编号，不要代码块。只输出两行：第一行英文标题，第二行中文标题，不要写 EN: 或 CN:。',
+        exportTemplateDefaults: {
+            mainCodePrefix: 'A',
+            categoryId: '124300',
+            urlPrefix: '',
+            ossBucket: '',
+            ossRegion: '',
+            ossAccessKeyId: '',
+            ossAccessKeySecret: '',
+            ossObjectPrefix: 'products',
+            shipLeadTime: '2',
+            originPlace: '中国-浙江省',
+            customized: '否',
+            specName1: '尺寸',
+            specName2: '颜色',
+            specValue1: '白色',
+            specValue2: '0',
+            declaredPrice: '0.01',
+            suggestedPrice: '',
+            lengthCm: '0',
+            widthCm: '0',
+            heightCm: '0',
+            weightG: '0',
+            inventory: '0',
+            sensitive: '否'
+        },
+        exportTemplateProfiles: []
+    };
+}
+
+function normalizeProductPublishAiProvider(value) {
+    const provider = String(value || '').trim().toLowerCase();
+    if (provider === 'openai') return 'openai';
+    if (provider === 'text') return 'text';
+    return 'auto';
+}
+
+function loadProductPublishConfig() {
+    const defaults = createDefaultProductPublishConfig();
+    try {
+        const parsed = JSON.parse(fs.readFileSync(PRODUCT_PUBLISH_CONFIG_FILE, 'utf-8'));
+        return {
+            ...defaults,
+            ...(parsed || {})
+        };
+    } catch {
+        return defaults;
+    }
+}
+
+function saveProductPublishConfig(cfg) {
+    const nextCfg = {
+        ...createDefaultProductPublishConfig(),
+        ...(cfg || {})
+    };
+    nextCfg.aiModelHistory = Array.from(new Set((Array.isArray(nextCfg.aiModelHistory) ? nextCfg.aiModelHistory : [])
+        .map((item) => String(item || '').trim())
+        .filter(Boolean))).slice(0, 30);
+    fs.writeFileSync(PRODUCT_PUBLISH_CONFIG_FILE, JSON.stringify(nextCfg, null, 2), 'utf-8');
+    return nextCfg;
+}
+
+function normalizeProductPublishImage(item, index = 0) {
+    const imagePath = String(item?.path || '').trim();
+    const sceneName = String(item?.sceneName || '').trim();
+    const name = String(item?.name || path.basename(imagePath || `image-${index + 1}`)).trim() || `image-${index + 1}`;
+    return {
+        id: String(item?.id || `image-${index + 1}`).trim() || `image-${index + 1}`,
+        name,
+        path: imagePath,
+        sceneName
+    };
+}
+
+function normalizeProductPublishRecord(record, index = 0) {
+    const id = String(record?.id || `product-${Date.now()}-${index + 1}`).trim() || `product-${Date.now()}-${index + 1}`;
+    const legacyTitle = String(record?.title || '').trim();
+    const titleEn = String(record?.titleEn || '').trim();
+    const titleZh = String(record?.titleZh || '').trim() || ((!titleEn && legacyTitle) ? legacyTitle : '');
+    const titleStatus = ['pending', 'generated', 'edited'].includes(record?.titleStatus)
+        ? record.titleStatus
+        : ((titleEn || titleZh) ? 'generated' : 'pending');
+    const urls = Array.isArray(record?.urls)
+        ? record.urls.map((item) => String(item || '').trim()).filter(Boolean)
+        : [];
+    const images = Array.isArray(record?.images)
+        ? record.images.map((item, itemIndex) => normalizeProductPublishImage(item, itemIndex)).filter((item) => item.path)
+        : [];
+    return {
+        id,
+        sourceTaskKey: String(record?.sourceTaskKey || '').trim(),
+        groupName: String(record?.groupName || '').trim(),
+        productType: String(record?.productType || '').trim(),
+        categoryId: String(record?.categoryId || '').trim(),
+        mainCode: String(record?.mainCode || record?.groupName || '').trim(),
+        shipLeadTime: String(record?.shipLeadTime || '').trim(),
+        originPlace: String(record?.originPlace || '').trim(),
+        previewImageUrl: String(record?.previewImageUrl || '').trim(),
+        customized: String(record?.customized || '否').trim() || '否',
+        specName1: String(record?.specName1 || '').trim(),
+        specName2: String(record?.specName2 || '').trim(),
+        specValue1: String(record?.specValue1 || '').trim(),
+        specValue2: String(record?.specValue2 || '').trim(),
+        declaredPrice: String(record?.declaredPrice || '').trim(),
+        suggestedPrice: String(record?.suggestedPrice || '').trim(),
+        lengthCm: String(record?.lengthCm || '').trim(),
+        widthCm: String(record?.widthCm || '').trim(),
+        heightCm: String(record?.heightCm || '').trim(),
+        weightG: String(record?.weightG || '').trim(),
+        inventory: String(record?.inventory || '').trim(),
+        sensitive: String(record?.sensitive || '否').trim() || '否',
+        outputDir: String(record?.outputDir || '').trim(),
+        designName: String(record?.designName || '').trim(),
+        sceneNames: Array.isArray(record?.sceneNames)
+            ? record.sceneNames.map((item) => String(item || '').trim()).filter(Boolean)
+            : [],
+        images,
+        titleEn,
+        titleZh,
+        titleStatus,
+        urls,
+        urlStatus: String(record?.urlStatus || (urls.length ? 'ready' : 'pending')).trim() || 'pending',
+        exportStatus: String(record?.exportStatus || 'idle').trim() || 'idle',
+        createdAt: String(record?.createdAt || new Date().toISOString()),
+        updatedAt: String(record?.updatedAt || new Date().toISOString())
+    };
+}
+
+function resolveProductPublishTemuTemplatePath() {
+    const candidates = [
+        path.join(app.getPath('downloads'), PRODUCT_PUBLISH_TEMU_TEMPLATE_NAME),
+        path.join(app.getPath('documents'), PRODUCT_PUBLISH_TEMU_TEMPLATE_NAME),
+        path.join(process.cwd(), PRODUCT_PUBLISH_TEMU_TEMPLATE_NAME)
+    ];
+    return candidates.find((filePath) => fs.existsSync(filePath)) || '';
+}
+
+function setWorksheetCellValue(worksheet, cellAddress, value) {
+    const previous = worksheet[cellAddress] || {};
+    const cell = { ...previous };
+    if (value === undefined || value === null || value === '') {
+        cell.t = 's';
+        cell.v = '';
+        delete cell.w;
+        worksheet[cellAddress] = cell;
+        return;
+    }
+    if (typeof value === 'number' && Number.isFinite(value)) {
+        cell.t = 'n';
+        cell.v = value;
+    } else {
+        cell.t = 's';
+        cell.v = String(value);
+    }
+    delete cell.w;
+    worksheet[cellAddress] = cell;
+}
+
+function clearWorksheetDataRows(worksheet, startRowNumber) {
+    const range = XLSX.utils.decode_range(worksheet['!ref'] || 'A1:A1');
+    const startRowIndex = Math.max(0, startRowNumber - 1);
+    for (let row = startRowIndex; row <= range.e.r; row += 1) {
+        for (let col = range.s.c; col <= range.e.c; col += 1) {
+            const addr = XLSX.utils.encode_cell({ r: row, c: col });
+            if (worksheet[addr]) {
+                setWorksheetCellValue(worksheet, addr, '');
+            }
+        }
+    }
+}
+
+function buildProductPublishTemuWorkbook(records, templatePath) {
+    const workbook = XLSX.readFile(templatePath, {
+        cellStyles: true,
+        cellFormula: true,
+        cellNF: true,
+        cellDates: true
+    });
+    const worksheet = workbook.Sheets.Sheet1 || workbook.Sheets[workbook.SheetNames[0]];
+    if (!worksheet) {
+        throw new Error('模板中没有可写入的工作表');
+    }
+    clearWorksheetDataRows(worksheet, 3);
+    const templateRange = XLSX.utils.decode_range(worksheet['!ref'] || 'A1:AQ3');
+    const startRow = 3;
+    const rows = Array.isArray(records) ? records : [];
+    rows.forEach((record, index) => {
+        const rowNumber = startRow + index;
+        const carouselUrls = Array.isArray(record?.urls)
+            ? record.urls.map((item) => String(item || '').trim()).filter(Boolean)
+            : [];
+        const fallbackImageUrl = carouselUrls[0] || '';
+        setWorksheetCellValue(worksheet, `B${rowNumber}`, String(record?.categoryId || '').trim());
+        setWorksheetCellValue(worksheet, `C${rowNumber}`, String(record?.mainCode || '').trim());
+        setWorksheetCellValue(worksheet, `D${rowNumber}`, String(record?.titleZh || '').trim());
+        setWorksheetCellValue(worksheet, `E${rowNumber}`, String(record?.titleEn || '').trim());
+        setWorksheetCellValue(worksheet, `G${rowNumber}`, String(record?.shipLeadTime || '').trim());
+        setWorksheetCellValue(worksheet, `I${rowNumber}`, String(record?.originPlace || '').trim());
+        setWorksheetCellValue(worksheet, `K${rowNumber}`, carouselUrls.join('\n'));
+        setWorksheetCellValue(worksheet, `L${rowNumber}`, fallbackImageUrl);
+        setWorksheetCellValue(worksheet, `M${rowNumber}`, String(record?.customized || '否').trim() || '否');
+        setWorksheetCellValue(worksheet, `N${rowNumber}`, String(record?.specName1 || '').trim());
+        setWorksheetCellValue(worksheet, `O${rowNumber}`, String(record?.specValue1 || '').trim());
+        setWorksheetCellValue(worksheet, `P${rowNumber}`, String(record?.specName2 || '').trim());
+        setWorksheetCellValue(worksheet, `Q${rowNumber}`, String(record?.specValue2 || '').trim());
+        setWorksheetCellValue(worksheet, `R${rowNumber}`, String(record?.previewImageUrl || fallbackImageUrl).trim());
+        setWorksheetCellValue(worksheet, `S${rowNumber}`, String(record?.declaredPrice || '').trim());
+        setWorksheetCellValue(worksheet, `T${rowNumber}`, String(record?.suggestedPrice || '').trim());
+        setWorksheetCellValue(worksheet, `U${rowNumber}`, String(record?.lengthCm || '').trim());
+        setWorksheetCellValue(worksheet, `V${rowNumber}`, String(record?.widthCm || '').trim());
+        setWorksheetCellValue(worksheet, `W${rowNumber}`, String(record?.heightCm || '').trim());
+        setWorksheetCellValue(worksheet, `X${rowNumber}`, String(record?.weightG || '').trim());
+        setWorksheetCellValue(worksheet, `Y${rowNumber}`, String(record?.inventory || '').trim());
+        setWorksheetCellValue(worksheet, `AA${rowNumber}`, String(record?.sensitive || '否').trim() || '否');
+    });
+    const requiredLastRow = Math.max(templateRange.e.r + 1, startRow + rows.length - 1);
+    worksheet['!ref'] = XLSX.utils.encode_range({
+        s: templateRange.s,
+        e: {
+            c: Math.max(templateRange.e.c, XLSX.utils.decode_col('AA')),
+            r: Math.max(templateRange.e.r, requiredLastRow - 1)
+        }
+    });
+    return workbook;
+}
+
+function getProductPublishImageMimeType(filePath) {
+    const ext = path.extname(String(filePath || '')).toLowerCase();
+    if (ext === '.png') return 'image/png';
+    if (ext === '.webp') return 'image/webp';
+    if (ext === '.gif') return 'image/gif';
+    if (ext === '.bmp') return 'image/bmp';
+    return 'image/jpeg';
+}
+
+function normalizeProductPublishOssRegion(value) {
+    const raw = String(value || '').trim();
+    if (!raw) return '';
+    const clean = raw.replace(/^https?:\/\//i, '').replace(/\/+$/, '');
+    if (clean.startsWith('oss-')) return clean;
+    return `oss-${clean}`;
+}
+
+function normalizeProductPublishOssPrefix(value) {
+    return String(value || '')
+        .trim()
+        .replace(/^\/+/, '')
+        .replace(/\/+$/, '');
+}
+
+function encodeProductPublishUrlPath(value) {
+    return String(value || '')
+        .split('/')
+        .map((segment) => encodeURIComponent(segment))
+        .join('/');
+}
+
+function buildProductPublishOssObjectKey(record, image, index, cfg) {
+    const prefix = normalizeProductPublishOssPrefix(cfg?.ossObjectPrefix || '');
+    const groupName = String(record?.groupName || 'product').trim() || 'product';
+    const rawName = String(
+        image?.name
+        || path.basename(String(image?.path || ''))
+        || `image-${index + 1}.jpg`
+    ).trim() || `image-${index + 1}.jpg`;
+    const parts = [];
+    if (prefix) parts.push(prefix);
+    parts.push(groupName, rawName);
+    return parts.join('/');
+}
+
+function buildProductPublishOssPublicUrl(bucket, region, objectKey) {
+    const bucketName = String(bucket || '').trim();
+    const regionHost = normalizeProductPublishOssRegion(region);
+    const key = String(objectKey || '').trim();
+    if (!bucketName || !regionHost || !key) return '';
+    return `https://${bucketName}.${regionHost}.aliyuncs.com/${encodeProductPublishUrlPath(key)}`;
+}
+
+function getProductPublishOssConfig(cfg) {
+    return {
+        ossBucket: String(cfg?.ossBucket || '').trim(),
+        ossRegion: normalizeProductPublishOssRegion(cfg?.ossRegion || ''),
+        ossAccessKeyId: String(cfg?.ossAccessKeyId || '').trim(),
+        ossAccessKeySecret: String(cfg?.ossAccessKeySecret || '').trim(),
+        ossObjectPrefix: normalizeProductPublishOssPrefix(cfg?.ossObjectPrefix || '')
+    };
+}
+
+function isProductPublishOssConfigured(cfg) {
+    const oss = getProductPublishOssConfig(cfg);
+    return Boolean(oss.ossBucket && oss.ossRegion && oss.ossAccessKeyId && oss.ossAccessKeySecret);
+}
+
+function uploadBufferToOss(buffer, contentType, objectKey, ossCfg) {
+    return new Promise((resolve, reject) => {
+        const bucket = String(ossCfg?.ossBucket || '').trim();
+        const region = normalizeProductPublishOssRegion(ossCfg?.ossRegion || '');
+        const accessKeyId = String(ossCfg?.ossAccessKeyId || '').trim();
+        const accessKeySecret = String(ossCfg?.ossAccessKeySecret || '').trim();
+        const key = String(objectKey || '').trim();
+        if (!bucket || !region || !accessKeyId || !accessKeySecret || !key) {
+            reject(new Error('OSS 配置不完整，无法上传图片'));
+            return;
+        }
+        const date = new Date().toUTCString();
+        const canonicalResource = `/${bucket}/${key}`;
+        const stringToSign = `PUT\n\n${contentType}\n${date}\n${canonicalResource}`;
+        const signature = crypto
+            .createHmac('sha1', accessKeySecret)
+            .update(stringToSign, 'utf8')
+            .digest('base64');
+        const request = https.request({
+            hostname: `${bucket}.${region}.aliyuncs.com`,
+            method: 'PUT',
+            path: `/${encodeProductPublishUrlPath(key)}`,
+            headers: {
+                Date: date,
+                Host: `${bucket}.${region}.aliyuncs.com`,
+                'Content-Type': contentType,
+                'Content-Length': buffer.length,
+                Authorization: `OSS ${accessKeyId}:${signature}`
+            }
+        }, (response) => {
+            const chunks = [];
+            response.on('data', (chunk) => chunks.push(chunk));
+            response.on('end', () => {
+                const body = Buffer.concat(chunks).toString('utf8');
+                if (response.statusCode >= 200 && response.statusCode < 300) {
+                    resolve({
+                        objectKey: key,
+                        url: buildProductPublishOssPublicUrl(bucket, region, key)
+                    });
+                    return;
+                }
+                reject(new Error(`OSS 上传失败：${response.statusCode}${body ? ` ${body}` : ''}`));
+            });
+        });
+        request.on('error', (error) => reject(error));
+        request.write(buffer);
+        request.end();
+    });
+}
+
+async function uploadProductPublishRecordImagesToOss(record, cfg) {
+    const ossCfg = getProductPublishOssConfig(cfg);
+    if (!isProductPublishOssConfigured(ossCfg)) {
+        return [];
+    }
+    const images = Array.isArray(record?.images) ? record.images : [];
+    const urls = [];
+    for (let index = 0; index < images.length; index += 1) {
+        const image = images[index];
+        const imagePath = String(image?.path || '').trim();
+        if (!imagePath || !fs.existsSync(imagePath)) continue;
+        const buffer = fs.readFileSync(imagePath);
+        const contentType = getProductPublishImageMimeType(imagePath);
+        const objectKey = buildProductPublishOssObjectKey(record, image, index, ossCfg);
+        const uploaded = await uploadBufferToOss(buffer, contentType, objectKey, ossCfg);
+        if (uploaded?.url) {
+            urls.push(uploaded.url);
+        }
+    }
+    return urls;
+}
+
+function buildProductPublishVisionInputs(images) {
+    return (Array.isArray(images) ? images : [])
+        .filter((item) => item && item.path && fs.existsSync(item.path))
+        .slice(0, 3)
+        .map((item) => {
+            const buffer = fs.readFileSync(item.path);
+            const mime = getProductPublishImageMimeType(item.path);
+            return {
+                type: 'image_url',
+                image_url: {
+                    url: `data:${mime};base64,${buffer.toString('base64')}`
+                }
+            };
+        });
+}
+
+function loadProductPublishData() {
+    try {
+        const parsed = JSON.parse(fs.readFileSync(PRODUCT_PUBLISH_DATA_FILE, 'utf-8'));
+        return {
+            records: Array.isArray(parsed?.records)
+                ? parsed.records.map((item, index) => normalizeProductPublishRecord(item, index))
+                : []
+        };
+    } catch {
+        return { records: [] };
+    }
+}
+
+function saveProductPublishData(data) {
+    const nextData = {
+        records: Array.isArray(data?.records)
+            ? data.records.map((item, index) => normalizeProductPublishRecord(item, index))
+            : []
+    };
+    fs.writeFileSync(PRODUCT_PUBLISH_DATA_FILE, JSON.stringify(nextData, null, 2), 'utf-8');
+    return nextData;
+}
+
+function importProductPublishRecordFromTemplateTask(payload) {
+    const currentData = loadProductPublishData();
+    const sourceTaskKey = String(payload?.sourceTaskKey || '').trim();
+    const groupName = String(payload?.groupName || '').trim();
+    if (!sourceTaskKey || !groupName) {
+        throw new Error('缺少模板任务信息，无法导入产品发布');
+    }
+    const normalizedImages = Array.isArray(payload?.images)
+        ? payload.images.map((item, index) => normalizeProductPublishImage(item, index)).filter((item) => item.path)
+        : [];
+    const existingIndex = currentData.records.findIndex((item) => item.sourceTaskKey === sourceTaskKey);
+    const now = new Date().toISOString();
+    if (existingIndex >= 0) {
+        const existing = currentData.records[existingIndex];
+        currentData.records[existingIndex] = normalizeProductPublishRecord({
+            ...existing,
+            groupName,
+            mainCode: String(existing.mainCode || groupName || '').trim(),
+            outputDir: String(payload?.outputDir || existing.outputDir || '').trim(),
+            designName: String(payload?.designName || existing.designName || '').trim(),
+            sceneNames: Array.isArray(payload?.sceneNames) && payload.sceneNames.length ? payload.sceneNames : existing.sceneNames,
+            images: normalizedImages.length ? normalizedImages : existing.images,
+            updatedAt: now
+        }, existingIndex);
+    } else {
+        currentData.records.unshift(normalizeProductPublishRecord({
+            id: `product-${Date.now()}`,
+            sourceTaskKey,
+            groupName,
+            mainCode: groupName,
+            outputDir: String(payload?.outputDir || '').trim(),
+            designName: String(payload?.designName || '').trim(),
+            sceneNames: Array.isArray(payload?.sceneNames) ? payload.sceneNames : [],
+            images: normalizedImages,
+            titleEn: '',
+            titleZh: '',
+            titleStatus: 'pending',
+            urls: [],
+            urlStatus: 'pending',
+            exportStatus: 'idle',
+            categoryId: '',
+            shipLeadTime: '',
+            originPlace: '',
+            previewImageUrl: '',
+            customized: '否',
+            specName1: '',
+            specName2: '',
+            specValue1: '',
+            specValue2: '',
+            declaredPrice: '',
+            suggestedPrice: '',
+            lengthCm: '',
+            widthCm: '',
+            heightCm: '',
+            weightG: '',
+            inventory: '',
+            sensitive: '否',
+            createdAt: now,
+            updatedAt: now
+        }));
+    }
+    return saveProductPublishData(currentData);
+}
+
+function resolveAiChatCompletionsUrl(rawUrl) {
+    const value = String(rawUrl || '').trim();
+    if (!value) return '';
+    const normalized = value.replace(/\/+$/, '');
+    if (/\/chat\/completions\/?$/i.test(normalized)) return normalized;
+    if (/\/v1\/?$/i.test(normalized)) return `${normalized}/chat/completions`;
+    if (/\/v1\/chat\/completions\/?$/i.test(normalized)) return normalized;
+    return `${normalized}/v1/chat/completions`;
+}
+
+function resolveAiModelsUrl(rawUrl) {
+    const value = String(rawUrl || '').trim();
+    if (!value) return '';
+    const normalized = value.replace(/\/+$/, '');
+    if (/\/chat\/completions$/i.test(normalized)) {
+        return normalized.replace(/\/chat\/completions$/i, '/models');
+    }
+    if (/\/v1\/chat\/completions$/i.test(normalized)) {
+        return normalized.replace(/\/chat\/completions$/i, '/models');
+    }
+    if (/\/models$/i.test(normalized)) {
+        return normalized;
+    }
+    if (/\/v1\/?$/i.test(normalized)) {
+        return `${normalized}/models`;
+    }
+    return `${normalized}/v1/models`;
+}
+
+function resolveAiModelsUrlCandidates(rawUrl) {
+    const value = String(rawUrl || '').trim();
+    if (!value) return [];
+    const normalized = value.replace(/\/+$/, '');
+    const candidates = [];
+    if (/\/v1\/models$/i.test(normalized) || /\/models$/i.test(normalized)) {
+        candidates.push(normalized);
+    } else if (/\/v1\/chat\/completions$/i.test(normalized)) {
+        candidates.push(normalized.replace(/\/chat\/completions$/i, '/models'));
+        candidates.push(normalized.replace(/\/v1\/chat\/completions$/i, '/models'));
+    } else if (/\/chat\/completions$/i.test(normalized)) {
+        candidates.push(normalized.replace(/\/chat\/completions$/i, '/models'));
+        candidates.push(normalized.replace(/\/chat\/completions$/i, '/v1/models'));
+    } else if (/\/v1$/i.test(normalized)) {
+        candidates.push(`${normalized}/models`);
+        candidates.push(normalized.replace(/\/v1$/i, '/models'));
+    } else {
+        candidates.push(`${normalized}/v1/models`);
+        candidates.push(`${normalized}/models`);
+    }
+    return [...new Set(candidates.filter(Boolean))];
+}
+
+function resolveProductPublishAiProvider(cfg) {
+    const explicit = normalizeProductPublishAiProvider(cfg?.aiProvider);
+    if (explicit !== 'auto') return explicit;
+    return 'openai';
+}
+
+function buildProductPublishUserPrompt(record) {
+    const sceneNames = Array.isArray(record?.sceneNames) && record.sceneNames.length
+        ? record.sceneNames.join('、')
+        : '未命名场景';
+    const imageCount = Array.isArray(record?.images) ? record.images.length : 0;
+    const productType = String(record?.productType || '').trim();
+    return [
+        `产品模板组：${record?.groupName || '未命名产品'}`,
+        `产品类型：${productType || '未指定，请根据图片识别'}`,
+        `场景列表：${sceneNames}`,
+        `图片数量：${imageCount}`,
+        '请综合识别这些图片内容，只返回两行：第一行英文标题，第二行中文标题。不要解释，不要编号，不要输出 EN: 或 CN: 标签。'
+    ].join('\n');
+}
+
+function parseProductPublishTitleResult(rawContent) {
+    const lines = String(rawContent || '')
+        .trim()
+        .replace(/\r/g, '\n')
+        .split('\n')
+        .map((line) => String(line || '').trim())
+        .filter(Boolean)
+        .map((line) => line.replace(/^(EN|CN|英文标题|中文标题)\s*[:：]\s*/i, '').trim())
+        .filter(Boolean);
+    let titleEn = '';
+    let titleZh = '';
+    for (const line of lines) {
+        if (!titleEn && /[A-Za-z]/.test(line) && !/[\u4E00-\u9FFF]/.test(line)) {
+            titleEn = line.replace(/^["“”']+|["“”']+$/g, '');
+            continue;
+        }
+        if (!titleZh && /[\u4E00-\u9FFF]/.test(line)) {
+            titleZh = line.replace(/^["“”']+|["“”']+$/g, '');
+            continue;
+        }
+    }
+    if ((!titleEn || !titleZh) && lines.length >= 2) {
+        titleEn = titleEn || lines[0].replace(/^["“”']+|["“”']+$/g, '');
+        titleZh = titleZh || lines[1].replace(/^["“”']+|["“”']+$/g, '');
+    }
+    if (!titleEn || !titleZh) {
+        throw new Error('AI 未返回可用的中英双标题');
+    }
+    return { titleEn, titleZh };
+}
+
+function isProductPublishVisionUnsupportedError(text) {
+    const content = String(text || '');
+    return /unknown variant\s+[`'"]?image_url|image_url|vision|multimodal|does not support images|not support image|image input/i.test(content);
+}
+
+async function requestProductPublishChatCompletion(apiUrl, headers, body, model) {
+    const response = await fetch(apiUrl, {
+        method: 'POST',
+        headers,
+        body: JSON.stringify(body)
+    });
+    const rawText = await response.text().catch(() => '');
+    if (!response.ok) {
+        if (/model not exist|model_not_found|does not exist|invalid model/i.test(rawText)) {
+            throw new Error(`模型不存在：${model}`);
+        }
+        throw new Error(`AI 标题生成失败：${response.status}${rawText ? ` ${rawText}` : ''}`);
+    }
+    let payload = {};
+    try {
+        payload = rawText ? JSON.parse(rawText) : {};
+    } catch {
+        throw new Error(`AI 标题生成失败：接口返回的不是合法 JSON${rawText ? ` ${rawText.slice(0, 300)}` : ''}`);
+    }
+    return parseProductPublishTitleResult(payload?.choices?.[0]?.message?.content || '');
+}
+
+async function detectProductPublishModels(cfg) {
+    const config = {
+        ...createDefaultProductPublishConfig(),
+        ...(cfg || {})
+    };
+    const provider = resolveProductPublishAiProvider(config);
+    if (provider === 'text') {
+        throw new Error('纯文本接口模式不支持自动识别模型，请手动填写模型名');
+    }
+    const urls = resolveAiModelsUrlCandidates(config.aiApiUrl);
+    if (!urls.length) {
+        throw new Error('请先填写 AI 接口地址');
+    }
+    const headers = {
+        'Content-Type': 'application/json'
+    };
+    const apiKey = String(config.aiApiKey || '').trim();
+    if (apiKey) {
+        headers.Authorization = `Bearer ${apiKey}`;
+    }
+    let lastError = null;
+    for (const apiUrl of urls) {
+        try {
+            const response = await fetch(apiUrl, {
+                method: 'GET',
+                headers
+            });
+            const rawText = await response.text();
+            if (!response.ok) {
+                lastError = new Error(`模型识别失败：${response.status}${rawText ? ` ${rawText.slice(0, 300)}` : ''}`);
+                continue;
+            }
+            let payload = {};
+            try {
+                payload = rawText ? JSON.parse(rawText) : {};
+            } catch {
+                lastError = new Error('模型识别失败：接口返回的不是合法 JSON');
+                continue;
+            }
+            const models = Array.isArray(payload?.data)
+                ? payload.data.map((item) => String(item?.id || '').trim()).filter(Boolean)
+                : [];
+            if (models.length) {
+                return {
+                    models,
+                    preferredModel: models[0],
+                    provider: 'openai'
+                };
+            }
+            lastError = new Error('模型识别失败：接口没有返回可用模型');
+        } catch (error) {
+            lastError = error;
+        }
+    }
+    throw lastError || new Error('模型识别失败');
+}
+
+async function testProductPublishModel(cfg) {
+    const config = {
+        ...createDefaultProductPublishConfig(),
+        ...(cfg || {})
+    };
+    const apiUrl = resolveAiChatCompletionsUrl(config.aiApiUrl);
+    const apiKey = String(config.aiApiKey || '').trim();
+    const model = String(config.aiModel || '').trim();
+    if (!apiUrl || !model) {
+        throw new Error('请先填写 AI 接口地址和模型名称');
+    }
+    const headers = {
+        'Content-Type': 'application/json'
+    };
+    if (apiKey) {
+        headers.Authorization = `Bearer ${apiKey}`;
+    }
+    const response = await fetch(apiUrl, {
+        method: 'POST',
+        headers,
+        body: JSON.stringify({
+            model,
+            temperature: 0,
+            max_tokens: 12,
+            messages: [
+                { role: 'system', content: 'You are a model connectivity checker.' },
+                { role: 'user', content: 'Reply with OK only.' }
+            ]
+        })
+    });
+    const rawText = await response.text().catch(() => '');
+    if (!response.ok) {
+        if (/model not exist|model_not_found|does not exist|invalid model/i.test(rawText)) {
+            throw new Error(`模型不存在：${model}`);
+        }
+        throw new Error(`测试模型失败：${response.status}${rawText ? ` ${rawText.slice(0, 300)}` : ''}`);
+    }
+    let payload = {};
+    try {
+        payload = rawText ? JSON.parse(rawText) : {};
+    } catch {
+        throw new Error(`测试模型失败：接口返回的不是合法 JSON${rawText ? ` ${rawText.slice(0, 300)}` : ''}`);
+    }
+    return {
+        ok: true,
+        content: String(payload?.choices?.[0]?.message?.content || '').trim()
+    };
+}
+
+async function generateProductPublishTitle(record, cfg) {
+    const config = {
+        ...createDefaultProductPublishConfig(),
+        ...(cfg || {})
+    };
+    const provider = resolveProductPublishAiProvider(config);
+    const apiUrl = resolveAiChatCompletionsUrl(config.aiApiUrl);
+    const apiKey = String(config.aiApiKey || '').trim();
+    const model = String(config.aiModel || '').trim();
+    if (!apiUrl || !model) {
+        throw new Error('请先填写 AI 接口地址和模型名称');
+    }
+    const systemPrompt = String(config.titlePromptDoc || '').trim() || createDefaultProductPublishConfig().titlePromptDoc;
+    const userPrompt = buildProductPublishUserPrompt(record);
+    const visionInputs = buildProductPublishVisionInputs(record?.images);
+    if (!visionInputs.length) {
+        throw new Error('当前记录没有可供识别的图片');
+    }
+    const headers = {
+        'Content-Type': 'application/json'
+    };
+    if (apiKey) {
+        headers.Authorization = `Bearer ${apiKey}`;
+    }
+    const textOnlyBody = {
+        model,
+        temperature: 0.7,
+        messages: [
+            { role: 'system', content: systemPrompt },
+            {
+                role: 'user',
+                content: userPrompt
+            }
+        ]
+    };
+    if (provider === 'text') {
+        return requestProductPublishChatCompletion(apiUrl, headers, textOnlyBody, model);
+    }
+    const visionBody = {
+            model,
+            temperature: 0.7,
+            messages: [
+                { role: 'system', content: systemPrompt },
+                {
+                    role: 'user',
+                    content: [
+                        {
+                            type: 'text',
+                            text: userPrompt
+                        },
+                        ...visionInputs
+                    ]
+                }
+            ]
+        };
+    try {
+        return await requestProductPublishChatCompletion(apiUrl, headers, visionBody, model);
+    } catch (error) {
+        if (provider === 'openai' && isProductPublishVisionUnsupportedError(error.message || '')) {
+            return requestProductPublishChatCompletion(apiUrl, headers, textOnlyBody, model);
+        }
+        if (provider === 'auto' && isProductPublishVisionUnsupportedError(error.message || '')) {
+            return requestProductPublishChatCompletion(apiUrl, headers, textOnlyBody, model);
+        }
+        throw error;
+    }
+}
+
+function escapeCsvCell(value) {
+    const text = String(value ?? '');
+    if (/[",\r\n]/.test(text)) {
+        return `"${text.replace(/"/g, '""')}"`;
+    }
+    return text;
+}
+
+function buildProductPublishCsv(records) {
+    const header = ['产品名称', '图片URL', '中文标题', '英文标题', '来源模板', '场景列表', 'URL状态'];
+    const lines = [header.map(escapeCsvCell).join(',')];
+    (Array.isArray(records) ? records : []).forEach((record) => {
+        const urls = Array.isArray(record?.urls) && record.urls.length ? record.urls : [''];
+        urls.forEach((url) => {
+            lines.push([
+                record?.groupName || '',
+                url,
+                record?.titleZh || '',
+                record?.titleEn || '',
+                record?.sourceTaskKey || '',
+                Array.isArray(record?.sceneNames) ? record.sceneNames.join(' / ') : '',
+                record?.urlStatus || 'pending'
+            ].map(escapeCsvCell).join(','));
+        });
+    });
+    return `\uFEFF${lines.join('\r\n')}`;
+}
+
+function walkDirectoryFiles(dirPath) {
+    const files = [];
+    const stack = [dirPath];
+    while (stack.length) {
+        const current = stack.pop();
+        if (!current || !fs.existsSync(current)) continue;
+        for (const entry of fs.readdirSync(current, { withFileTypes: true })) {
+            const entryPath = path.join(current, entry.name);
+            if (entry.isDirectory()) {
+                stack.push(entryPath);
+            } else if (entry.isFile()) {
+                files.push(entryPath);
+            }
+        }
+    }
+    return files;
+}
+
+function buildProductPublishRecordFromFolder(folderPath) {
+    const resolvedFolder = path.resolve(folderPath);
+    const groupName = path.basename(resolvedFolder);
+    const files = walkDirectoryFiles(resolvedFolder)
+        .filter((filePath) => PRODUCT_PUBLISH_IMAGE_EXTS.has(path.extname(filePath).toLowerCase()))
+        .sort((a, b) => a.localeCompare(b, 'zh-CN'));
+    const images = files.map((filePath, index) => ({
+        id: `image-${index + 1}`,
+        name: path.basename(filePath),
+        path: filePath,
+        sceneName: path.basename(filePath, path.extname(filePath))
+    }));
+    return normalizeProductPublishRecord({
+        id: `product-${Date.now()}-${Math.random().toString(36).slice(2, 8)}`,
+        sourceTaskKey: `folder::${resolvedFolder}`,
+        groupName,
+        mainCode: groupName,
+        outputDir: resolvedFolder,
+        designName: '',
+        sceneNames: images.map((item) => item.sceneName).filter(Boolean),
+        images,
+        titleEn: '',
+        titleZh: '',
+        titleStatus: 'pending',
+        urls: [],
+        urlStatus: 'pending',
+        exportStatus: 'idle',
+        categoryId: '',
+        shipLeadTime: '',
+        originPlace: '',
+        previewImageUrl: '',
+        customized: '否',
+        specName1: '',
+        specName2: '',
+        specValue1: '',
+        specValue2: '',
+        declaredPrice: '',
+        suggestedPrice: '',
+        lengthCm: '',
+        widthCm: '',
+        heightCm: '',
+        weightG: '',
+        inventory: '',
+        sensitive: '否',
+        createdAt: new Date().toISOString(),
+        updatedAt: new Date().toISOString()
+    });
 }
 
 function normalizeUpdateSource(value) {
@@ -2315,6 +3198,127 @@ app.whenReady().then(() => {
     ipcMain.handle('template:cancel-generation', () => {
         const stopped = stopTemplateProcess();
         return { stopped };
+    });
+
+    ipcMain.handle('product-publish:load-config', () => {
+        return loadProductPublishConfig();
+    });
+
+    ipcMain.handle('product-publish:save-config', (event, cfg) => {
+        return saveProductPublishConfig(cfg || {});
+    });
+
+    ipcMain.handle('product-publish:load-data', () => {
+        return loadProductPublishData();
+    });
+
+    ipcMain.handle('product-publish:save-data', (event, data) => {
+        return saveProductPublishData(data || {});
+    });
+
+    ipcMain.handle('product-publish:import-template-task', (event, payload) => {
+        return importProductPublishRecordFromTemplateTask(payload || {});
+    });
+
+    ipcMain.handle('product-publish:select-import-folders', async () => {
+        const result = await dialog.showOpenDialog(mainWindow, {
+            title: '选择产品图片文件夹',
+            defaultPath: app.getPath('pictures'),
+            properties: ['openDirectory', 'multiSelections', 'createDirectory']
+        });
+        if (result.canceled || !Array.isArray(result.filePaths) || !result.filePaths.length) {
+            const data = loadProductPublishData();
+            return { canceled: true, ...data };
+        }
+        const currentData = loadProductPublishData();
+        const now = new Date().toISOString();
+        result.filePaths.forEach((folderPath) => {
+            const nextRecord = buildProductPublishRecordFromFolder(folderPath);
+            const existingIndex = currentData.records.findIndex((item) => item.sourceTaskKey === nextRecord.sourceTaskKey);
+            if (existingIndex >= 0) {
+                const existing = currentData.records[existingIndex];
+                currentData.records[existingIndex] = normalizeProductPublishRecord({
+                    ...existing,
+                    groupName: nextRecord.groupName,
+                    outputDir: nextRecord.outputDir,
+                    sceneNames: nextRecord.sceneNames,
+                    images: nextRecord.images,
+                    updatedAt: now
+                }, existingIndex);
+            } else {
+                currentData.records.unshift(nextRecord);
+            }
+        });
+        const saved = saveProductPublishData(currentData);
+        return { canceled: false, ...saved };
+    });
+
+    ipcMain.handle('product-publish:generate-title', async (event, payload) => {
+        const record = normalizeProductPublishRecord(payload?.record || {});
+        const cfg = loadProductPublishConfig();
+        return generateProductPublishTitle(record, cfg);
+    });
+
+    ipcMain.handle('product-publish:detect-models', async () => {
+        const cfg = loadProductPublishConfig();
+        return detectProductPublishModels(cfg);
+    });
+
+    ipcMain.handle('product-publish:test-model', async () => {
+        const cfg = loadProductPublishConfig();
+        return testProductPublishModel(cfg);
+    });
+
+    ipcMain.handle('product-publish:export-temu-sheet', async (event, payload) => {
+        const records = Array.isArray(payload?.records)
+            ? payload.records.map((item, index) => normalizeProductPublishRecord(item, index))
+            : [];
+        const exportConfig = {
+            ...createDefaultProductPublishConfig().exportTemplateDefaults,
+            ...(payload?.bulk || {})
+        };
+        if (!records.length) {
+            throw new Error('当前没有可导出的产品记录');
+        }
+        let templatePath = resolveProductPublishTemuTemplatePath();
+        if (!templatePath) {
+            const templateResult = await dialog.showOpenDialog(mainWindow, {
+                title: '选择妙手 Temu 导入模板',
+                defaultPath: app.getPath('downloads'),
+                properties: ['openFile'],
+                filters: [
+                    { name: 'Excel 模板', extensions: ['xlsx'] }
+                ]
+            });
+            if (templateResult.canceled || !Array.isArray(templateResult.filePaths) || !templateResult.filePaths[0]) {
+                return { canceled: true };
+            }
+            templatePath = templateResult.filePaths[0];
+        }
+        const defaultDir = app.getPath('documents');
+        const result = await dialog.showSaveDialog(mainWindow, {
+            title: '导出妙手 Temu 表格',
+            defaultPath: path.join(defaultDir, `ImageFlow产品发布_${new Date().toISOString().slice(0, 10)}.xlsx`),
+            filters: [
+                { name: 'Excel 表格', extensions: ['xlsx'] }
+            ]
+        });
+        if (result.canceled || !result.filePath) {
+            return { canceled: true };
+        }
+        if (isProductPublishOssConfigured(exportConfig)) {
+            for (const record of records) {
+                const uploadedUrls = await uploadProductPublishRecordImagesToOss(record, exportConfig);
+                if (uploadedUrls.length) {
+                    record.urls = uploadedUrls;
+                    record.urlStatus = 'ready';
+                    record.previewImageUrl = uploadedUrls[0];
+                }
+            }
+        }
+        const workbook = buildProductPublishTemuWorkbook(records, templatePath);
+        XLSX.writeFile(workbook, result.filePath, { compression: true });
+        return { canceled: false, filePath: result.filePath, templatePath };
     });
 
     ipcMain.on('classify:start-auto', (event, { sourceDir, targetDir, userName }) => {

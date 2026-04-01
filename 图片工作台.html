@@ -309,6 +309,10 @@
             padding: 0 0 30px 0;
         }
 
+        .content.product-publish-mode {
+            overflow: hidden;
+        }
+
         .content::-webkit-scrollbar {
             display: none;
             width: 0;
@@ -3450,6 +3454,593 @@
             white-space: pre-line;
         }
 
+        #product-publish.tab-content.active {
+            display: block;
+            height: 100%;
+        }
+
+        .product-publish-page {
+            display: flex;
+            flex-direction: column;
+            gap: 12px;
+            height: 100%;
+            min-height: 0;
+        }
+
+        .product-publish-page > .card {
+            flex: 1;
+            min-height: 0;
+            display: flex;
+            flex-direction: column;
+            overflow: hidden;
+        }
+
+        .product-publish-page > .card > .card-body {
+            flex: 1;
+            min-height: 0;
+            display: flex;
+            overflow: hidden;
+        }
+
+        .product-publish-layout {
+            display: grid;
+            grid-template-columns: 320px minmax(0, 1fr);
+            gap: 16px;
+            height: 100%;
+            min-height: 0;
+        }
+
+        .product-publish-list-panel,
+        .product-publish-detail-panel {
+            border: 1px solid #E5E7EB;
+            border-radius: 18px;
+            background: #FFFFFF;
+            min-height: 0;
+            display: flex;
+            flex-direction: column;
+        }
+
+        .product-publish-panel-head {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            gap: 10px;
+            padding: 16px 18px;
+            border-bottom: 1px solid #F1F5F9;
+        }
+
+        .product-publish-panel-title {
+            font-size: 14px;
+            font-weight: 700;
+            color: #111827;
+        }
+
+        .product-publish-panel-tools {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            min-width: 0;
+            flex-wrap: wrap;
+        }
+
+        .product-publish-panel-title-row {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            min-width: 0;
+        }
+
+        .product-publish-panel-tools .product-publish-info-label {
+            margin: 0;
+            white-space: nowrap;
+        }
+
+        .product-publish-panel-tools .virtual-select,
+        .product-publish-panel-tools .template-select {
+            width: 180px;
+            min-width: 180px;
+        }
+
+        .product-publish-toolbar-field {
+            display: grid;
+            gap: 4px;
+            min-width: 0;
+            flex: 1 1 170px;
+        }
+
+        .product-publish-toolbar-field-type {
+            flex: 0 0 180px;
+        }
+
+        .product-publish-toolbar-field-short {
+            flex: 0 0 132px;
+        }
+
+        .product-publish-toolbar-field .form-input,
+        .product-publish-toolbar-field .virtual-select,
+        .product-publish-toolbar-field .template-select {
+            width: 100%;
+            min-width: 0;
+            max-width: 100%;
+        }
+
+        .product-publish-panel-body {
+            flex: 1;
+            min-height: 0;
+            padding: 12px;
+            display: flex;
+            flex-direction: column;
+        }
+
+        .product-publish-record-list {
+            display: flex;
+            flex-direction: column;
+            gap: 10px;
+            min-height: 0;
+            overflow: auto;
+            scrollbar-width: none;
+            flex: 1;
+        }
+
+        .product-publish-record-list::-webkit-scrollbar {
+            display: none;
+        }
+
+        .product-publish-record-card {
+            border: 1px solid #E5E7EB;
+            border-radius: 16px;
+            background: #FFFFFF;
+            padding: 12px;
+            cursor: pointer;
+            transition: border-color 0.2s ease, box-shadow 0.2s ease, transform 0.2s ease;
+        }
+
+        .product-publish-record-card:hover {
+            border-color: #CBD5E1;
+            box-shadow: 0 8px 20px rgba(15, 23, 42, 0.06);
+            transform: translateY(-1px);
+        }
+
+        .product-publish-record-card.active {
+            border-color: #2563EB;
+            box-shadow: 0 12px 30px rgba(37, 99, 235, 0.12);
+        }
+
+        .product-publish-record-top {
+            display: grid;
+            grid-template-columns: 64px minmax(0, 1fr);
+            gap: 12px;
+            align-items: center;
+        }
+
+        .product-publish-record-head {
+            display: flex;
+            align-items: flex-start;
+            justify-content: space-between;
+            gap: 10px;
+            min-width: 0;
+        }
+
+        .product-publish-record-copy {
+            min-width: 0;
+            flex: 1;
+        }
+
+        .product-publish-record-status-dot {
+            width: 10px;
+            height: 10px;
+            border-radius: 999px;
+            flex-shrink: 0;
+            margin-top: 4px;
+            background: #CBD5E1;
+            box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.7);
+        }
+
+        .product-publish-record-status-dot.pending {
+            background: #94A3B8;
+        }
+
+        .product-publish-record-status-dot.generated {
+            background: #22C55E;
+        }
+
+        .product-publish-record-status-dot.edited {
+            background: #F59E0B;
+        }
+
+        .product-publish-record-status-dot.generating {
+            background: #3B82F6;
+        }
+
+        .product-publish-record-status-dot.failed {
+            background: #EF4444;
+        }
+
+        .product-publish-record-thumb {
+            width: 64px;
+            height: 64px;
+            border-radius: 14px;
+            overflow: hidden;
+            background: #F3F4F6;
+            border: 1px solid #E5E7EB;
+        }
+
+        .product-publish-record-thumb img {
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+            display: block;
+        }
+
+        .product-publish-record-name {
+            font-size: 14px;
+            font-weight: 700;
+            color: #111827;
+            line-height: 1.45;
+            word-break: break-word;
+        }
+
+        .product-publish-record-meta {
+            margin-top: 4px;
+            font-size: 12px;
+            color: #6B7280;
+            line-height: 1.6;
+        }
+
+        .product-publish-record-actions {
+            display: flex;
+            gap: 8px;
+            margin-top: 10px;
+            flex-wrap: wrap;
+        }
+
+        .product-publish-record-actions .btn,
+        .product-publish-title-actions .btn {
+            min-width: 0;
+            padding-inline: 14px;
+        }
+
+        .product-publish-detail-empty,
+        .product-publish-list-empty {
+            min-height: 220px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            text-align: center;
+            color: #6B7280;
+            font-size: 13px;
+            padding: 24px;
+        }
+
+        .product-publish-detail-stack {
+            display: flex;
+            flex-direction: column;
+            gap: 12px;
+            min-height: 0;
+        }
+
+        .product-publish-detail-panel .product-publish-panel-body {
+            overflow: auto;
+            scrollbar-width: none;
+        }
+
+        .product-publish-detail-panel .product-publish-panel-body::-webkit-scrollbar {
+            display: none;
+        }
+
+        .product-publish-info-strip {
+            display: grid;
+            grid-template-columns: repeat(2, minmax(0, 1fr));
+            gap: 10px 14px;
+            padding: 12px 14px;
+            border: 1px solid #E5E7EB;
+            border-radius: 16px;
+            background: #FAFBFC;
+        }
+
+        .product-publish-info-row {
+            min-width: 0;
+        }
+
+        .product-publish-info-label {
+            font-size: 11px;
+            color: #6B7280;
+            margin-bottom: 4px;
+        }
+
+        .product-publish-info-value {
+            font-size: 13px;
+            color: #111827;
+            line-height: 1.5;
+            word-break: break-word;
+        }
+
+        .product-publish-info-value.compact {
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+            cursor: copy;
+        }
+
+        .product-publish-info-row .form-input,
+        .product-publish-info-row .template-select {
+            min-height: 36px;
+        }
+
+        .product-publish-gallery {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(120px, 1fr));
+            gap: 12px;
+        }
+
+        .product-publish-gallery-item {
+            border: 1px solid #E5E7EB;
+            border-radius: 16px;
+            overflow: hidden;
+            background: #FFFFFF;
+        }
+
+        .product-publish-gallery-item img {
+            width: 100%;
+            height: 120px;
+            object-fit: cover;
+            display: block;
+            background: #F3F4F6;
+        }
+
+        .product-publish-gallery-caption {
+            padding: 8px 10px 10px;
+            font-size: 12px;
+            color: #6B7280;
+            line-height: 1.45;
+        }
+
+        .product-publish-title-actions {
+            display: flex;
+            gap: 8px;
+            flex-wrap: wrap;
+        }
+
+        .product-publish-title-grid {
+            display: grid;
+            grid-template-columns: repeat(2, minmax(0, 1fr));
+            gap: 12px;
+            width: 100%;
+        }
+
+        .product-publish-title-field {
+            display: flex;
+            flex-direction: column;
+            gap: 8px;
+            min-width: 0;
+        }
+
+        .product-publish-title-field .form-label {
+            min-width: 0;
+            font-size: 13px;
+            color: #374151;
+        }
+
+        .product-publish-title-field textarea.form-input {
+            min-height: 120px !important;
+        }
+
+        .product-publish-title-top {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            gap: 10px;
+        }
+
+        .product-publish-title-status {
+            display: inline-flex;
+            align-items: center;
+            gap: 6px;
+            padding: 6px 10px;
+            border-radius: 999px;
+            font-size: 12px;
+            font-weight: 600;
+            background: #F3F4F6;
+            color: #4B5563;
+        }
+
+        .product-publish-title-status.generated {
+            background: rgba(34, 197, 94, 0.12);
+            color: #166534;
+        }
+
+        .product-publish-title-status.edited {
+            background: rgba(245, 158, 11, 0.16);
+            color: #92400E;
+        }
+
+        .product-publish-title-status.pending {
+            background: rgba(59, 130, 246, 0.10);
+            color: #1D4ED8;
+        }
+
+        .product-publish-scene-note {
+            font-size: 12px;
+            color: #6B7280;
+            line-height: 1.55;
+        }
+
+        .product-publish-config-modal-shell {
+            width: min(560px, 100%);
+            height: auto;
+            max-height: min(78vh, 720px);
+            border-radius: 22px;
+            background: #FFFFFF;
+            box-shadow: 0 24px 60px rgba(15, 23, 42, 0.18);
+            display: flex;
+            flex-direction: column;
+            overflow: hidden;
+        }
+
+        .product-publish-config-modal-body {
+            padding: 18px 20px 20px;
+            overflow-y: auto;
+        }
+
+        .product-publish-config-modal-body::-webkit-scrollbar {
+            display: none;
+        }
+
+        .product-publish-config-modal-footer {
+            padding: 14px 20px 18px;
+            border-top: 1px solid #EEF2F6;
+            display: flex;
+            justify-content: flex-end;
+            gap: 10px;
+            background: linear-gradient(180deg, #FFFFFF 0%, #FBFCFD 100%);
+        }
+
+        .product-publish-export-shell {
+            width: min(860px, 100%);
+            max-height: min(82vh, 760px);
+        }
+
+        .product-publish-export-body {
+            display: flex;
+            flex-direction: column;
+            gap: 14px;
+        }
+
+        .product-publish-export-list {
+            display: flex;
+            flex-direction: column;
+            gap: 14px;
+        }
+
+        .product-publish-export-item {
+            border: 1px solid #E5E7EB;
+            border-radius: 18px;
+            background: #FFFFFF;
+            padding: 14px;
+            display: flex;
+            flex-direction: column;
+            gap: 12px;
+        }
+
+        .product-publish-export-head {
+            display: flex;
+            align-items: flex-start;
+            justify-content: space-between;
+            gap: 12px;
+        }
+
+        .product-publish-export-name {
+            font-size: 14px;
+            font-weight: 700;
+            color: #111827;
+            line-height: 1.45;
+        }
+
+        .product-publish-export-meta {
+            margin-top: 4px;
+            font-size: 12px;
+            color: #6B7280;
+            line-height: 1.55;
+        }
+
+        .product-publish-export-grid {
+            display: grid;
+            grid-template-columns: repeat(2, minmax(0, 1fr));
+            gap: 12px 14px;
+        }
+
+        .product-publish-export-field {
+            display: flex;
+            flex-direction: column;
+            gap: 6px;
+            min-width: 0;
+        }
+
+        .product-publish-export-field.full {
+            grid-column: 1 / -1;
+        }
+
+        .product-publish-export-field .form-input {
+            width: 100%;
+            min-width: 0;
+            max-width: 100%;
+        }
+
+        .settings-ai-grid {
+            display: grid;
+            gap: 12px;
+            width: 100%;
+            max-width: 760px;
+        }
+
+        .settings-ai-grid textarea.form-input {
+            min-height: 148px;
+            resize: vertical;
+            line-height: 1.7;
+        }
+
+        .product-publish-ai-stack {
+            display: grid;
+            gap: 14px;
+            width: 100%;
+        }
+
+        .product-publish-ai-field {
+            display: grid;
+            gap: 7px;
+            width: 100%;
+        }
+
+        .product-publish-ai-label {
+            font-size: 13px;
+            font-weight: 700;
+            color: #1A1D1F;
+            line-height: 1.4;
+        }
+
+        .product-publish-ai-hint {
+            font-size: 12px;
+            color: #6F767E;
+            line-height: 1.6;
+        }
+
+        .product-publish-ai-inline {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            min-width: 0;
+        }
+
+        .product-publish-ai-inline .form-input,
+        .product-publish-ai-inline .template-select {
+            flex: 1;
+            min-width: 0;
+            max-width: 100%;
+        }
+
+        .product-publish-ai-actions {
+            display: flex;
+            justify-content: flex-end;
+            gap: 8px;
+            flex-wrap: wrap;
+        }
+
+        .product-publish-ai-actions .btn,
+        .product-publish-ai-inline .btn {
+            min-width: 74px;
+            height: 36px;
+            padding: 0 14px;
+            border-radius: 10px;
+            font-size: 13px;
+        }
+
+        .product-publish-ai-stack textarea.form-input {
+            min-height: 168px;
+            max-width: 100%;
+            padding: 12px 14px;
+            line-height: 1.7;
+        }
+
         .settings-update-progress {
             height: 8px;
             border-radius: 999px;
@@ -5140,6 +5731,18 @@
                         </span>
                         <span>智能模板</span>
                     </div>
+                    <div class="nav-item" onclick="switchTab('product-publish')">
+                        <span class="nav-item-icon">
+                            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round">
+                                <rect x="4.5" y="5" width="15" height="14" rx="2"></rect>
+                                <path d="M8 9.5h8"></path>
+                                <path d="M8 13h8"></path>
+                                <path d="M8 16.5h5"></path>
+                                <path d="M19.5 8.5l1.8 1.8-4.5 4.5-2.1.3.3-2.1 4.5-4.5z"></path>
+                            </svg>
+                        </span>
+                        <span>产品发布</span>
+                    </div>
                     <div class="nav-item" onclick="switchTab('compress')">
                         <span class="nav-item-icon">
                             <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round">
@@ -5446,6 +6049,55 @@
                                 </div>
                                 <div id="templateLog" class="log-area" style="display:none;margin-top:16px;">
                                     <div class="empty-state" id="templateLogEmpty">等待开始生成...</div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- 产品发布页面 -->
+                <div id="product-publish" class="tab-content">
+                    <div class="product-publish-page">
+                        <div class="card">
+                            <div class="card-header">
+                                <div class="template-section-row" style="justify-content:space-between;">
+                                    <div>
+                                        <span class="card-title">产品发布</span>
+                                    </div>
+                                    <div class="template-upload-actions">
+                                        <button class="btn btn-secondary" type="button" onclick="openProductPublishAiConfigModal()">AI配置</button>
+                                        <button class="btn btn-secondary" type="button" onclick="generateAllProductPublishTitles()">批量生成标题</button>
+                                        <button class="btn btn-primary" type="button" onclick="openProductPublishExportModal()">导出模板</button>
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="card-body">
+                                <div class="product-publish-layout">
+                                    <div class="product-publish-list-panel">
+                                        <div class="product-publish-panel-head">
+                                            <div class="product-publish-panel-title">产品列表</div>
+                                            <div class="product-publish-title-actions">
+                                                <button class="btn btn-secondary" type="button" onclick="importProductPublishFolders()">导入</button>
+                                            </div>
+                                        </div>
+                                        <div class="product-publish-panel-body">
+                                            <div id="productPublishRecordList" class="product-publish-record-list">
+                                                <div class="product-publish-list-empty">还没有产品记录。<br>先从智能模板任务列表或文件夹导入。</div>
+                                            </div>
+                                        </div>
+                                    </div>
+                                    <div class="product-publish-detail-panel">
+                                        <div class="product-publish-panel-head">
+                                            <div class="product-publish-panel-title-row">
+                                                <div class="product-publish-panel-title">详情</div>
+                                                <div id="productPublishDetailStatus"></div>
+                                            </div>
+                                            <div id="productPublishDetailTools" class="product-publish-panel-tools"></div>
+                                        </div>
+                                        <div id="productPublishDetail" class="product-publish-panel-body">
+                        <div class="product-publish-detail-empty">选择一条产品记录后，可查看图片并编辑中英标题。</div>
+                                        </div>
+                                    </div>
                                 </div>
                             </div>
                         </div>
@@ -6270,6 +6922,70 @@
         </div>
     </div>
 
+    <div id="productPublishAiConfigModal" class="modal-overlay">
+        <div class="product-publish-config-modal-shell">
+            <div class="modal-header">
+                <div>
+                    <div class="modal-title">AI配置</div>
+                    <div class="modal-subtitle">用于产品发布模块生成标题。当前只接标题生成，URL 上传后续再补。</div>
+                </div>
+            </div>
+            <div class="product-publish-config-modal-body">
+                <div class="product-publish-ai-stack">
+                    <div class="product-publish-ai-field">
+                        <span class="product-publish-ai-label">API 地址</span>
+                        <input type="text" id="productPublishAiApiUrl" class="form-input" placeholder="例如：https://api.openai.com/v1" style="max-width:100%;">
+                        <div class="product-publish-ai-hint">填写兼容接口根地址。保存后可直接识别模型并测试。</div>
+                    </div>
+                    <div class="product-publish-ai-field">
+                        <span class="product-publish-ai-label">API Key</span>
+                        <div class="product-publish-ai-inline">
+                            <input type="password" id="productPublishAiApiKey" class="form-input" placeholder="输入接口密钥" style="max-width:100%;">
+                            <button class="btn btn-secondary" type="button" onclick="toggleProductPublishApiKeyVisibility()">显示</button>
+                        </div>
+                    </div>
+                    <div class="product-publish-ai-field">
+                        <span class="product-publish-ai-label">模型名</span>
+                        <select id="productPublishAiModel" class="template-select" style="width:100%;">
+                            <option value="">请先识别模型</option>
+                        </select>
+                        <div class="product-publish-ai-actions">
+                            <button class="btn btn-secondary" type="button" onclick="detectProductPublishModels()">识别模型</button>
+                            <button class="btn btn-secondary" type="button" onclick="testProductPublishModel()">测试模型</button>
+                        </div>
+                        <div class="product-publish-ai-hint">优先从接口拉取可用模型；识别不到时会保留当前模型和历史模型。</div>
+                    </div>
+                    <div class="product-publish-ai-field">
+                        <span class="product-publish-ai-label">生成文档</span>
+                        <textarea id="productPublishAiPromptDoc" class="form-input" placeholder="描述标题生成规则、风格和限制"></textarea>
+                    </div>
+                </div>
+            </div>
+            <div class="product-publish-config-modal-footer">
+                <button class="btn btn-secondary" type="button" onclick="closeProductPublishAiConfigModal()">取消</button>
+                <button class="btn btn-primary" type="button" onclick="saveAndCloseProductPublishAiConfig()">保存</button>
+            </div>
+        </div>
+    </div>
+
+    <div id="productPublishExportModal" class="modal-overlay">
+        <div class="product-publish-config-modal-shell product-publish-export-shell">
+            <div class="modal-header">
+                <div>
+                    <div class="modal-title">导出模板</div>
+                    <div class="modal-subtitle">导出前统一配置 Temu 模板字段，并可保存为导出模板。</div>
+                </div>
+            </div>
+            <div class="product-publish-config-modal-body product-publish-export-body">
+                <div id="productPublishExportList" class="product-publish-export-list"></div>
+            </div>
+            <div class="product-publish-config-modal-footer">
+                <button class="btn btn-secondary" type="button" onclick="closeProductPublishExportModal()">取消</button>
+                <button class="btn btn-primary" type="button" onclick="confirmProductPublishExport()">导出模板</button>
+            </div>
+        </div>
+    </div>
+
     <div id="confirmDialogModal" class="modal-overlay">
         <div class="confirm-dialog-shell">
             <div class="confirm-dialog-body">
@@ -6395,6 +7111,7 @@
             const contentHost = document.querySelector('.content');
             if (contentHost) {
                 contentHost.classList.toggle('settings-mode', tabName === 'settings');
+                contentHost.classList.toggle('product-publish-mode', tabName === 'product-publish');
             }
             // 隐藏所有标签页
             document.querySelectorAll('.tab-content').forEach(tab => {
@@ -6418,6 +7135,7 @@
                 'classify': '一键归类',
                 'slice': '智能切片',
                 'template': '智能模板',
+                'product-publish': '产品发布',
                 'settings': '设置'
             };
             const titleEl = document.getElementById('pageTitle');
@@ -6965,6 +7683,52 @@
                 pendingPresetId: ''
             }
         };
+        const productPublishState = {
+            records: [],
+            selectedRecordId: '',
+            config: {
+                aiProvider: 'auto',
+                aiApiUrl: '',
+                aiApiKey: '',
+                aiModel: '',
+                aiModelHistory: [],
+                titlePromptDoc: '',
+                exportTemplateDefaults: {
+                    mainCodePrefix: 'A',
+                    categoryId: '124300',
+                    urlPrefix: '',
+                    ossBucket: '',
+                    ossRegion: '',
+                    ossAccessKeyId: '',
+                    ossAccessKeySecret: '',
+                    ossObjectPrefix: 'products',
+                    shipLeadTime: '2',
+                    originPlace: '中国-浙江省',
+                    customized: '否',
+                    specName1: '尺寸',
+                    specName2: '颜色',
+                    specValue1: '白色',
+                    specValue2: '0',
+                    declaredPrice: '0.01',
+                    suggestedPrice: '',
+                    lengthCm: '0',
+                    widthCm: '0',
+                    heightCm: '0',
+                    weightG: '0',
+                    inventory: '0',
+                    sensitive: '否'
+                },
+                exportTemplateProfiles: []
+            },
+            detectedModels: [],
+            apiKeyVisible: false,
+            generatingRecordId: '',
+            generatingAll: false,
+            exportDraft: {
+                recordIds: [],
+                fieldsById: {}
+            }
+        };
 
         const templateEditorAssetCache = new Map();
         const templateEditorMaskCache = new Map();
@@ -7040,6 +7804,52 @@
                 confirmDialogState.resolver = resolve;
                 renderConfirmDialog(title, message, options);
             });
+        }
+
+        function showNoticeDialog(title, message, confirmText = '确认') {
+            return showConfirmDialog(title, message, {
+                confirmText,
+                hideCancel: true
+            });
+        }
+
+        async function copyTextToClipboard(text) {
+            const value = String(text ?? '');
+            if (!value) return;
+            if (navigator.clipboard?.writeText) {
+                await navigator.clipboard.writeText(value);
+                return;
+            }
+            const textarea = document.createElement('textarea');
+            textarea.value = value;
+            textarea.setAttribute('readonly', 'readonly');
+            textarea.style.position = 'fixed';
+            textarea.style.opacity = '0';
+            textarea.style.pointerEvents = 'none';
+            document.body.appendChild(textarea);
+            textarea.select();
+            document.execCommand('copy');
+            textarea.remove();
+        }
+
+        async function showCopyableErrorDialog(title, message, confirmText = '确认') {
+            const text = String(message || '').trim() || title;
+            const result = await showConfirmDialog(title, text, {
+                confirmText,
+                hideCancel: true,
+                extraText: '复制错误',
+                extraTone: 'btn-secondary'
+            });
+            if (result === 'extra') {
+                try {
+                    await copyTextToClipboard(text);
+                    appendTemplateLog('success', '已复制错误信息');
+                } catch {
+                    appendTemplateLog('error', '复制错误信息失败');
+                }
+                return showCopyableErrorDialog(title, text, confirmText);
+            }
+            return result;
         }
 
         function createVirtualSelectMenuHtml(select) {
@@ -7988,6 +8798,1424 @@
             renderTemplateResults();
             newWatermarkPreset(false);
             loadUpdateSettings();
+            loadProductPublishModule();
+        }
+
+        function normalizeProductPublishRecord(record, index = 0) {
+            const images = Array.isArray(record?.images)
+                ? record.images.map((item, itemIndex) => ({
+                    id: String(item?.id || `image-${itemIndex + 1}`),
+                    name: String(item?.name || `图片${itemIndex + 1}`),
+                    path: String(item?.path || '').trim(),
+                    sceneName: String(item?.sceneName || '').trim()
+                })).filter((item) => item.path)
+                : [];
+            const legacyTitle = String(record?.title || '');
+            const titleEn = String(record?.titleEn || '').trim();
+            const titleZh = String(record?.titleZh || '').trim() || ((!titleEn && legacyTitle.trim()) ? legacyTitle : '');
+            return {
+                id: String(record?.id || `product-${Date.now()}-${index + 1}`),
+                sourceTaskKey: String(record?.sourceTaskKey || '').trim(),
+                groupName: String(record?.groupName || '').trim() || '未命名产品',
+                productType: String(record?.productType || '').trim(),
+                categoryId: String(record?.categoryId || '').trim(),
+                mainCode: String(record?.mainCode || record?.groupName || '').trim(),
+                shipLeadTime: String(record?.shipLeadTime || '').trim(),
+                originPlace: String(record?.originPlace || '').trim(),
+                previewImageUrl: String(record?.previewImageUrl || '').trim(),
+                customized: String(record?.customized || '否').trim() || '否',
+                specName1: String(record?.specName1 || '').trim(),
+                specName2: String(record?.specName2 || '').trim(),
+                specValue1: String(record?.specValue1 || '').trim(),
+                specValue2: String(record?.specValue2 || '').trim(),
+                declaredPrice: String(record?.declaredPrice || '').trim(),
+                suggestedPrice: String(record?.suggestedPrice || '').trim(),
+                lengthCm: String(record?.lengthCm || '').trim(),
+                widthCm: String(record?.widthCm || '').trim(),
+                heightCm: String(record?.heightCm || '').trim(),
+                weightG: String(record?.weightG || '').trim(),
+                inventory: String(record?.inventory || '').trim(),
+                sensitive: String(record?.sensitive || '否').trim() || '否',
+                outputDir: String(record?.outputDir || '').trim(),
+                designName: String(record?.designName || '').trim(),
+                sceneNames: Array.isArray(record?.sceneNames)
+                    ? record.sceneNames.map((item) => String(item || '').trim()).filter(Boolean)
+                    : [],
+                images,
+                titleEn,
+                titleZh,
+                titleStatus: ['pending', 'generated', 'edited'].includes(record?.titleStatus)
+                    ? record.titleStatus
+                    : ((titleEn || titleZh) ? 'generated' : 'pending'),
+                generationState: ['idle', 'generating', 'failed'].includes(record?.generationState)
+                    ? record.generationState
+                    : 'idle',
+                generationMessage: String(record?.generationMessage || ''),
+                urls: Array.isArray(record?.urls) ? record.urls.map((item) => String(item || '').trim()).filter(Boolean) : [],
+                urlStatus: String(record?.urlStatus || 'pending') || 'pending',
+                exportStatus: String(record?.exportStatus || 'idle') || 'idle',
+                createdAt: String(record?.createdAt || ''),
+                updatedAt: String(record?.updatedAt || '')
+            };
+        }
+
+        function getProductPublishTypeOptionsHtml(selectedValue = '') {
+            const current = String(selectedValue || '').trim();
+            const options = [
+                { value: '', label: '自动识别' },
+                { value: '鼠标垫', label: '鼠标垫' },
+                { value: '地垫', label: '地垫' },
+                { value: '咖啡机垫', label: '咖啡机垫' },
+                { value: '杯垫', label: '杯垫' },
+                { value: '桌垫', label: '桌垫' },
+                { value: '其他', label: '其他' }
+            ];
+            return options.map((option) => `<option value="${escapeHtml(option.value)}" ${option.value === current ? 'selected' : ''}>${escapeHtml(option.label)}</option>`).join('');
+        }
+
+        function getProductPublishShipLeadTimeOptionsHtml(selectedValue = '2') {
+            const current = String(selectedValue || '2').trim() || '2';
+            const options = [
+                { value: '2', label: '2天' },
+                { value: '9', label: '9天' }
+            ];
+            return options.map((option) => `<option value="${escapeHtml(option.value)}" ${option.value === current ? 'selected' : ''}>${escapeHtml(option.label)}</option>`).join('');
+        }
+
+        function getProductPublishYesNoOptionsHtml(selectedValue = '否') {
+            const current = String(selectedValue || '否').trim() || '否';
+            const options = [
+                { value: '否', label: '否' },
+                { value: '是', label: '是' }
+            ];
+            return options.map((option) => `<option value="${escapeHtml(option.value)}" ${option.value === current ? 'selected' : ''}>${escapeHtml(option.label)}</option>`).join('');
+        }
+
+        function getProductPublishSpecNameOptionsHtml(selectedValue = '') {
+            const current = String(selectedValue || '').trim();
+            const options = [
+                { value: '', label: '不填写' },
+                { value: '尺寸', label: '尺寸' },
+                { value: '颜色', label: '颜色' }
+            ];
+            return options.map((option) => `<option value="${escapeHtml(option.value)}" ${option.value === current ? 'selected' : ''}>${escapeHtml(option.label)}</option>`).join('');
+        }
+
+        function getProductPublishCategoryOptionsHtml(selectedValue = '124300') {
+            const current = String(selectedValue || '124300').trim() || '124300';
+            const options = [
+                { value: '124300', label: '浴室防滑垫' },
+                { value: '1004', label: '鼠标垫' },
+                { value: '10489', label: '咖啡机垫' }
+            ];
+            return options.map((option) => `<option value="${escapeHtml(option.value)}" ${option.value === current ? 'selected' : ''}>${escapeHtml(option.label)}</option>`).join('');
+        }
+
+        function getSelectedProductPublishRecord() {
+            return productPublishState.records.find((item) => item.id === productPublishState.selectedRecordId) || null;
+        }
+
+        function getProductPublishTitleStatusMeta(status) {
+            if (status === 'edited') return { text: '已手动修改', className: 'edited' };
+            if (status === 'generated') return { text: '已生成标题', className: 'generated' };
+            return { text: '待生成标题', className: 'pending' };
+        }
+
+        function getProductPublishRecordStateClass(record) {
+            if (record?.generationState === 'generating') return 'generating';
+            if (record?.generationState === 'failed') return 'failed';
+            if (record?.titleStatus === 'generated') return 'generated';
+            if (record?.titleStatus === 'edited') return 'edited';
+            return 'pending';
+        }
+
+        async function copyProductPublishMeta(textEncoded) {
+            const value = decodeURIComponent(String(textEncoded || ''));
+            if (!value) return;
+            try {
+                await navigator.clipboard.writeText(value);
+                appendTemplateLog('success', `已复制：${value}`);
+            } catch (error) {
+                appendTemplateLog('error', error.message || '复制失败');
+            }
+        }
+
+        function renderProductPublishRecordList() {
+            const list = document.getElementById('productPublishRecordList');
+            if (!list) return;
+            if (!productPublishState.records.length) {
+                list.innerHTML = '<div class="product-publish-list-empty">还没有产品记录。<br>先从智能模板任务列表导入，或手动新增一条记录。</div>';
+                return;
+            }
+            list.innerHTML = productPublishState.records.map((record) => {
+                const titlePreview = String(record.titleZh || record.titleEn || '').trim();
+                const stateClass = getProductPublishRecordStateClass(record);
+                const stateText = record.generationState === 'failed'
+                    ? (record.generationMessage || '生成失败')
+                    : (record.generationState === 'generating'
+                        ? '生成中'
+                        : getProductPublishTitleStatusMeta(record.titleStatus).text);
+                return `
+                <div class="product-publish-record-card ${record.id === productPublishState.selectedRecordId ? 'active' : ''}" onclick="selectProductPublishRecord('${encodeURIComponent(record.id)}')">
+                    <div class="product-publish-record-top">
+                        <div class="product-publish-record-thumb">
+                            ${record.images[0]?.path ? `<img src="${toFileUrl(record.images[0].path)}" alt="${escapeHtml(record.groupName)}">` : ''}
+                        </div>
+                        <div class="product-publish-record-head">
+                            <div class="product-publish-record-copy">
+                                <div class="product-publish-record-name">${escapeHtml(record.groupName)}</div>
+                                <div class="product-publish-record-meta">${escapeHtml(record.sceneNames.length ? `${record.sceneNames.length} 个场景` : '缺少场景')} · ${escapeHtml(record.images.length ? `${record.images.length} 张图` : '暂无图片')}${titlePreview ? ` · ${escapeHtml(titlePreview)}` : ''}</div>
+                            </div>
+                            <span class="product-publish-record-status-dot ${stateClass}" title="${escapeHtml(stateText)}"></span>
+                        </div>
+                    </div>
+                    <div class="product-publish-record-actions">
+                        <button class="btn btn-secondary" type="button" onclick="event.stopPropagation(); generateProductPublishTitleById('${encodeURIComponent(record.id)}')">生成</button>
+                        <button class="btn btn-secondary" type="button" onclick="event.stopPropagation(); deleteProductPublishRecordById('${encodeURIComponent(record.id)}')">删除</button>
+                    </div>
+                </div>
+                `;
+            }).join('');
+        }
+
+        function renderProductPublishDetail() {
+            const detail = document.getElementById('productPublishDetail');
+            const tools = document.getElementById('productPublishDetailTools');
+            const statusHost = document.getElementById('productPublishDetailStatus');
+            if (!detail) return;
+            const record = getSelectedProductPublishRecord();
+            if (!record) {
+                if (tools) {
+                    tools.innerHTML = '';
+                }
+                if (statusHost) {
+                    statusHost.innerHTML = '';
+                }
+                detail.innerHTML = '<div class="product-publish-detail-empty">选择一条产品记录后，可查看图片并编辑中英标题。</div>';
+                return;
+            }
+            const titleMeta = getProductPublishTitleStatusMeta(record.titleStatus);
+            if (statusHost) {
+                statusHost.innerHTML = `<span class="product-publish-title-status ${titleMeta.className}">${titleMeta.text}</span>`;
+            }
+            if (tools) {
+                tools.innerHTML = `
+                    <div class="product-publish-toolbar-field product-publish-toolbar-field-type">
+                        <span class="product-publish-info-label">产品类型</span>
+                        <select id="productPublishTypeSelect" class="template-select" onchange="handleProductPublishTypeChange(event)">
+                            ${getProductPublishTypeOptionsHtml(record.productType)}
+                        </select>
+                    </div>
+                `;
+                initializeVirtualSelect('productPublishTypeSelect');
+            }
+            detail.innerHTML = `
+                <div class="product-publish-detail-stack">
+                    <div class="product-publish-info-strip">
+                        <div class="product-publish-info-row">
+                            <div class="product-publish-info-label">产品名称</div>
+                            <div class="product-publish-info-value">${escapeHtml(record.groupName)}</div>
+                        </div>
+                        <div class="product-publish-info-row">
+                            <div class="product-publish-info-label">来源</div>
+                            <div class="product-publish-info-value compact" title="${escapeHtml(record.sourceTaskKey || '手动新增')}" onclick="copyProductPublishMeta('${encodeURIComponent(record.sourceTaskKey || '手动新增')}')">${escapeHtml(record.sourceTaskKey || '手动新增')}</div>
+                        </div>
+                        <div class="product-publish-info-row">
+                            <div class="product-publish-info-label">轮播图 URL</div>
+                            <div class="product-publish-info-value">${record.urls.length ? `已准备 ${record.urls.length} 条 URL` : 'URL 待接入'}</div>
+                        </div>
+                        <div class="product-publish-info-row">
+                            <div class="product-publish-info-label">场景</div>
+                            <div class="product-publish-info-value compact" title="${escapeHtml(record.sceneNames.length ? record.sceneNames.join(' / ') : '暂无场景')}" onclick="copyProductPublishMeta('${encodeURIComponent(record.sceneNames.length ? record.sceneNames.join(' / ') : '暂无场景')}')">${escapeHtml(record.sceneNames.length ? record.sceneNames.join(' / ') : '暂无场景')}</div>
+                        </div>
+                    </div>
+                    <div class="product-publish-title-grid">
+                        <div class="product-publish-title-field">
+                            <div class="product-publish-title-top">
+                                <span class="form-label">英文标题</span>
+                            </div>
+                            <textarea id="productPublishTitleEnInput" class="form-input" style="resize:vertical;line-height:1.7;" placeholder="在这里编辑英文标题" oninput="handleProductPublishTitleInput(event, 'en')">${escapeHtml(record.titleEn || '')}</textarea>
+                        </div>
+                        <div class="product-publish-title-field">
+                            <span class="form-label">中文标题</span>
+                            <textarea id="productPublishTitleZhInput" class="form-input" style="resize:vertical;line-height:1.7;" placeholder="在这里编辑中文标题" oninput="handleProductPublishTitleInput(event, 'zh')">${escapeHtml(record.titleZh || '')}</textarea>
+                        </div>
+                    </div>
+                    <div>
+                        <div class="product-publish-panel-title" style="margin-bottom:12px;">结果预览</div>
+                        <div class="product-publish-gallery">
+                            ${record.images.map((image) => `
+                                <div class="product-publish-gallery-item">
+                                    <img src="${toFileUrl(image.path)}" alt="${escapeHtml(image.name)}">
+                                    <div class="product-publish-gallery-caption">${escapeHtml(image.sceneName || image.name)}</div>
+                                </div>
+                            `).join('') || '<div class="product-publish-detail-empty" style="min-height:160px;">当前记录还没有图片。</div>'}
+                        </div>
+                    </div>
+                </div>
+            `;
+        }
+
+        function renderProductPublishModule() {
+            renderProductPublishRecordList();
+            renderProductPublishDetail();
+        }
+
+        async function loadProductPublishModule() {
+            try {
+                const [config, data] = await Promise.all([
+                    ipcRenderer.invoke('product-publish:load-config'),
+                    ipcRenderer.invoke('product-publish:load-data')
+                ]);
+                productPublishState.config = {
+                    aiApiUrl: String(config?.aiApiUrl || ''),
+                    aiApiKey: String(config?.aiApiKey || ''),
+                    aiModel: String(config?.aiModel || ''),
+                    titlePromptDoc: String(config?.titlePromptDoc || ''),
+                    aiModelHistory: Array.isArray(config?.aiModelHistory) ? config.aiModelHistory.slice() : [],
+                    exportTemplateDefaults: {
+                        ...productPublishState.config.exportTemplateDefaults,
+                        ...(config?.exportTemplateDefaults || {})
+                    },
+                    exportTemplateProfiles: Array.isArray(config?.exportTemplateProfiles)
+                        ? config.exportTemplateProfiles.map((item) => ({
+                            id: String(item?.id || `profile-${Date.now()}`).trim(),
+                            name: String(item?.name || '未命名模板').trim() || '未命名模板',
+                            fields: {
+                                ...productPublishState.config.exportTemplateDefaults,
+                                ...(item?.fields || {})
+                            }
+                        }))
+                        : []
+                };
+                productPublishState.records = Array.isArray(data?.records)
+                    ? data.records.map((item, index) => normalizeProductPublishRecord(item, index))
+                    : [];
+                if (!productPublishState.records.some((item) => item.id === productPublishState.selectedRecordId)) {
+                    productPublishState.selectedRecordId = productPublishState.records[0]?.id || '';
+                }
+                syncProductPublishSettingsFields();
+                renderProductPublishModule();
+            } catch (error) {
+                appendTemplateLog('error', error.message || '读取产品发布数据失败');
+            }
+        }
+
+        async function importProductPublishFolders() {
+            try {
+                const result = await ipcRenderer.invoke('product-publish:select-import-folders');
+                if (!result || result.canceled) {
+                    return;
+                }
+                productPublishState.records = Array.isArray(result.records)
+                    ? result.records.map((item, index) => normalizeProductPublishRecord(item, index))
+                    : [];
+                productPublishState.selectedRecordId = productPublishState.records[0]?.id || '';
+                renderProductPublishModule();
+                appendTemplateLog('success', `已导入 ${productPublishState.records.length} 条产品记录`);
+            } catch (error) {
+                appendTemplateLog('error', error.message || '导入产品文件夹失败');
+            }
+        }
+
+        function syncProductPublishSettingsFields() {
+            const cfg = productPublishState.config;
+            const apiUrlInput = document.getElementById('productPublishAiApiUrl');
+            const apiKeyInput = document.getElementById('productPublishAiApiKey');
+            const modelInput = document.getElementById('productPublishAiModel');
+            const promptInput = document.getElementById('productPublishAiPromptDoc');
+            if (apiUrlInput) apiUrlInput.value = cfg.aiApiUrl || '';
+            if (apiKeyInput) apiKeyInput.value = cfg.aiApiKey || '';
+            if (modelInput) {
+                const models = Array.isArray(productPublishState.detectedModels) ? productPublishState.detectedModels.filter(Boolean) : [];
+                const historyModels = Array.isArray(cfg.aiModelHistory) ? cfg.aiModelHistory.filter(Boolean) : [];
+                const currentValue = cfg.aiModel || '';
+                const optionValues = [];
+                models.forEach((model) => {
+                    if (!optionValues.includes(model)) optionValues.push(model);
+                });
+                historyModels.forEach((model) => {
+                    if (!optionValues.includes(model)) optionValues.push(model);
+                });
+                if (currentValue && !optionValues.includes(currentValue)) {
+                    optionValues.unshift(currentValue);
+                }
+                modelInput.innerHTML = optionValues.length
+                    ? optionValues.map((model) => {
+                        const isCurrentOnly = Boolean(currentValue) && model === currentValue && !models.includes(model) && !historyModels.includes(model);
+                        const isHistory = !isCurrentOnly && !models.includes(model) && historyModels.includes(model);
+                        return `<option value="${escapeHtml(model)}">${isCurrentOnly ? `当前模型 · ${escapeHtml(model)}` : (isHistory ? `历史模型 · ${escapeHtml(model)}` : escapeHtml(model))}</option>`;
+                    }).join('')
+                    : '<option value="">请先识别模型</option>';
+                modelInput.value = currentValue || modelInput.value || '';
+            }
+            if (promptInput) promptInput.value = cfg.titlePromptDoc || '';
+            if (apiKeyInput) {
+                apiKeyInput.type = productPublishState.apiKeyVisible ? 'text' : 'password';
+            }
+            const toggleButton = document.querySelector('#productPublishAiConfigModal button[onclick="toggleProductPublishApiKeyVisibility()"]');
+            if (toggleButton) {
+                toggleButton.textContent = productPublishState.apiKeyVisible ? '隐藏' : '显示';
+            }
+            initializeVirtualSelect('productPublishAiModel');
+        }
+
+        function openProductPublishAiConfigModal() {
+            syncProductPublishSettingsFields();
+            document.getElementById('productPublishAiConfigModal')?.classList.add('active');
+        }
+
+        function closeProductPublishAiConfigModal() {
+            document.getElementById('productPublishAiConfigModal')?.classList.remove('active');
+        }
+
+        function getProductPublishExportTemplateDefaults() {
+            const defaults = productPublishState.config?.exportTemplateDefaults || {};
+            return {
+                mainCodePrefix: String(defaults.mainCodePrefix || 'A').trim() || 'A',
+                categoryId: String(defaults.categoryId || '124300').trim() || '124300',
+                urlPrefix: String(defaults.urlPrefix || '').trim(),
+                ossBucket: String(defaults.ossBucket || '').trim(),
+                ossRegion: String(defaults.ossRegion || '').trim(),
+                ossAccessKeyId: String(defaults.ossAccessKeyId || '').trim(),
+                ossAccessKeySecret: String(defaults.ossAccessKeySecret || '').trim(),
+                ossObjectPrefix: String(defaults.ossObjectPrefix || 'products').trim() || 'products',
+                shipLeadTime: String(defaults.shipLeadTime || '2').trim() || '2',
+                originPlace: String(defaults.originPlace || '中国-浙江省').trim() || '中国-浙江省',
+                customized: String(defaults.customized || '否').trim() || '否',
+                specName1: String(defaults.specName1 || '尺寸').trim() || '尺寸',
+                specName2: String(defaults.specName2 || '颜色').trim() || '颜色',
+                specValue1: String(defaults.specValue1 || '白色').trim() || '白色',
+                specValue2: String(defaults.specValue2 || '0').trim() || '0',
+                declaredPrice: String(defaults.declaredPrice || '0.01').trim() || '0.01',
+                suggestedPrice: String(defaults.suggestedPrice || '').trim(),
+                lengthCm: String(defaults.lengthCm || '0').trim() || '0',
+                widthCm: String(defaults.widthCm || '0').trim() || '0',
+                heightCm: String(defaults.heightCm || '0').trim() || '0',
+                weightG: String(defaults.weightG || '0').trim() || '0',
+                inventory: String(defaults.inventory || '0').trim() || '0',
+                sensitive: String(defaults.sensitive || '否').trim() || '否'
+            };
+        }
+
+        function buildProductPublishExportDraft(records) {
+            const bulk = getProductPublishExportTemplateDefaults();
+            return {
+                recordIds: records.map((record) => record.id),
+                bulk,
+                profileId: '',
+                profileName: '',
+                fieldsById: {}
+            };
+        }
+
+        function syncProductPublishExportVirtualSelects() {
+            [
+                'productPublishExportProfile',
+                'productPublishExportBulkCategoryId',
+                'productPublishExportBulkShipLeadTime',
+                'productPublishExportBulkCustomized',
+                'productPublishExportBulkSpecName1',
+                'productPublishExportBulkSpecName2',
+                'productPublishExportBulkSensitive'
+            ].forEach((id) => initializeVirtualSelect(id));
+        }
+
+        function getProductPublishExportProfiles() {
+            return Array.isArray(productPublishState.config?.exportTemplateProfiles)
+                ? productPublishState.config.exportTemplateProfiles
+                : [];
+        }
+
+        function getProductPublishExportProfileOptionsHtml(selectedValue = '') {
+            const current = String(selectedValue || '').trim();
+            const options = [{ value: '', label: '不使用导出模板' }]
+                .concat(getProductPublishExportProfiles().map((item) => ({
+                    value: String(item?.id || '').trim(),
+                    label: String(item?.name || '未命名模板').trim() || '未命名模板'
+                })));
+            return options.map((option) => `<option value="${escapeHtml(option.value)}" ${option.value === current ? 'selected' : ''}>${escapeHtml(option.label)}</option>`).join('');
+        }
+
+        function handleProductPublishExportProfileNameInput(value) {
+            productPublishState.exportDraft.profileName = String(value || '').trim();
+        }
+
+        function handleProductPublishExportProfileChange(value) {
+            const profileId = String(value || '').trim();
+            productPublishState.exportDraft.profileId = profileId;
+            const profile = getProductPublishExportProfiles().find((item) => item.id === profileId);
+            if (profile) {
+                productPublishState.exportDraft.profileName = String(profile.name || '').trim();
+                productPublishState.exportDraft.bulk = {
+                    ...getProductPublishExportTemplateDefaults(),
+                    ...(profile.fields || {})
+                };
+            } else {
+                productPublishState.exportDraft.profileName = '';
+            }
+            renderProductPublishExportModal();
+        }
+
+        async function saveCurrentProductPublishExportProfile() {
+            const name = String(productPublishState.exportDraft?.profileName || '').trim();
+            if (!name) {
+                openConfirmDialog({
+                    title: '缺少名称',
+                    message: '请先填写导出模板名称。',
+                    confirmText: '确认'
+                });
+                return;
+            }
+            const profiles = getProductPublishExportProfiles().slice();
+            const profileId = String(productPublishState.exportDraft?.profileId || `export-profile-${Date.now()}`).trim();
+            const profile = {
+                id: profileId,
+                name,
+                fields: {
+                    ...getProductPublishExportTemplateDefaults(),
+                    ...(productPublishState.exportDraft.bulk || {})
+                }
+            };
+            const existingIndex = profiles.findIndex((item) => item.id === profileId);
+            if (existingIndex >= 0) {
+                profiles[existingIndex] = profile;
+            } else {
+                profiles.unshift(profile);
+            }
+            productPublishState.config.exportTemplateProfiles = profiles;
+            productPublishState.exportDraft.profileId = profileId;
+            await ipcRenderer.invoke('product-publish:save-config', {
+                ...productPublishState.config,
+                exportTemplateDefaults: {
+                    ...(productPublishState.config.exportTemplateDefaults || {}),
+                    ...(productPublishState.exportDraft.bulk || {})
+                },
+                exportTemplateProfiles: profiles
+            });
+            appendTemplateLog('success', `导出模板已保存：${name}`);
+            renderProductPublishExportModal();
+        }
+
+        async function deleteCurrentProductPublishExportProfile() {
+            const profileId = String(productPublishState.exportDraft?.profileId || '').trim();
+            if (!profileId) return;
+            const profiles = getProductPublishExportProfiles().slice();
+            const profile = profiles.find((item) => item.id === profileId);
+            if (!profile) return;
+            const confirmed = await openConfirmDialog({
+                title: '删除导出模板',
+                message: `确定删除导出模板“${profile.name}”？`,
+                confirmText: '删除',
+                cancelText: '取消'
+            });
+            if (!confirmed) return;
+            productPublishState.config.exportTemplateProfiles = profiles.filter((item) => item.id !== profileId);
+            productPublishState.exportDraft.profileId = '';
+            productPublishState.exportDraft.profileName = '';
+            await ipcRenderer.invoke('product-publish:save-config', {
+                ...productPublishState.config,
+                exportTemplateDefaults: {
+                    ...(productPublishState.config.exportTemplateDefaults || {}),
+                    ...(productPublishState.exportDraft.bulk || {})
+                },
+                exportTemplateProfiles: productPublishState.config.exportTemplateProfiles
+            });
+            appendTemplateLog('success', `导出模板已删除：${profile.name}`);
+            renderProductPublishExportModal();
+        }
+
+        function buildProductPublishExportModalHtml(records, bulk) {
+            const profileId = String(productPublishState.exportDraft.profileId || '').trim();
+            const profileName = String(productPublishState.exportDraft.profileName || '').trim();
+            const prefix = String(bulk.mainCodePrefix || 'A').trim() || 'A';
+            return `
+                <div class="product-publish-export-item">
+                    <div class="product-publish-export-head">
+                        <div>
+                            <div class="product-publish-export-name">批量导出设置</div>
+                            <div class="product-publish-export-meta">当前导出统一使用这一套字段。主编号会自动生成为 ${escapeHtml(prefix)}1、${escapeHtml(prefix)}2、${escapeHtml(prefix)}3...</div>
+                        </div>
+                    </div>
+                    <div class="product-publish-export-grid">
+                        <div class="product-publish-export-field">
+                            <span class="product-publish-info-label">导出模板</span>
+                            <select id="productPublishExportProfile" class="template-select" onchange="handleProductPublishExportProfileChange(this.value)">
+                                ${getProductPublishExportProfileOptionsHtml(profileId)}
+                            </select>
+                        </div>
+                        <div class="product-publish-export-field">
+                            <span class="product-publish-info-label">模板名称</span>
+                            <input class="form-input" type="text" value="${escapeHtml(profileName)}" placeholder="输入导出模板名称" oninput="handleProductPublishExportProfileNameInput(this.value)">
+                        </div>
+                        <div class="product-publish-export-field full">
+                            <div class="product-publish-title-actions">
+                                <button class="btn btn-secondary" type="button" onclick="saveCurrentProductPublishExportProfile()">保存模板</button>
+                                <button class="btn btn-secondary" type="button" onclick="deleteCurrentProductPublishExportProfile()">删除模板</button>
+                            </div>
+                        </div>
+                        <div class="product-publish-export-field">
+                            <span class="product-publish-info-label">类目</span>
+                            <select id="productPublishExportBulkCategoryId" class="template-select" onchange="handleProductPublishExportBulkInput('categoryId', this.value)">
+                                ${getProductPublishCategoryOptionsHtml(bulk.categoryId)}
+                            </select>
+                        </div>
+                        <div class="product-publish-export-field">
+                            <span class="product-publish-info-label">主编号前缀</span>
+                            <input class="form-input" type="text" value="${escapeHtml(prefix)}" placeholder="如：A" oninput="handleProductPublishExportBulkInput('mainCodePrefix', this.value)">
+                        </div>
+                        <div class="product-publish-export-field">
+                            <span class="product-publish-info-label">OSS Bucket</span>
+                            <input class="form-input" type="text" value="${escapeHtml(bulk.ossBucket || '')}" placeholder="例如：imageflow" oninput="handleProductPublishExportBulkInput('ossBucket', this.value)">
+                        </div>
+                        <div class="product-publish-export-field">
+                            <span class="product-publish-info-label">OSS 地域</span>
+                            <input class="form-input" type="text" value="${escapeHtml(bulk.ossRegion || '')}" placeholder="例如：oss-cn-hangzhou" oninput="handleProductPublishExportBulkInput('ossRegion', this.value)">
+                        </div>
+                        <div class="product-publish-export-field">
+                            <span class="product-publish-info-label">AccessKey ID</span>
+                            <input class="form-input" type="text" value="${escapeHtml(bulk.ossAccessKeyId || '')}" placeholder="填写 OSS AccessKey ID" oninput="handleProductPublishExportBulkInput('ossAccessKeyId', this.value)">
+                        </div>
+                        <div class="product-publish-export-field">
+                            <span class="product-publish-info-label">AccessKey Secret</span>
+                            <input class="form-input" type="password" value="${escapeHtml(bulk.ossAccessKeySecret || '')}" placeholder="填写 OSS AccessKey Secret" oninput="handleProductPublishExportBulkInput('ossAccessKeySecret', this.value)">
+                        </div>
+                        <div class="product-publish-export-field">
+                            <span class="product-publish-info-label">上传目录</span>
+                            <input class="form-input" type="text" value="${escapeHtml(bulk.ossObjectPrefix || '')}" placeholder="例如：products" oninput="handleProductPublishExportBulkInput('ossObjectPrefix', this.value)">
+                        </div>
+                        <div class="product-publish-export-field full">
+                            <span class="product-publish-info-label">URL前缀</span>
+                            <input class="form-input" type="text" value="${escapeHtml(bulk.urlPrefix || '')}" placeholder="不使用 OSS 时，可改用固定前缀拼接 URL" oninput="handleProductPublishExportBulkInput('urlPrefix', this.value)">
+                        </div>
+                        <div class="product-publish-export-field full">
+                            <span class="product-publish-info-label">URL预览</span>
+                            <div id="productPublishExportUrlPreview" class="product-publish-export-meta">${getProductPublishExportUrlPreviewHtml(records, bulk)}</div>
+                        </div>
+                        <div class="product-publish-export-field">
+                            <span class="product-publish-info-label">承诺发货时效</span>
+                            <select id="productPublishExportBulkShipLeadTime" class="template-select" onchange="handleProductPublishExportBulkInput('shipLeadTime', this.value)">
+                                ${getProductPublishShipLeadTimeOptionsHtml(bulk.shipLeadTime)}
+                            </select>
+                        </div>
+                        <div class="product-publish-export-field">
+                            <span class="product-publish-info-label">产地</span>
+                            <input class="form-input" type="text" value="${escapeHtml(bulk.originPlace || '')}" oninput="handleProductPublishExportBulkInput('originPlace', this.value)">
+                        </div>
+                        <div class="product-publish-export-field">
+                            <span class="product-publish-info-label">定制品</span>
+                            <select id="productPublishExportBulkCustomized" class="template-select" onchange="handleProductPublishExportBulkInput('customized', this.value)">
+                                ${getProductPublishYesNoOptionsHtml(bulk.customized)}
+                            </select>
+                        </div>
+                        <div class="product-publish-export-field">
+                            <span class="product-publish-info-label">是否敏感属性</span>
+                            <select id="productPublishExportBulkSensitive" class="template-select" onchange="handleProductPublishExportBulkInput('sensitive', this.value)">
+                                ${getProductPublishYesNoOptionsHtml(bulk.sensitive)}
+                            </select>
+                        </div>
+                        <div class="product-publish-export-field">
+                            <span class="product-publish-info-label">规格名称1</span>
+                            <select id="productPublishExportBulkSpecName1" class="template-select" onchange="handleProductPublishExportBulkInput('specName1', this.value)">
+                                ${getProductPublishSpecNameOptionsHtml(bulk.specName1)}
+                            </select>
+                        </div>
+                        <div class="product-publish-export-field">
+                            <span class="product-publish-info-label">规格属性值1</span>
+                            <input class="form-input" type="text" value="${escapeHtml(bulk.specValue1 || '')}" oninput="handleProductPublishExportBulkInput('specValue1', this.value)">
+                        </div>
+                        <div class="product-publish-export-field">
+                            <span class="product-publish-info-label">规格名称2</span>
+                            <select id="productPublishExportBulkSpecName2" class="template-select" onchange="handleProductPublishExportBulkInput('specName2', this.value)">
+                                ${getProductPublishSpecNameOptionsHtml(bulk.specName2)}
+                            </select>
+                        </div>
+                        <div class="product-publish-export-field">
+                            <span class="product-publish-info-label">规格属性值2</span>
+                            <input class="form-input" type="text" value="${escapeHtml(bulk.specValue2 || '')}" oninput="handleProductPublishExportBulkInput('specValue2', this.value)">
+                        </div>
+                        <div class="product-publish-export-field">
+                            <span class="product-publish-info-label">申报价</span>
+                            <input class="form-input" type="text" value="${escapeHtml(bulk.declaredPrice || '')}" oninput="handleProductPublishExportBulkInput('declaredPrice', this.value)">
+                        </div>
+                        <div class="product-publish-export-field">
+                            <span class="product-publish-info-label">建议售价</span>
+                            <input class="form-input" type="text" value="${escapeHtml(bulk.suggestedPrice || '')}" oninput="handleProductPublishExportBulkInput('suggestedPrice', this.value)">
+                        </div>
+                        <div class="product-publish-export-field">
+                            <span class="product-publish-info-label">长（cm）</span>
+                            <input class="form-input" type="text" value="${escapeHtml(bulk.lengthCm || '')}" oninput="handleProductPublishExportBulkInput('lengthCm', this.value)">
+                        </div>
+                        <div class="product-publish-export-field">
+                            <span class="product-publish-info-label">宽（cm）</span>
+                            <input class="form-input" type="text" value="${escapeHtml(bulk.widthCm || '')}" oninput="handleProductPublishExportBulkInput('widthCm', this.value)">
+                        </div>
+                        <div class="product-publish-export-field">
+                            <span class="product-publish-info-label">高（cm）</span>
+                            <input class="form-input" type="text" value="${escapeHtml(bulk.heightCm || '')}" oninput="handleProductPublishExportBulkInput('heightCm', this.value)">
+                        </div>
+                        <div class="product-publish-export-field">
+                            <span class="product-publish-info-label">重量（g）</span>
+                            <input class="form-input" type="text" value="${escapeHtml(bulk.weightG || '')}" oninput="handleProductPublishExportBulkInput('weightG', this.value)">
+                        </div>
+                        <div class="product-publish-export-field">
+                            <span class="product-publish-info-label">库存</span>
+                            <input class="form-input" type="text" value="${escapeHtml(bulk.inventory || '')}" oninput="handleProductPublishExportBulkInput('inventory', this.value)">
+                        </div>
+                        <div class="product-publish-export-field full">
+                            <span class="product-publish-info-label">本次导出记录</span>
+                            <div class="product-publish-export-meta">${records.map((record, index) => `${escapeHtml(`${prefix}${index + 1}`)} · ${escapeHtml(record.groupName)}`).join('<br>')}</div>
+                        </div>
+                    </div>
+                </div>
+            `;
+        }
+
+        function renderProductPublishExportModal() {
+            const host = document.getElementById('productPublishExportList');
+            if (!host) return;
+            const recordIds = Array.isArray(productPublishState.exportDraft?.recordIds)
+                ? productPublishState.exportDraft.recordIds
+                : [];
+            const records = recordIds
+                .map((id) => productPublishState.records.find((item) => item.id === id))
+                .filter(Boolean);
+            if (!records.length) {
+                host.innerHTML = '<div class="product-publish-detail-empty" style="min-height:180px;">当前没有可导出的产品记录。</div>';
+                return;
+            }
+            const bulk = productPublishState.exportDraft.bulk || getProductPublishExportTemplateDefaults();
+            host.innerHTML = buildProductPublishExportModalHtml(records, bulk);
+            syncProductPublishExportVirtualSelects();
+            return;
+            const profileId = String(productPublishState.exportDraft.profileId || '').trim();
+            const profileName = String(productPublishState.exportDraft.profileName || '').trim();
+            const prefix = String(bulk.mainCodePrefix || 'A').trim() || 'A';
+            host.innerHTML = `
+                <div class="product-publish-export-item">
+                    <div class="product-publish-export-head">
+                        <div>
+                            <div class="product-publish-export-name">批量导出设置</div>
+                            <div class="product-publish-export-meta">当前导出统一使用这一套字段。主编号会自动生成 ${escapeHtml(prefix)}1、${escapeHtml(prefix)}2、${escapeHtml(prefix)}3...</div>
+                        </div>
+                    </div>
+                    <div class="product-publish-export-grid">
+                        <div class="product-publish-export-field">
+                            <span class="product-publish-info-label">导出模板</span>
+                            <select id="productPublishExportProfile" class="template-select" onchange="handleProductPublishExportProfileChange(this.value)">
+                                ${getProductPublishExportProfileOptionsHtml(profileId)}
+                            </select>
+                        </div>
+                        <div class="product-publish-export-field">
+                            <span class="product-publish-info-label">模板名称</span>
+                            <input class="form-input" type="text" value="${escapeHtml(profileName)}" placeholder="输入导出模板名称" oninput="handleProductPublishExportProfileNameInput(this.value)">
+                        </div>
+                        <div class="product-publish-export-field full">
+                            <div class="product-publish-title-actions">
+                                <button class="btn btn-secondary" type="button" onclick="saveCurrentProductPublishExportProfile()">保存模板</button>
+                                <button class="btn btn-secondary" type="button" onclick="deleteCurrentProductPublishExportProfile()">删除模板</button>
+                            </div>
+                        </div>
+                        <div class="product-publish-export-field">
+                            <span class="product-publish-info-label">类目</span>
+                            <select id="productPublishExportBulkCategoryId" class="template-select" onchange="handleProductPublishExportBulkInput('categoryId', this.value)">
+                                ${getProductPublishCategoryOptionsHtml(bulk.categoryId)}
+                            </select>
+                        </div>
+                        <div class="product-publish-export-field">
+                            <span class="product-publish-info-label">主编号前缀</span>
+                            <input class="form-input" type="text" value="${escapeHtml(prefix)}" placeholder="如：A" oninput="handleProductPublishExportBulkInput('mainCodePrefix', this.value)">
+                        </div>
+                        <div class="product-publish-export-field">
+                            <span class="product-publish-info-label">承诺发货时效</span>
+                            <select id="productPublishExportBulkShipLeadTime" class="template-select" onchange="handleProductPublishExportBulkInput('shipLeadTime', this.value)">
+                                ${getProductPublishShipLeadTimeOptionsHtml(bulk.shipLeadTime)}
+                            </select>
+                        </div>
+                        <div class="product-publish-export-field">
+                            <span class="product-publish-info-label">产地</span>
+                            <input class="form-input" type="text" value="${escapeHtml(bulk.originPlace || '')}" placeholder="填写产地" oninput="handleProductPublishExportBulkInput('originPlace', this.value)">
+                        </div>
+                        <div class="product-publish-export-field">
+                            <span class="product-publish-info-label">定制品</span>
+                            <select id="productPublishExportBulkCustomized" class="template-select" onchange="handleProductPublishExportBulkInput('customized', this.value)">
+                                ${getProductPublishYesNoOptionsHtml(bulk.customized)}
+                            </select>
+                        </div>
+                        <div class="product-publish-export-field">
+                            <span class="product-publish-info-label">是否敏感属性</span>
+                            <select id="productPublishExportBulkSensitive" class="template-select" onchange="handleProductPublishExportBulkInput('sensitive', this.value)">
+                                ${getProductPublishYesNoOptionsHtml(bulk.sensitive)}
+                            </select>
+                        </div>
+                        <div class="product-publish-export-field">
+                            <span class="product-publish-info-label">规格名称1</span>
+                            <select id="productPublishExportBulkSpecName1" class="template-select" onchange="handleProductPublishExportBulkInput('specName1', this.value)">
+                                ${getProductPublishSpecNameOptionsHtml(bulk.specName1)}
+                            </select>
+                        </div>
+                        <div class="product-publish-export-field">
+                            <span class="product-publish-info-label">规格名称2</span>
+                            <select id="productPublishExportBulkSpecName2" class="template-select" onchange="handleProductPublishExportBulkInput('specName2', this.value)">
+                                ${getProductPublishSpecNameOptionsHtml(bulk.specName2)}
+                            </select>
+                        </div>
+                        <div class="product-publish-export-field">
+                            <span class="product-publish-info-label">规格属性值1</span>
+                            <input class="form-input" type="text" value="${escapeHtml(bulk.specValue1 || '')}" placeholder="如：白色" oninput="handleProductPublishExportBulkInput('specValue1', this.value)">
+                        </div>
+                        <div class="product-publish-export-field">
+                            <span class="product-publish-info-label">规格属性值2</span>
+                            <input class="form-input" type="text" value="${escapeHtml(bulk.specValue2 || '')}" placeholder="如：0" oninput="handleProductPublishExportBulkInput('specValue2', this.value)">
+                        </div>
+                        <div class="product-publish-export-field">
+                            <span class="product-publish-info-label">申报价</span>
+                            <input class="form-input" type="text" value="${escapeHtml(bulk.declaredPrice || '')}" placeholder="填写申报价" oninput="handleProductPublishExportBulkInput('declaredPrice', this.value)">
+                        </div>
+                        <div class="product-publish-export-field">
+                            <span class="product-publish-info-label">建议售价</span>
+                            <input class="form-input" type="text" value="${escapeHtml(bulk.suggestedPrice || '')}" placeholder="填写建议售价" oninput="handleProductPublishExportBulkInput('suggestedPrice', this.value)">
+                        </div>
+                        <div class="product-publish-export-field">
+                            <span class="product-publish-info-label">长（cm）</span>
+                            <input class="form-input" type="text" value="${escapeHtml(bulk.lengthCm || '')}" placeholder="填写长度" oninput="handleProductPublishExportBulkInput('lengthCm', this.value)">
+                        </div>
+                        <div class="product-publish-export-field">
+                            <span class="product-publish-info-label">宽（cm）</span>
+                            <input class="form-input" type="text" value="${escapeHtml(bulk.widthCm || '')}" placeholder="填写宽度" oninput="handleProductPublishExportBulkInput('widthCm', this.value)">
+                        </div>
+                        <div class="product-publish-export-field">
+                            <span class="product-publish-info-label">高（cm）</span>
+                            <input class="form-input" type="text" value="${escapeHtml(bulk.heightCm || '')}" placeholder="填写高度" oninput="handleProductPublishExportBulkInput('heightCm', this.value)">
+                        </div>
+                        <div class="product-publish-export-field">
+                            <span class="product-publish-info-label">重量（g）</span>
+                            <input class="form-input" type="text" value="${escapeHtml(bulk.weightG || '')}" placeholder="填写重量" oninput="handleProductPublishExportBulkInput('weightG', this.value)">
+                        </div>
+                        <div class="product-publish-export-field">
+                            <span class="product-publish-info-label">库存</span>
+                            <input class="form-input" type="text" value="${escapeHtml(bulk.inventory || '')}" placeholder="填写库存" oninput="handleProductPublishExportBulkInput('inventory', this.value)">
+                        </div>
+                        <div class="product-publish-export-field full">
+                            <span class="product-publish-info-label">本次导出记录</span>
+                            <div class="product-publish-export-meta">${records.map((record, index) => `${escapeHtml(`${prefix}${index + 1}`)} · ${escapeHtml(record.groupName)}`).join('<br>')}</div>
+                        </div>
+                    </div>
+                </div>
+                <div class="product-publish-export-item">
+                    <div class="product-publish-export-head">
+                        <div>
+                            <div class="product-publish-export-name">导出内容预览</div>
+                            <div class="product-publish-export-meta">产品轮播图会按每条记录的全部 URL 以换行写入单元格；素材图和预览图默认取第一张。</div>
+                        </div>
+                    </div>
+                    <div class="product-publish-export-grid">
+                        ${records.map((record, index) => `
+                            <div class="product-publish-export-field full">
+                                <span class="product-publish-info-label">${escapeHtml(`${prefix}${index + 1}`)} · ${escapeHtml(record.groupName)}</span>
+                                <input class="form-input" type="text" value="${escapeHtml((record.urls || []).join(' / '))}" readonly>
+                            </div>
+                        `).join('')}
+                    </div>
+                </div>
+            `;
+            syncProductPublishExportVirtualSelects();
+        }
+
+        function openProductPublishExportModal(recordIdEncoded = '') {
+            const targetId = decodeURIComponent(recordIdEncoded || '');
+            const records = targetId
+                ? productPublishState.records.filter((item) => item.id === targetId)
+                : productPublishState.records;
+            if (!records.length) {
+                appendTemplateLog('warn', '当前没有可导出的产品记录');
+                return;
+            }
+            productPublishState.exportDraft = buildProductPublishExportDraft(records);
+            renderProductPublishExportModal();
+            document.getElementById('productPublishExportModal')?.classList.add('active');
+        }
+
+        function closeProductPublishExportModal() {
+            document.getElementById('productPublishExportModal')?.classList.remove('active');
+            productPublishState.exportDraft = {
+                recordIds: [],
+                bulk: getProductPublishExportTemplateDefaults(),
+                profileId: '',
+                profileName: '',
+                fieldsById: {}
+            };
+        }
+
+        function handleProductPublishExportBulkInput(field, value) {
+            if (!productPublishState.exportDraft.bulk) {
+                productPublishState.exportDraft.bulk = getProductPublishExportTemplateDefaults();
+            }
+            productPublishState.exportDraft.bulk[field] = String(value || '').trim();
+            if (['urlPrefix', 'ossBucket', 'ossRegion', 'ossObjectPrefix', 'ossAccessKeyId', 'ossAccessKeySecret'].includes(field)) {
+                renderProductPublishExportUrlPreview();
+            }
+        }
+
+        function normalizeProductPublishUrlPrefix(value) {
+            const raw = String(value || '').trim();
+            if (!raw) return '';
+            return raw.replace(/\/+$/, '');
+        }
+
+        function normalizeProductPublishOssRegion(value) {
+            const raw = String(value || '').trim().replace(/^https?:\/\//i, '').replace(/\/+$/, '');
+            if (!raw) return '';
+            return raw.startsWith('oss-') ? raw : `oss-${raw}`;
+        }
+
+        function normalizeProductPublishOssPrefix(value) {
+            return String(value || '').trim().replace(/^\/+/, '').replace(/\/+$/, '');
+        }
+
+        function encodeProductPublishUrlPath(value) {
+            return String(value || '').split('/').map((segment) => encodeURIComponent(segment)).join('/');
+        }
+
+        function isProductPublishOssConfigured(bulk) {
+            return Boolean(
+                String(bulk?.ossBucket || '').trim()
+                && normalizeProductPublishOssRegion(bulk?.ossRegion || '')
+                && String(bulk?.ossAccessKeyId || '').trim()
+                && String(bulk?.ossAccessKeySecret || '').trim()
+            );
+        }
+
+        function buildProductPublishOssObjectKey(record, image, bulk, index = 0) {
+            const prefix = normalizeProductPublishOssPrefix(bulk?.ossObjectPrefix || '');
+            const folderName = String(record?.groupName || 'product').trim() || 'product';
+            const rawName = String(image?.name || pathUtil.basename(String(image?.path || '')) || `image-${index + 1}.jpg`).trim() || `image-${index + 1}.jpg`;
+            return [prefix, folderName, rawName].filter(Boolean).join('/');
+        }
+
+        function buildProductPublishOssPublicUrl(record, image, bulk, index = 0) {
+            const bucket = String(bulk?.ossBucket || '').trim();
+            const region = normalizeProductPublishOssRegion(bulk?.ossRegion || '');
+            if (!bucket || !region) return '';
+            const objectKey = buildProductPublishOssObjectKey(record, image, bulk, index);
+            return `https://${bucket}.${region}.aliyuncs.com/${encodeProductPublishUrlPath(objectKey)}`;
+        }
+
+        function getProductPublishExportUrlPreviewHtml(records, bulk) {
+            const prefix = normalizeProductPublishUrlPrefix(bulk?.urlPrefix || '');
+            const hasOss = isProductPublishOssConfigured(bulk);
+            if (!hasOss && !prefix) {
+                return '填写 OSS 配置或 URL前缀 后，将在这里预览每条产品会生成的图片 URL。';
+            }
+            const list = (Array.isArray(records) ? records : []).slice(0, 6).map((record) => {
+                const urls = buildProductPublishExportUrls(record, bulk);
+                const firstUrl = String(urls[0] || '').trim();
+                const suffix = urls.length > 1 ? ` 等 ${urls.length} 张` : '';
+                return `<div>${escapeHtml(record?.groupName || '未命名产品')}：${firstUrl ? `<span title="${escapeHtml(firstUrl)}">${escapeHtml(firstUrl)}</span>${escapeHtml(suffix)}` : '当前没有可生成的图片 URL'}</div>`;
+            });
+            if ((Array.isArray(records) ? records.length : 0) > 6) {
+                list.push(`<div>……其余 ${(records.length - 6)} 条产品按相同规则生成</div>`);
+            }
+            return list.join('');
+        }
+
+        function renderProductPublishExportUrlPreview() {
+            const host = document.getElementById('productPublishExportUrlPreview');
+            if (!host) return;
+            const recordIds = Array.isArray(productPublishState.exportDraft?.recordIds)
+                ? productPublishState.exportDraft.recordIds
+                : [];
+            const records = recordIds
+                .map((id) => productPublishState.records.find((item) => item.id === id))
+                .filter(Boolean);
+            const bulk = productPublishState.exportDraft.bulk || getProductPublishExportTemplateDefaults();
+            host.innerHTML = getProductPublishExportUrlPreviewHtml(records, bulk);
+        }
+
+        function buildProductPublishExportUrls(record, bulk) {
+            const images = Array.isArray(record?.images) ? record.images : [];
+            if (isProductPublishOssConfigured(bulk)) {
+                return images.map((image, index) => buildProductPublishOssPublicUrl(record, image, bulk, index)).filter(Boolean);
+            }
+            const prefix = normalizeProductPublishUrlPrefix(bulk?.urlPrefix || '');
+            if (!prefix) return [];
+            const folderName = encodeURIComponent(String(record?.groupName || 'product').trim() || 'product');
+            return images.map((image, index) => {
+                const rawName = String(image?.name || pathUtil.basename(String(image?.path || '')) || `image-${index + 1}.jpg`).trim();
+                const safeName = encodeURIComponent(rawName || `image-${index + 1}.jpg`);
+                return `${prefix}/${folderName}/${safeName}`;
+            }).filter(Boolean);
+        }
+
+        function validateProductPublishExportRecords(records, bulk) {
+            const errors = [];
+            records.forEach((record) => {
+                const name = String(record?.groupName || '未命名产品').trim() || '未命名产品';
+                const generatedUrls = buildProductPublishExportUrls(record, bulk);
+                const nextUrls = generatedUrls.length
+                    ? generatedUrls
+                    : (Array.isArray(record?.urls) ? record.urls.map((item) => String(item || '').trim()).filter(Boolean) : []);
+                if (!nextUrls.length) {
+                    errors.push(`“${name}”缺少图片 URL，请先填写 OSS 配置或 URL前缀。`);
+                }
+                if (!String(record?.titleZh || '').trim()) {
+                    errors.push(`“${name}”缺少中文标题。`);
+                }
+                if (!String(record?.titleEn || '').trim()) {
+                    errors.push(`“${name}”缺少英文标题。`);
+                }
+            });
+            const declaredPrice = Number(String(bulk?.declaredPrice || '').trim());
+            if (!Number.isFinite(declaredPrice) || declaredPrice < 0.01) {
+                errors.push('申报价必须大于等于 0.01。');
+            }
+            return errors;
+        }
+
+        async function confirmProductPublishExport() {
+            const recordIds = Array.isArray(productPublishState.exportDraft?.recordIds)
+                ? productPublishState.exportDraft.recordIds
+                : [];
+            const records = recordIds
+                .map((id) => productPublishState.records.find((item) => item.id === id))
+                .filter(Boolean);
+            if (!records.length) {
+                appendTemplateLog('warn', '当前没有可导出的产品记录');
+                return;
+            }
+            const bulk = productPublishState.exportDraft.bulk || getProductPublishExportTemplateDefaults();
+            const validationErrors = validateProductPublishExportRecords(records, bulk);
+            if (validationErrors.length) {
+                await showNoticeDialog('导出前检查', validationErrors.join('\n'));
+                return;
+            }
+            const prefix = String(bulk.mainCodePrefix || 'A').trim() || 'A';
+            records.forEach((record, index) => {
+                const generatedUrls = buildProductPublishExportUrls(record, bulk);
+                const nextUrls = generatedUrls.length
+                    ? generatedUrls
+                    : (Array.isArray(record.urls) ? record.urls.map((item) => String(item || '').trim()).filter(Boolean) : []);
+                const firstUrl = String(nextUrls[0] || '').trim();
+                record.urls = nextUrls;
+                record.urlStatus = firstUrl ? 'ready' : 'pending';
+                record.categoryId = String(bulk.categoryId || '').trim();
+                record.mainCode = `${prefix}${index + 1}`;
+                record.shipLeadTime = String(bulk.shipLeadTime || '2').trim() || '2';
+                record.originPlace = String(bulk.originPlace || '中国-浙江省').trim() || '中国-浙江省';
+                record.previewImageUrl = firstUrl;
+                record.customized = String(bulk.customized || '否').trim() || '否';
+                record.specName1 = String(bulk.specName1 || '').trim();
+                record.specName2 = String(bulk.specName2 || '').trim();
+                record.specValue1 = String(bulk.specValue1 || '').trim();
+                record.specValue2 = String(bulk.specValue2 || '').trim();
+                record.declaredPrice = String(bulk.declaredPrice || '').trim();
+                record.suggestedPrice = String(bulk.suggestedPrice || '').trim();
+                record.lengthCm = String(bulk.lengthCm || '0').trim() || '0';
+                record.widthCm = String(bulk.widthCm || '0').trim() || '0';
+                record.heightCm = String(bulk.heightCm || '0').trim() || '0';
+                record.weightG = String(bulk.weightG || '0').trim() || '0';
+                record.inventory = String(bulk.inventory || '0').trim() || '0';
+                record.sensitive = String(bulk.sensitive || '否').trim() || '否';
+                record.updatedAt = new Date().toISOString();
+            });
+            productPublishState.config.exportTemplateDefaults = {
+                ...(productPublishState.config.exportTemplateDefaults || {}),
+                ...bulk
+            };
+            persistProductPublishData();
+            renderProductPublishModule();
+            try {
+                await ipcRenderer.invoke('product-publish:save-config', {
+                    ...productPublishState.config,
+                    exportTemplateDefaults: {
+                        ...(productPublishState.config.exportTemplateDefaults || {})
+                    },
+                    exportTemplateProfiles: getProductPublishExportProfiles()
+                });
+                const result = await ipcRenderer.invoke('product-publish:export-temu-sheet', { records, bulk });
+                if (!result?.canceled) {
+                    appendTemplateLog('success', `产品发布模板已导出：${result.filePath}`);
+                    closeProductPublishExportModal();
+                }
+            } catch (error) {
+                appendTemplateLog('error', error.message || '导出产品发布模板失败');
+            }
+        }
+
+        function persistProductPublishData() {
+            ipcRenderer.invoke('product-publish:save-data', {
+                records: productPublishState.records
+            }).catch(() => {});
+        }
+
+        function selectProductPublishRecord(recordIdEncoded) {
+            const recordId = decodeURIComponent(recordIdEncoded || '');
+            productPublishState.selectedRecordId = recordId;
+            renderProductPublishModule();
+        }
+
+        function createEmptyProductPublishRecord() {
+            const id = `product-${Date.now()}`;
+            productPublishState.records.unshift(normalizeProductPublishRecord({
+                id,
+                sourceTaskKey: '',
+                groupName: '未命名产品',
+                productType: '',
+                categoryId: '',
+                mainCode: '',
+                shipLeadTime: '',
+                originPlace: '',
+                previewImageUrl: '',
+                customized: '否',
+                specName1: '',
+                specName2: '',
+                specValue1: '',
+                specValue2: '',
+                declaredPrice: '',
+                suggestedPrice: '',
+                lengthCm: '',
+                widthCm: '',
+                heightCm: '',
+                weightG: '',
+                inventory: '',
+                sensitive: '否',
+                sceneNames: [],
+                images: [],
+                titleEn: '',
+                titleZh: '',
+                titleStatus: 'pending',
+                urls: [],
+                urlStatus: 'pending',
+                exportStatus: 'idle',
+                createdAt: new Date().toISOString(),
+                updatedAt: new Date().toISOString()
+            }));
+            productPublishState.selectedRecordId = id;
+            persistProductPublishData();
+            renderProductPublishModule();
+        }
+
+        function handleProductPublishTypeChange(event) {
+            const record = getSelectedProductPublishRecord();
+            if (!record) return;
+            record.productType = String(event?.target?.value || '').trim();
+            record.updatedAt = new Date().toISOString();
+            persistProductPublishData();
+        }
+
+        function handleProductPublishFieldInput(field, value) {
+            const record = getSelectedProductPublishRecord();
+            if (!record) return;
+            record[field] = String(value || '').trim();
+            record.updatedAt = new Date().toISOString();
+            persistProductPublishData();
+        }
+
+        async function deleteProductPublishRecordById(recordIdEncoded) {
+            const recordId = decodeURIComponent(recordIdEncoded || '');
+            const record = productPublishState.records.find((item) => item.id === recordId);
+            if (!record) return;
+            const confirmed = await showConfirmDialog(
+                '删除产品记录',
+                `确定删除“${record.groupName}”吗？`,
+                { confirmText: '删除', cancelText: '取消', danger: true }
+            );
+            if (!confirmed) return;
+            productPublishState.records = productPublishState.records.filter((item) => item.id !== recordId);
+            if (productPublishState.selectedRecordId === recordId) {
+                productPublishState.selectedRecordId = productPublishState.records[0]?.id || '';
+            }
+            persistProductPublishData();
+            renderProductPublishModule();
+        }
+
+        async function deleteSelectedProductPublishRecord() {
+            const record = getSelectedProductPublishRecord();
+            if (!record) return;
+            await deleteProductPublishRecordById(encodeURIComponent(record.id));
+        }
+
+        function handleProductPublishTitleInput(event, lang = 'zh') {
+            const record = getSelectedProductPublishRecord();
+            if (!record) return;
+            const value = String(event?.target?.value || '');
+            if (lang === 'en') {
+                record.titleEn = value;
+            } else {
+                record.titleZh = value;
+            }
+            record.titleStatus = String(record.titleEn || '').trim() || String(record.titleZh || '').trim() ? 'edited' : 'pending';
+            record.updatedAt = new Date().toISOString();
+            persistProductPublishData();
+            renderProductPublishRecordList();
+        }
+
+        async function saveProductPublishSettingsNow() {
+            try {
+                const selectedModelValue = String(document.getElementById('productPublishAiModel')?.value || '').trim();
+                const config = {
+                    aiProvider: 'auto',
+                    aiApiUrl: String(document.getElementById('productPublishAiApiUrl')?.value || '').trim(),
+                    aiApiKey: String(document.getElementById('productPublishAiApiKey')?.value || '').trim(),
+                    aiModel: selectedModelValue,
+                    aiModelHistory: Array.isArray(productPublishState.config.aiModelHistory) ? productPublishState.config.aiModelHistory.slice() : [],
+                    titlePromptDoc: String(document.getElementById('productPublishAiPromptDoc')?.value || '').trim(),
+                    exportTemplateDefaults: {
+                        ...(productPublishState.config.exportTemplateDefaults || {})
+                    },
+                    exportTemplateProfiles: getProductPublishExportProfiles()
+                };
+                productPublishState.config = await ipcRenderer.invoke('product-publish:save-config', config);
+                syncProductPublishSettingsFields();
+            } catch (error) {
+                appendTemplateLog('error', error.message || '保存 AI 标题设置失败');
+            }
+        }
+
+        async function saveAndCloseProductPublishAiConfig() {
+            await saveProductPublishSettingsNow();
+            closeProductPublishAiConfigModal();
+        }
+
+        async function rememberProductPublishModel(modelName) {
+            const model = String(modelName || '').trim();
+            if (!model) return;
+            const nextHistory = [model]
+                .concat(Array.isArray(productPublishState.config.aiModelHistory) ? productPublishState.config.aiModelHistory : [])
+                .map((item) => String(item || '').trim())
+                .filter(Boolean)
+                .filter((item, index, array) => array.indexOf(item) === index)
+                .slice(0, 30);
+            productPublishState.config.aiModelHistory = nextHistory;
+            productPublishState.config = await ipcRenderer.invoke('product-publish:save-config', {
+                ...productPublishState.config,
+                aiModelHistory: nextHistory
+            });
+            syncProductPublishSettingsFields();
+        }
+
+        function toggleProductPublishApiKeyVisibility() {
+            productPublishState.apiKeyVisible = !productPublishState.apiKeyVisible;
+            syncProductPublishSettingsFields();
+        }
+
+        async function detectProductPublishModels() {
+            try {
+                await saveProductPublishSettingsNow();
+                const result = await ipcRenderer.invoke('product-publish:detect-models');
+                productPublishState.detectedModels = Array.isArray(result?.models) ? result.models : [];
+                const currentModel = String(document.getElementById('productPublishAiModel')?.value || '').trim();
+                if (!currentModel && result?.preferredModel) {
+                    productPublishState.config.aiModel = result.preferredModel;
+                } else if (currentModel) {
+                    productPublishState.config.aiModel = currentModel;
+                }
+                if (result?.provider) {
+                    productPublishState.config.aiProvider = result.provider;
+                }
+                syncProductPublishSettingsFields();
+                appendTemplateLog('success', `已识别 ${productPublishState.detectedModels.length} 个模型`);
+            } catch (error) {
+                appendTemplateLog('error', error.message || '识别模型失败');
+                await showCopyableErrorDialog('识别模型失败', error.message || '识别模型失败');
+            }
+        }
+
+        async function testProductPublishModel() {
+            try {
+                await saveProductPublishSettingsNow();
+                const model = String(productPublishState.config.aiModel || '').trim();
+                if (!model) {
+                    await showNoticeDialog('测试模型', '请先填写或选择模型名称。');
+                    return;
+                }
+                const result = await ipcRenderer.invoke('product-publish:test-model');
+                await rememberProductPublishModel(model);
+                appendTemplateLog('success', `模型可用：${model}`);
+                await showNoticeDialog('测试模型', result?.content ? `模型可用：${model}\n\n返回：${String(result.content).trim()}` : `模型可用：${model}`);
+            } catch (error) {
+                appendTemplateLog('error', error.message || '测试模型失败');
+                await showCopyableErrorDialog('测试模型失败', error.message || '测试模型失败');
+            }
+        }
+
+        function getProductPublishFriendlyErrorMessage(error) {
+            const text = String(error?.message || error || '').trim();
+            if (!text) return '生成标题失败';
+            if (text.includes('429') || text.includes('Concurrency limit exceeded') || text.includes('rate_limit_error')) {
+                return '当前 AI 接口繁忙，请稍后再试。';
+            }
+            return text;
+        }
+
+        async function generateProductPublishTitleById(recordIdEncoded, options = {}) {
+            const opts = {
+                silent: false,
+                preserveBatchState: false,
+                ...options
+            };
+            const recordId = decodeURIComponent(recordIdEncoded || '');
+            const record = productPublishState.records.find((item) => item.id === recordId);
+            if (!record) {
+                if (!opts.silent) {
+                    await showNoticeDialog('生成标题', '请先选择一条产品记录。');
+                }
+                return { ok: false, reason: 'missing-record' };
+            }
+            if (!String(productPublishState.config.aiApiUrl || '').trim() || !String(productPublishState.config.aiModel || '').trim()) {
+                if (!opts.silent) {
+                    await showNoticeDialog('生成标题', '请先点击 AI配置，填写接口地址和模型名称。');
+                }
+                return { ok: false, reason: 'missing-config' };
+            }
+            try {
+                productPublishState.generatingRecordId = record.id;
+                record.generationState = 'generating';
+                record.generationMessage = '';
+                persistProductPublishData();
+                renderProductPublishRecordList();
+                renderProductPublishDetail();
+                const result = await ipcRenderer.invoke('product-publish:generate-title', { record });
+                record.titleEn = String(result?.titleEn || '').trim();
+                record.titleZh = String(result?.titleZh || '').trim();
+                record.titleStatus = record.titleEn || record.titleZh ? 'generated' : 'pending';
+                record.generationState = 'idle';
+                record.generationMessage = '';
+                record.updatedAt = new Date().toISOString();
+                await rememberProductPublishModel(String(productPublishState.config.aiModel || '').trim());
+                persistProductPublishData();
+                renderProductPublishModule();
+                return { ok: true };
+            } catch (error) {
+                const friendlyMessage = getProductPublishFriendlyErrorMessage(error);
+                record.generationState = 'failed';
+                record.generationMessage = friendlyMessage;
+                appendTemplateLog('error', friendlyMessage);
+                persistProductPublishData();
+                renderProductPublishRecordList();
+                if (!opts.silent) {
+                    await showCopyableErrorDialog('生成标题失败', error.message || friendlyMessage);
+                }
+                return { ok: false, reason: 'request-failed', message: friendlyMessage };
+            } finally {
+                productPublishState.generatingRecordId = '';
+                if (!opts.preserveBatchState) {
+                    productPublishState.generatingAll = false;
+                }
+                if (!productPublishState.selectedRecordId && productPublishState.records.length) {
+                    productPublishState.selectedRecordId = productPublishState.records[0].id;
+                }
+                renderProductPublishDetail();
+            }
+        }
+
+        async function generateSelectedProductPublishTitle() {
+            let record = getSelectedProductPublishRecord();
+            if (!record && productPublishState.records.length) {
+                productPublishState.selectedRecordId = productPublishState.records[0].id;
+                record = getSelectedProductPublishRecord();
+                renderProductPublishModule();
+            }
+            if (!record) {
+                await showNoticeDialog('生成标题', '请先选择一条产品记录。');
+                return;
+            }
+            await generateProductPublishTitleById(encodeURIComponent(record.id));
+        }
+
+        async function generateAllProductPublishTitles() {
+            if (!productPublishState.records.length) {
+                appendTemplateLog('warn', '当前没有可生成标题的产品记录');
+                await showNoticeDialog('批量生成标题', '当前没有可生成标题的产品记录。');
+                return;
+            }
+            if (!String(productPublishState.config.aiApiUrl || '').trim() || !String(productPublishState.config.aiModel || '').trim()) {
+                await showNoticeDialog('批量生成标题', '请先点击 AI配置，填写接口地址和模型名称。');
+                return;
+            }
+            if (!productPublishState.selectedRecordId && productPublishState.records.length) {
+                productPublishState.selectedRecordId = productPublishState.records[0].id;
+            }
+            productPublishState.generatingAll = true;
+            renderProductPublishDetail();
+            let successCount = 0;
+            let failCount = 0;
+            try {
+                for (const record of productPublishState.records) {
+                    const result = await generateProductPublishTitleById(encodeURIComponent(record.id), {
+                        silent: true,
+                        preserveBatchState: true
+                    });
+                    if (result?.ok) {
+                        successCount += 1;
+                    } else {
+                        failCount += 1;
+                    }
+                }
+            } finally {
+                productPublishState.generatingAll = false;
+                productPublishState.generatingRecordId = '';
+                if (!productPublishState.selectedRecordId && productPublishState.records.length) {
+                    productPublishState.selectedRecordId = productPublishState.records[0].id;
+                }
+                renderProductPublishDetail();
+            }
+            appendTemplateLog('success', `批量生成完成：成功 ${successCount} 条，失败 ${failCount} 条`);
+        }
+
+        async function exportProductPublishRecords(recordIdEncoded = '') {
+            const targetId = decodeURIComponent(recordIdEncoded || '');
+            const records = targetId
+                ? productPublishState.records.filter((item) => item.id === targetId)
+                : productPublishState.records;
+            if (!records.length) {
+                appendTemplateLog('warn', '当前没有可导出的产品记录');
+                return;
+            }
+            try {
+                const result = await ipcRenderer.invoke('product-publish:export-temu-sheet', { records, bulk: getProductPublishExportTemplateDefaults() });
+                if (!result?.canceled) {
+                    appendTemplateLog('success', `产品发布表格已导出：${result.filePath}`);
+                }
+            } catch (error) {
+                appendTemplateLog('error', error.message || '导出产品发布表格失败');
+            }
+        }
+
+        async function importTemplateTaskToProductPublish(encodedKey) {
+            const key = decodeURIComponent(encodedKey || '');
+            const item = getTemplateGroupedResults().find((result) => result.key === key);
+            if (!item) {
+                appendTemplateLog('warn', '当前模板任务不存在，无法导入产品发布');
+                return;
+            }
+            try {
+                const data = await ipcRenderer.invoke('product-publish:import-template-task', {
+                    sourceTaskKey: item.key,
+                    groupName: item.groupName,
+                    outputDir: item.outputDir,
+                    designName: item.designName,
+                    sceneNames: item.sceneNames,
+                    images: Array.isArray(item.children)
+                        ? item.children.map((child, index) => ({
+                            id: `image-${index + 1}`,
+                            name: child.name || pathUtil.basename(child.path || ''),
+                            path: child.path || '',
+                            sceneName: child.sceneName || ''
+                        }))
+                        : []
+                });
+                productPublishState.records = Array.isArray(data?.records)
+                    ? data.records.map((record, index) => normalizeProductPublishRecord(record, index))
+                    : productPublishState.records;
+                const selected = productPublishState.records.find((record) => record.sourceTaskKey === item.key);
+                productPublishState.selectedRecordId = selected?.id || productPublishState.records[0]?.id || '';
+                renderProductPublishModule();
+                switchTab('product-publish');
+                appendTemplateLog('success', `已导入到产品发布：${item.groupName}`);
+            } catch (error) {
+                appendTemplateLog('error', error.message || '导入产品发布失败');
+            }
         }
 
         function persistTemplateConfig() {
@@ -8506,7 +10734,6 @@
             const groupHtml = templateState.availableTemplates.map((item) => {
                 const invalidClass = item.valid ? '' : ' invalid';
                 const selectedClass = templateState.selectedTemplates.includes(item.name) ? ' selected' : '';
-                const activeClass = item.name === getPreferredPreviewTemplateGroupName() ? ' active' : '';
                 const draggingClass = item.name === templateState.dragGroupName ? ' dragging' : '';
                 const dragOverClass = item.name === templateState.dragTargetGroupName ? ' drag-over' : '';
                 const meta = getTemplateGroupMeta(item);
@@ -8516,7 +10743,7 @@
                     : `<div class="template-preview-list-thumb" data-template-group-thumb="${escapeHtml(item.name)}"></div>`;
                 const encodedGroup = encodeURIComponent(item.name);
                 return `
-                    <div class="template-option${invalidClass}${selectedClass}${activeClass}${draggingClass}${dragOverClass}" data-template-group-item="${escapeHtml(item.name)}" draggable="true" ondragstart="startTemplateGroupDrag('${encodedGroup}', event)" ondragover="handleTemplateGroupDragOver('${encodedGroup}', event)" ondrop="handleTemplateGroupDrop('${encodedGroup}', event)" ondragend="endTemplateGroupDrag()" onclick="toggleTemplateSelectedGroupCard('${encodedGroup}', event)">
+                    <div class="template-option${invalidClass}${selectedClass}${draggingClass}${dragOverClass}" data-template-group-item="${escapeHtml(item.name)}" draggable="true" ondragstart="startTemplateGroupDrag('${encodedGroup}', event)" ondragover="handleTemplateGroupDragOver('${encodedGroup}', event)" ondrop="handleTemplateGroupDrop('${encodedGroup}', event)" ondragend="endTemplateGroupDrag()" onclick="toggleTemplateSelectedGroupCard('${encodedGroup}', event)">
                         ${previewHtml}
                         <div class="template-option-content">
                             <div class="template-option-head">
@@ -11635,9 +13862,10 @@
 
         function renderTemplateResultActionButtons(item, variant = 'default') {
             const editButton = `<button class="btn btn-secondary" type="button" onclick="editTemplateResultTask('${encodeURIComponent(item.key || '')}')">编辑</button>`;
+            const importButton = `<button class="btn btn-secondary" type="button" onclick="importTemplateTaskToProductPublish('${encodeURIComponent(item.key || '')}')">导入产品发布</button>`;
             const viewButton = `<button class="btn btn-secondary" type="button" onclick="openTemplateResultFile(decodeURIComponent('${encodeURIComponent(item.primaryPath || item.path || '')}'))">查看</button>`;
             const openButton = `<button class="btn btn-secondary" type="button" onclick="openTemplateResultDir(decodeURIComponent('${encodeURIComponent(item.outputDir || '')}'))">打开</button>`;
-            return `${editButton}${viewButton}${openButton}`;
+            return `${editButton}${importButton}${viewButton}${openButton}`;
         }
 
         function renderTemplateResultCard(item) {
