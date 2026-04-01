@@ -255,6 +255,10 @@ function getDefaultTemplateOutputDir() {
     return path.join(app.getPath('pictures'), 'ImageFlow智能模板结果');
 }
 
+function getDefaultProductPublishOutputDir() {
+    return path.join(app.getPath('documents'), 'ImageFlow产品发布');
+}
+
 function loadTemplateConfig() {
     const defaults = {
         outputDir: getDefaultTemplateOutputDir(),
@@ -368,6 +372,7 @@ function createDefaultProductPublishConfig() {
         exportTemplateDefaults: {
             mainCodePrefix: 'A',
             categoryId: '124300',
+            outputDir: getDefaultProductPublishOutputDir(),
             urlPrefix: '',
             ossBucket: '',
             ossRegion: '',
@@ -397,9 +402,70 @@ function createDefaultProductPublishConfig() {
 function normalizeProductPublishAiProvider(value) {
     const provider = String(value || '').trim().toLowerCase();
     if (provider === 'openai') return 'openai';
+    if (provider === 'gemini') return 'gemini';
+    if (provider === 'claude') return 'claude';
     if (provider === 'text') return 'text';
     return 'auto';
 }
+
+const PRODUCT_PUBLISH_GEMINI_MODELS = [
+    'gemini-1.5-flash',
+    'gemini-1.5-pro',
+    'gemini-2.0-flash',
+    'gemini-2.0-flash-exp',
+    'gemini-2.0-flash-exp-image-generation',
+    'gemini-2.0-flash-thinking-exp',
+    'gemini-2.5-flash',
+    'gemini-2.5-flash-image',
+    'gemini-2.5-flash-image-preview',
+    'gemini-2.5-pro',
+    'gemini-3-pro-preview',
+    'gemini-3-pro-image-preview',
+    'gemini-3.1-flash-image-preview',
+    'gemini-embedding-001',
+    'gemini-image-editing'
+];
+
+const PRODUCT_PUBLISH_CLAUDE_MODELS = [
+    'claude-3-haiku',
+    'claude-3-sonnet',
+    'claude-3-opus',
+    'claude-3-5-haiku',
+    'claude-3-5-haiku-latest',
+    'claude-3-5-sonnet',
+    'claude-3-5-sonnet-latest',
+    'claude-3-7-sonnet',
+    'claude-3-7-sonnet-latest',
+    'claude-4-sonnet',
+    'claude-4-opus',
+    'claude-sonnet-4-20250514',
+    'claude-opus-4-20250514'
+];
+
+const PRODUCT_PUBLISH_GATEWAY_EXTRA_MODELS = [
+    'chatgpt-4o-latest',
+    'gpt-4.1',
+    'gpt-4.1-mini',
+    'gpt-4o',
+    'gpt-4o-mini',
+    'gpt-5',
+    'gpt-5.4',
+    'o3',
+    'o3-pro',
+    'o4-mini',
+    'deepseek-chat',
+    'deepseek-reasoner',
+    'grok-3',
+    'glm4',
+    'glm-4',
+    'glm-4-plus',
+    'qwen-max',
+    'qwen-plus',
+    'qwen-turbo',
+    'qwen2.5-72b-instruct',
+    'kimi-k2',
+    'doubao-seedance-1-5-pro-251215'
+];
 
 function loadProductPublishConfig() {
     const defaults = createDefaultProductPublishConfig();
@@ -422,6 +488,14 @@ function saveProductPublishConfig(cfg) {
     nextCfg.aiModelHistory = Array.from(new Set((Array.isArray(nextCfg.aiModelHistory) ? nextCfg.aiModelHistory : [])
         .map((item) => String(item || '').trim())
         .filter(Boolean))).slice(0, 30);
+    nextCfg.exportTemplateDefaults = {
+        ...createDefaultProductPublishConfig().exportTemplateDefaults,
+        ...(nextCfg.exportTemplateDefaults || {})
+    };
+    nextCfg.exportTemplateDefaults.outputDir = normalizeDirectoryPath(
+        nextCfg.exportTemplateDefaults.outputDir,
+        getDefaultProductPublishOutputDir()
+    );
     fs.writeFileSync(PRODUCT_PUBLISH_CONFIG_FILE, JSON.stringify(nextCfg, null, 2), 'utf-8');
     return nextCfg;
 }
@@ -487,6 +561,9 @@ function normalizeProductPublishRecord(record, index = 0) {
         urls,
         urlStatus: String(record?.urlStatus || (urls.length ? 'ready' : 'pending')).trim() || 'pending',
         exportStatus: String(record?.exportStatus || 'idle').trim() || 'idle',
+        exportedAt: String(record?.exportedAt || '').trim(),
+        exportFilePath: String(record?.exportFilePath || '').trim(),
+        exportFileName: String(record?.exportFileName || '').trim(),
         createdAt: String(record?.createdAt || new Date().toISOString()),
         updatedAt: String(record?.updatedAt || new Date().toISOString())
     };
@@ -708,7 +785,7 @@ function uploadBufferToOss(buffer, contentType, objectKey, ossCfg) {
     });
 }
 
-async function uploadProductPublishRecordImagesToOss(record, cfg) {
+async function uploadProductPublishRecordImagesToOss(record, cfg, onProgress = null) {
     const ossCfg = getProductPublishOssConfig(cfg);
     if (!isProductPublishOssConfigured(ossCfg)) {
         return [];
@@ -719,15 +796,57 @@ async function uploadProductPublishRecordImagesToOss(record, cfg) {
         const image = images[index];
         const imagePath = String(image?.path || '').trim();
         if (!imagePath || !fs.existsSync(imagePath)) continue;
+        if (typeof onProgress === 'function') {
+            onProgress({
+                phase: 'uploading',
+                recordName: String(record?.groupName || '').trim() || '未命名产品',
+                imageName: String(image?.name || path.basename(imagePath)).trim() || path.basename(imagePath),
+                imageIndex: index + 1,
+                imageTotal: images.length
+            });
+        }
         const buffer = fs.readFileSync(imagePath);
         const contentType = getProductPublishImageMimeType(imagePath);
         const objectKey = buildProductPublishOssObjectKey(record, image, index, ossCfg);
         const uploaded = await uploadBufferToOss(buffer, contentType, objectKey, ossCfg);
         if (uploaded?.url) {
             urls.push(uploaded.url);
+            if (typeof onProgress === 'function') {
+                onProgress({
+                    phase: 'uploaded',
+                    recordName: String(record?.groupName || '').trim() || '未命名产品',
+                    imageName: String(image?.name || path.basename(imagePath)).trim() || path.basename(imagePath),
+                    imageIndex: index + 1,
+                    imageTotal: images.length,
+                    url: uploaded.url
+                });
+            }
         }
     }
     return urls;
+}
+
+function buildProductPublishExportFileName(count = 0) {
+    const now = new Date();
+    const pad = (value) => String(value).padStart(2, '0');
+    const stamp = `${now.getFullYear()}年${pad(now.getMonth() + 1)}月${pad(now.getDate())}日_${pad(now.getHours())}${pad(now.getMinutes())}${pad(now.getSeconds())}`;
+    const total = Math.max(0, Number(count) || 0);
+    return `ImageFlow_${stamp}_产品${total}.xlsx`;
+}
+
+function ensureUniqueFilePath(filePath) {
+    if (!fs.existsSync(filePath)) {
+        return filePath;
+    }
+    const parsed = path.parse(filePath);
+    let index = 2;
+    while (true) {
+        const candidate = path.join(parsed.dir, `${parsed.name}_${index}${parsed.ext}`);
+        if (!fs.existsSync(candidate)) {
+            return candidate;
+        }
+        index += 1;
+    }
 }
 
 function buildProductPublishVisionInputs(images) {
@@ -741,6 +860,22 @@ function buildProductPublishVisionInputs(images) {
                 type: 'image_url',
                 image_url: {
                     url: `data:${mime};base64,${buffer.toString('base64')}`
+                }
+            };
+        });
+}
+
+function buildProductPublishGeminiVisionParts(images) {
+    return (Array.isArray(images) ? images : [])
+        .filter((item) => item && item.path && fs.existsSync(item.path))
+        .slice(0, 3)
+        .map((item) => {
+            const buffer = fs.readFileSync(item.path);
+            const mime = getProductPublishImageMimeType(item.path);
+            return {
+                inline_data: {
+                    mime_type: mime,
+                    data: buffer.toString('base64')
                 }
             };
         });
@@ -791,6 +926,10 @@ function importProductPublishRecordFromTemplateTask(payload) {
             designName: String(payload?.designName || existing.designName || '').trim(),
             sceneNames: Array.isArray(payload?.sceneNames) && payload.sceneNames.length ? payload.sceneNames : existing.sceneNames,
             images: normalizedImages.length ? normalizedImages : existing.images,
+            exportStatus: 'idle',
+            exportedAt: '',
+            exportFilePath: '',
+            exportFileName: '',
             updatedAt: now
         }, existingIndex);
     } else {
@@ -885,10 +1024,24 @@ function resolveAiModelsUrlCandidates(rawUrl) {
     return [...new Set(candidates.filter(Boolean))];
 }
 
-function resolveProductPublishAiProvider(cfg) {
+function isLikelyMultiProviderGateway(rawUrl) {
+    const value = String(rawUrl || '').trim().toLowerCase();
+    if (!value) return false;
+    return !/api\.openai\.com|api\.anthropic\.com|generativelanguage\.googleapis\.com/.test(value);
+}
+
+function inferProductPublishAiProviderFromModel(modelName) {
+    const model = String(modelName || '').trim().toLowerCase();
+    if (!model) return 'openai';
+    if (model.includes('gemini')) return 'gemini';
+    if (model.includes('claude')) return 'claude';
+    return 'openai';
+}
+
+function resolveProductPublishAiProvider(cfg, modelName) {
     const explicit = normalizeProductPublishAiProvider(cfg?.aiProvider);
     if (explicit !== 'auto') return explicit;
-    return 'openai';
+    return inferProductPublishAiProviderFromModel(modelName || cfg?.aiModel);
 }
 
 function buildProductPublishUserPrompt(record) {
@@ -964,12 +1117,87 @@ async function requestProductPublishChatCompletion(apiUrl, headers, body, model)
     return parseProductPublishTitleResult(payload?.choices?.[0]?.message?.content || '');
 }
 
+function resolveAiGeminiGenerateContentUrl(rawUrl, model) {
+    const value = String(rawUrl || '').trim();
+    const modelName = String(model || '').trim();
+    if (!value || !modelName) return '';
+    const normalized = value.replace(/\/+$/, '');
+    if (/\/v1beta\/models\/[^/]+:generateContent$/i.test(normalized)) {
+        return normalized.replace(/\/v1beta\/models\/[^/]+:generateContent$/i, `/v1beta/models/${modelName}:generateContent`);
+    }
+    if (/\/v1beta$/i.test(normalized)) {
+        return `${normalized}/models/${modelName}:generateContent`;
+    }
+    if (/\/v1$/i.test(normalized)) {
+        return `${normalized.replace(/\/v1$/i, '/v1beta')}/models/${modelName}:generateContent`;
+    }
+    return `${normalized}/v1beta/models/${modelName}:generateContent`;
+}
+
+function appendApiKeyQueryParam(url, apiKey) {
+    const trimmedUrl = String(url || '').trim();
+    const trimmedKey = String(apiKey || '').trim();
+    if (!trimmedUrl || !trimmedKey) return trimmedUrl;
+    return `${trimmedUrl}${trimmedUrl.includes('?') ? '&' : '?'}key=${encodeURIComponent(trimmedKey)}`;
+}
+
+function parseProductPublishGeminiTitleResult(payload) {
+    const parts = Array.isArray(payload?.candidates?.[0]?.content?.parts)
+        ? payload.candidates[0].content.parts
+        : [];
+    const text = parts
+        .map((item) => String(item?.text || '').trim())
+        .filter(Boolean)
+        .join('\n');
+    return parseProductPublishTitleResult(text);
+}
+
+async function requestProductPublishGeminiGenerateContent(apiUrl, apiKey, systemPrompt, userPrompt, images, model) {
+    const finalUrl = appendApiKeyQueryParam(apiUrl, apiKey);
+    const response = await fetch(finalUrl, {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({
+            systemInstruction: {
+                parts: [
+                    { text: systemPrompt }
+                ]
+            },
+            contents: [
+                {
+                    role: 'user',
+                    parts: [
+                        { text: userPrompt },
+                        ...buildProductPublishGeminiVisionParts(images)
+                    ]
+                }
+            ]
+        })
+    });
+    const rawText = await response.text().catch(() => '');
+    if (!response.ok) {
+        if (/model not exist|model_not_found|does not exist|invalid model/i.test(rawText)) {
+            throw new Error(`模型不存在：${model}`);
+        }
+        throw new Error(`AI 标题生成失败：${response.status}${rawText ? ` ${rawText}` : ''}`);
+    }
+    let payload = {};
+    try {
+        payload = rawText ? JSON.parse(rawText) : {};
+    } catch {
+        throw new Error(`AI 标题生成失败：接口返回的不是合法 JSON${rawText ? ` ${rawText.slice(0, 300)}` : ''}`);
+    }
+    return parseProductPublishGeminiTitleResult(payload);
+}
+
 async function detectProductPublishModels(cfg) {
     const config = {
         ...createDefaultProductPublishConfig(),
         ...(cfg || {})
     };
-    const provider = resolveProductPublishAiProvider(config);
+    const provider = resolveProductPublishAiProvider(config, config.aiModel);
     if (provider === 'text') {
         throw new Error('纯文本接口模式不支持自动识别模型，请手动填写模型名');
     }
@@ -985,6 +1213,7 @@ async function detectProductPublishModels(cfg) {
         headers.Authorization = `Bearer ${apiKey}`;
     }
     let lastError = null;
+    let detectedModels = [];
     for (const apiUrl of urls) {
         try {
             const response = await fetch(apiUrl, {
@@ -1007,16 +1236,26 @@ async function detectProductPublishModels(cfg) {
                 ? payload.data.map((item) => String(item?.id || '').trim()).filter(Boolean)
                 : [];
             if (models.length) {
-                return {
-                    models,
-                    preferredModel: models[0],
-                    provider: 'openai'
-                };
+                detectedModels = models;
+                break;
             }
             lastError = new Error('模型识别失败：接口没有返回可用模型');
         } catch (error) {
             lastError = error;
         }
+    }
+    const mergedModels = [...new Set([
+        ...detectedModels,
+        ...(isLikelyMultiProviderGateway(config.aiApiUrl) ? PRODUCT_PUBLISH_GATEWAY_EXTRA_MODELS : []),
+        ...(isLikelyMultiProviderGateway(config.aiApiUrl) ? PRODUCT_PUBLISH_CLAUDE_MODELS : []),
+        ...(isLikelyMultiProviderGateway(config.aiApiUrl) ? PRODUCT_PUBLISH_GEMINI_MODELS : [])
+    ])].filter(Boolean);
+    if (mergedModels.length) {
+        return {
+            models: mergedModels,
+            preferredModel: detectedModels[0] || mergedModels[0],
+            provider: inferProductPublishAiProviderFromModel(detectedModels[0] || mergedModels[0])
+        };
     }
     throw lastError || new Error('模型识别失败');
 }
@@ -1026,11 +1265,24 @@ async function testProductPublishModel(cfg) {
         ...createDefaultProductPublishConfig(),
         ...(cfg || {})
     };
-    const apiUrl = resolveAiChatCompletionsUrl(config.aiApiUrl);
     const apiKey = String(config.aiApiKey || '').trim();
     const model = String(config.aiModel || '').trim();
+    const provider = resolveProductPublishAiProvider(config, model);
+    const apiUrl = provider === 'gemini'
+        ? resolveAiGeminiGenerateContentUrl(config.aiApiUrl, model)
+        : resolveAiChatCompletionsUrl(config.aiApiUrl);
     if (!apiUrl || !model) {
         throw new Error('请先填写 AI 接口地址和模型名称');
+    }
+    if (provider === 'gemini') {
+        return requestProductPublishGeminiGenerateContent(
+            apiUrl,
+            apiKey,
+            'You are a model connectivity checker.',
+            'Reply with OK only.',
+            [],
+            model
+        );
     }
     const headers = {
         'Content-Type': 'application/json'
@@ -1075,10 +1327,12 @@ async function generateProductPublishTitle(record, cfg) {
         ...createDefaultProductPublishConfig(),
         ...(cfg || {})
     };
-    const provider = resolveProductPublishAiProvider(config);
-    const apiUrl = resolveAiChatCompletionsUrl(config.aiApiUrl);
     const apiKey = String(config.aiApiKey || '').trim();
     const model = String(config.aiModel || '').trim();
+    const provider = resolveProductPublishAiProvider(config, model);
+    const apiUrl = provider === 'gemini'
+        ? resolveAiGeminiGenerateContentUrl(config.aiApiUrl, model)
+        : resolveAiChatCompletionsUrl(config.aiApiUrl);
     if (!apiUrl || !model) {
         throw new Error('请先填写 AI 接口地址和模型名称');
     }
@@ -1087,12 +1341,6 @@ async function generateProductPublishTitle(record, cfg) {
     const visionInputs = buildProductPublishVisionInputs(record?.images);
     if (!visionInputs.length) {
         throw new Error('当前记录没有可供识别的图片');
-    }
-    const headers = {
-        'Content-Type': 'application/json'
-    };
-    if (apiKey) {
-        headers.Authorization = `Bearer ${apiKey}`;
     }
     const textOnlyBody = {
         model,
@@ -1105,6 +1353,22 @@ async function generateProductPublishTitle(record, cfg) {
             }
         ]
     };
+    if (provider === 'gemini') {
+        return requestProductPublishGeminiGenerateContent(
+            apiUrl,
+            apiKey,
+            systemPrompt,
+            userPrompt,
+            record?.images,
+            model
+        );
+    }
+    const headers = {
+        'Content-Type': 'application/json'
+    };
+    if (apiKey) {
+        headers.Authorization = `Bearer ${apiKey}`;
+    }
     if (provider === 'text') {
         return requestProductPublishChatCompletion(apiUrl, headers, textOnlyBody, model);
     }
@@ -3336,6 +3600,10 @@ app.whenReady().then(() => {
                     outputDir: nextRecord.outputDir,
                     sceneNames: nextRecord.sceneNames,
                     images: nextRecord.images,
+                    exportStatus: 'idle',
+                    exportedAt: '',
+                    exportFilePath: '',
+                    exportFileName: '',
                     updatedAt: now
                 }, existingIndex);
             } else {
@@ -3360,6 +3628,150 @@ app.whenReady().then(() => {
     ipcMain.handle('product-publish:test-model', async () => {
         const cfg = loadProductPublishConfig();
         return testProductPublishModel(cfg);
+    });
+
+    ipcMain.handle('product-publish:select-output-dir', async () => {
+        const currentCfg = loadProductPublishConfig();
+        const result = await dialog.showOpenDialog(mainWindow, {
+            properties: ['openDirectory', 'createDirectory'],
+            defaultPath: currentCfg.exportTemplateDefaults?.outputDir || getDefaultProductPublishOutputDir(),
+            title: '选择产品发布默认导出目录'
+        });
+        if (result.canceled || !result.filePaths.length) {
+            return currentCfg;
+        }
+        const nextCfg = saveProductPublishConfig({
+            ...currentCfg,
+            exportTemplateDefaults: {
+                ...(currentCfg.exportTemplateDefaults || {}),
+                outputDir: result.filePaths[0]
+            }
+        });
+        return nextCfg;
+    });
+
+    ipcMain.handle('product-publish:open-output-dir', async (event, dirPath) => {
+        const targetDir = normalizeDirectoryPath(dirPath, loadProductPublishConfig().exportTemplateDefaults?.outputDir || getDefaultProductPublishOutputDir());
+        ensureDir(targetDir);
+        await shell.openPath(targetDir);
+        return { outputDir: targetDir };
+    });
+
+    ipcMain.handle('product-publish:prepare-temu-sheet', async (event, payload) => {
+        const records = Array.isArray(payload?.records)
+            ? payload.records.map((item, index) => normalizeProductPublishRecord(item, index))
+            : [];
+        const exportConfig = {
+            ...createDefaultProductPublishConfig().exportTemplateDefaults,
+            ...(payload?.bulk || {})
+        };
+        if (!records.length) {
+            throw new Error('当前没有可导出的产品记录');
+        }
+        let templatePath = resolveProductPublishTemuTemplatePath();
+        if (!templatePath) {
+            const templateResult = await dialog.showOpenDialog(mainWindow, {
+                title: '选择妙手 Temu 导入模板',
+                defaultPath: app.getPath('downloads'),
+                properties: ['openFile'],
+                filters: [
+                    { name: 'Excel 模板', extensions: ['xlsx'] }
+                ]
+            });
+            if (templateResult.canceled || !Array.isArray(templateResult.filePaths) || !templateResult.filePaths[0]) {
+                return { canceled: true };
+            }
+            templatePath = templateResult.filePaths[0];
+        }
+        const sender = event.sender;
+        const totalImages = records.reduce((sum, record) => sum + ((Array.isArray(record.images) ? record.images.length : 0)), 0);
+        let uploadedCount = 0;
+        safeSend(sender, 'product-publish:export-progress', {
+            stage: 'running',
+            total: totalImages || records.length,
+            current: 0,
+            message: totalImages ? '开始上传图片并生成 URL...' : '开始整理导出数据...'
+        });
+        if (isProductPublishOssConfigured(exportConfig)) {
+            for (const record of records) {
+                const uploadedUrls = await uploadProductPublishRecordImagesToOss(record, exportConfig, (progress) => {
+                    if (progress?.phase === 'uploading') {
+                        safeSend(sender, 'product-publish:export-progress', {
+                            stage: 'running',
+                            total: totalImages || records.length,
+                            current: Math.min(uploadedCount + 1, totalImages || records.length),
+                            message: `正在转换 URL：${progress.recordName} / ${progress.imageName}`
+                        });
+                    }
+                    if (progress?.phase === 'uploaded') {
+                        uploadedCount += 1;
+                        safeSend(sender, 'product-publish:export-progress', {
+                            stage: 'running',
+                            total: totalImages || records.length,
+                            current: uploadedCount,
+                            message: `已生成 URL：${progress.recordName} / ${progress.imageName}`
+                        });
+                    }
+                });
+                if (uploadedUrls.length) {
+                    record.urls = uploadedUrls;
+                    record.urlStatus = 'ready';
+                    record.previewImageUrl = uploadedUrls[0];
+                }
+            }
+        }
+        safeSend(sender, 'product-publish:export-progress', {
+            stage: 'running',
+            total: totalImages || records.length || 1,
+            current: totalImages || records.length || 1,
+            message: '正在写入导出模板...'
+        });
+        const workbook = buildProductPublishTemuWorkbook(records, templatePath);
+        const tempFilePath = path.join(app.getPath('temp'), `imageflow-product-publish-${Date.now()}-${process.pid}.xlsx`);
+        XLSX.writeFile(workbook, tempFilePath, { compression: true });
+        const defaultFileName = buildProductPublishExportFileName(records.length);
+        safeSend(sender, 'product-publish:export-progress', {
+            stage: 'done',
+            total: totalImages || records.length || 1,
+            current: totalImages || records.length || 1,
+            message: '导出文件已准备完成，可以保存。'
+        });
+        return { canceled: false, tempFilePath, defaultFileName, templatePath };
+    });
+
+    ipcMain.handle('product-publish:finalize-temu-sheet', async (event, payload) => {
+        const tempFilePath = String(payload?.tempFilePath || '').trim();
+        if (!tempFilePath || !fs.existsSync(tempFilePath)) {
+            throw new Error('临时导出文件不存在，请重新导出。');
+        }
+        const currentCfg = loadProductPublishConfig();
+        const configuredDir = normalizeDirectoryPath(
+            payload?.outputDir || currentCfg.exportTemplateDefaults?.outputDir,
+            getDefaultProductPublishOutputDir()
+        );
+        ensureDir(configuredDir);
+        const defaultFileName = String(payload?.defaultFileName || '').trim() || buildProductPublishExportFileName(Number(payload?.recordCount) || 0);
+        let targetPath = '';
+        if (payload?.mode === 'saveAs') {
+            const saveResult = await dialog.showSaveDialog(mainWindow, {
+                title: '保存妙手 Temu 表格',
+                defaultPath: path.join(configuredDir, defaultFileName),
+                filters: [
+                    { name: 'Excel 表格', extensions: ['xlsx'] }
+                ]
+            });
+            if (saveResult.canceled || !saveResult.filePath) {
+                return { canceled: true };
+            }
+            targetPath = saveResult.filePath;
+        } else {
+            targetPath = ensureUniqueFilePath(path.join(configuredDir, defaultFileName));
+        }
+        fs.copyFileSync(tempFilePath, targetPath);
+        try {
+            fs.unlinkSync(tempFilePath);
+        } catch {}
+        return { canceled: false, filePath: targetPath };
     });
 
     ipcMain.handle('product-publish:export-temu-sheet', async (event, payload) => {
@@ -3388,17 +3800,6 @@ app.whenReady().then(() => {
             }
             templatePath = templateResult.filePaths[0];
         }
-        const defaultDir = app.getPath('documents');
-        const result = await dialog.showSaveDialog(mainWindow, {
-            title: '导出妙手 Temu 表格',
-            defaultPath: path.join(defaultDir, `ImageFlow产品发布_${new Date().toISOString().slice(0, 10)}.xlsx`),
-            filters: [
-                { name: 'Excel 表格', extensions: ['xlsx'] }
-            ]
-        });
-        if (result.canceled || !result.filePath) {
-            return { canceled: true };
-        }
         if (isProductPublishOssConfigured(exportConfig)) {
             for (const record of records) {
                 const uploadedUrls = await uploadProductPublishRecordImagesToOss(record, exportConfig);
@@ -3410,8 +3811,21 @@ app.whenReady().then(() => {
             }
         }
         const workbook = buildProductPublishTemuWorkbook(records, templatePath);
-        XLSX.writeFile(workbook, result.filePath, { compression: true });
-        return { canceled: false, filePath: result.filePath, templatePath };
+        const saveResult = await dialog.showSaveDialog(mainWindow, {
+            title: '保存妙手 Temu 表格',
+            defaultPath: path.join(
+                normalizeDirectoryPath(exportConfig.outputDir, getDefaultProductPublishOutputDir()),
+                buildProductPublishExportFileName(records.length)
+            ),
+            filters: [
+                { name: 'Excel 表格', extensions: ['xlsx'] }
+            ]
+        });
+        if (saveResult.canceled || !saveResult.filePath) {
+            return { canceled: true };
+        }
+        XLSX.writeFile(workbook, saveResult.filePath, { compression: true });
+        return { canceled: false, filePath: saveResult.filePath, templatePath };
     });
 
     ipcMain.on('classify:start-auto', (event, { sourceDir, targetDir, userName }) => {
