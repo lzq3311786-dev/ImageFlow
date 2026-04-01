@@ -202,6 +202,17 @@ function isLegacyPackagedWatermarkRoot(dirPath) {
     return path.resolve(dirPath) === path.resolve(path.join(path.dirname(process.execPath), 'watermarks'));
 }
 
+function persistTemplateConfigMigration(partialCfg) {
+    try {
+        saveTemplateConfig({
+            ...loadTemplateConfig(),
+            ...(partialCfg || {})
+        });
+    } catch {
+        // 启动时迁移不应因配置写入失败阻塞程序打开
+    }
+}
+
 function seedTemplateRootDir(targetDir) {
     const sourceDir = path.resolve(getBundledTemplateRootDir());
     const resolvedTargetDir = path.resolve(targetDir);
@@ -268,13 +279,15 @@ function saveTemplateConfig(cfg) {
 }
 
 function getTemplateRootDir(cfg = loadTemplateConfig()) {
-    let templateRootDir = normalizeDirectoryPath(cfg && cfg.templateRootDir, getDefaultTemplateRootDir());
-    if (isLegacyPackagedTemplateRoot(templateRootDir)) {
+    const savedTemplateRootDir = normalizeDirectoryPath(cfg && cfg.templateRootDir, getDefaultTemplateRootDir());
+    let templateRootDir = savedTemplateRootDir;
+    if (isLegacyPackagedTemplateRoot(savedTemplateRootDir)) {
         templateRootDir = getDefaultTemplateRootDir();
-        saveTemplateConfig({
-            ...(cfg || {}),
-            templateRootDir
-        });
+        if (fs.existsSync(savedTemplateRootDir) && path.resolve(savedTemplateRootDir) !== path.resolve(templateRootDir)) {
+            ensureDir(templateRootDir);
+            copyMissingDirectoryContents(savedTemplateRootDir, templateRootDir);
+        }
+        persistTemplateConfigMigration({ templateRootDir });
     }
     ensureDir(templateRootDir);
     seedTemplateRootDir(templateRootDir);
@@ -282,13 +295,15 @@ function getTemplateRootDir(cfg = loadTemplateConfig()) {
 }
 
 function getWatermarkDir(cfg = loadTemplateConfig()) {
-    let watermarkDir = normalizeDirectoryPath(cfg && cfg.watermarkDir, getDefaultWatermarkDir());
-    if (isLegacyPackagedWatermarkRoot(watermarkDir)) {
+    const savedWatermarkDir = normalizeDirectoryPath(cfg && cfg.watermarkDir, getDefaultWatermarkDir());
+    let watermarkDir = savedWatermarkDir;
+    if (isLegacyPackagedWatermarkRoot(savedWatermarkDir)) {
         watermarkDir = getDefaultWatermarkDir();
-        saveTemplateConfig({
-            ...(cfg || {}),
-            watermarkDir
-        });
+        if (fs.existsSync(savedWatermarkDir) && path.resolve(savedWatermarkDir) !== path.resolve(watermarkDir)) {
+            ensureDir(watermarkDir);
+            copyMissingDirectoryContents(savedWatermarkDir, watermarkDir);
+        }
+        persistTemplateConfigMigration({ watermarkDir });
     }
     ensureDir(watermarkDir);
     seedWatermarkDir(watermarkDir);
