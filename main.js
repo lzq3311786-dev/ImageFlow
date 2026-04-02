@@ -45,6 +45,53 @@ const TEMPLATE_PARAMETER_PRESETS_FILE = path.join(app.getPath('userData'), 'temp
 const PRODUCT_PUBLISH_IMAGE_EXTS = new Set(['.jpg', '.jpeg', '.png', '.webp', '.bmp']);
 const PRODUCT_PUBLISH_TEMU_TEMPLATE_NAME = '妙手Temu导入模板-非服饰类模板.xlsx';
 
+function createDefaultProductPublishTypeMappings() {
+    return [
+        { id: 'type-rug', name: '地垫', keywords: ['地垫', '门垫', '浴室垫', 'floor mat', 'doormat', 'door mat', 'bath mat', 'bathroom rug', 'entryway mat', 'accent rug', 'rug'] },
+        { id: 'type-mousepad', name: '鼠标垫', keywords: ['鼠标垫', 'mouse pad', 'mousepad', 'computer mousepad', 'gaming mousepad'] },
+        { id: 'type-coffee-machine', name: '咖啡机垫', keywords: ['咖啡机垫', 'espresso machine pad', 'coffee maker underpad', 'coffee machine pad'] }
+    ];
+}
+
+function normalizeProductPublishTypeMappings(mappings) {
+    const defaults = createDefaultProductPublishTypeMappings();
+    const fallbackMap = new Map(defaults.map((item) => [item.id, item]));
+    const source = Array.isArray(mappings) && mappings.length ? mappings : defaults;
+    const normalized = source
+        .map((item, index) => {
+            const rawId = String(item?.id || '').trim();
+            const rawName = String(item?.name || '').trim();
+            if (!rawName || rawName === '咖啡垫') return null;
+
+            return {
+                id: rawId || `product-type-${Date.now()}-${index + 1}`,
+                name: rawName,
+                // 关键词不再由用户维护，内部按类型名称和内置别名生成。
+                keywords: []
+            };
+        })
+        .filter((item) => item && item.name);
+
+    const hasCoffeeMachine = normalized.some((item) => item.id === 'type-coffee-machine' || item.name === '咖啡机垫');
+    if (!hasCoffeeMachine) {
+        normalized.push({ ...fallbackMap.get('type-coffee-machine') });
+    }
+    return normalized;
+}
+
+function getProductPublishTypeKeywords(mapping) {
+    const name = String(mapping?.name || '').trim();
+    const keywords = new Set([name.toLowerCase()]);
+    if (name === '地垫') {
+        ['门垫', '浴室垫', 'floor mat', 'doormat', 'door mat', 'bath mat', 'bathroom rug', 'entryway mat', 'accent rug', 'rug'].forEach((item) => keywords.add(item.toLowerCase()));
+    } else if (name === '鼠标垫') {
+        ['mouse pad', 'mousepad', 'computer mousepad', 'gaming mousepad'].forEach((item) => keywords.add(item.toLowerCase()));
+    } else if (name === '咖啡机垫') {
+        ['espresso machine pad', 'coffee maker underpad', 'coffee machine pad'].forEach((item) => keywords.add(item.toLowerCase()));
+    }
+    return Array.from(keywords);
+}
+
 function loadConfig() {
     try {
         const cfg = JSON.parse(fs.readFileSync(CONFIG_FILE, 'utf-8'));
@@ -363,97 +410,130 @@ function saveTemplateParameterPresets(presets) {
 
 const DEFAULT_PRODUCT_PUBLISH_PROMPT_DOC = `# Role
 
-跨境电商标题重构大师 3.5 (SEO, Vision, Auto-Filtering & Compliance Expert)
+跨境电商中英标题生成助手（Vision + SEO + Compliance）
 
 # Task
 
-根据用户提供的【产品图片】与【指定产品类型（如有）】，生成专业且高度差异化的英文 SEO 标题，并提供对应中文对照。同时严格审查敏感词汇，自动过滤违禁词，确保店铺合规安全与高效产出。
+根据当前上传图片与已锁定的产品类型，生成一组可直接用于商品发布的英文标题和中文标题。
 
-# 🖼️ Vision Processing Rules (图像识别专属逻辑)
+# Vision Rules
 
-1. 自动识别：请直接识别图片中的【核心图案/风格】以及【文字内容】。
-2. 产品类型优先：如果用户额外指定了产品类型（如鼠标垫、地垫、咖啡机垫等），必须严格按该产品类型生成，绝对不要自行改成别的产品。
-3. 多图处理：如果用户一次性发送多张图片，请综合所有图片内容，为当前产品记录生成一组统一的标题，不要逐图编号输出。
+1. 识别优先级：
+   - 产品类型已经由文件夹名称或图片名称锁定，必须严格服从，不要重新识别产品类型。
+   - 重点识别图片中的图案、风格、配色、文字内容。
+2. 图片理解范围：
+   - 只能基于当前上传图片识别，不要编造图片里没有的元素。
+   - 如果上传多张图片，请综合当前上传图片内容，为同一条产品记录生成一组统一标题，不要逐图编号输出。
+3. 稳定识别要求：
+   - 先在脑中提取稳定的识别摘要：产品类型、主图案、风格、颜色、文字内容。
+   - 标题只能使用这份稳定摘要里的信息，不要为了差异化随意替换主题词。
+   - 对地垫类产品，优先稳定识别主图案和核心风格，不要频繁改变产品名和场景词。
+4. 图案文字识别：
+   - 如果图片中有可辨认文字、标语、短句，必须提取。
+   - 英文标题里用双引号包裹文字内容。
+   - 如果图片文字是中文，英文标题中必须翻译成英文，不得保留中文字符。
 
-# 🚨 CRITICAL RULES (强制执行)
+# Critical Rules
 
-1. 长度严格限制（英文标题，包含空格和标点）：
-   - 鼠标垫 (Mouse Pad)：150 - 200 字符
-   - 其他产品（如地垫/咖啡机垫）：150 - 250 字符
+1. 长度严格限制（英文标题，包含空格和标点，必须严格命中，不可超出）：
+   - 鼠标垫（Mouse Pad）：150 - 200 字符
+   - 其他产品（如地垫、咖啡机垫）：150 - 250 字符
+   - 如果初稿超长，必须主动压缩到合规长度后再输出。
 
-2. 强制前缀（严格区分）：
-   - 地垫（或用户指定需要 2D 的产品）：英文必须以 \`[2D Flat Print]1pc \` 开头。
-   - 其他默认产品（鼠标垫/咖啡机垫）：英文必须以 \`1pc \` 开头。
+2. 强制前缀：
+   - 地垫或用户明确要求 2D 的产品：英文必须以 \`[2D Flat Print]1pc \` 开头
+   - 其他默认产品：英文必须以 \`1pc \` 开头
 
-3. 🛡️ 违禁词自动过滤与彻底净化（Safety & Compliance）：
-   - 绝对禁止在生成的标题中包含以下违禁元素及其任何同义词、衍生词或相关部件：
-     - 毒品/致幻物
-     - 武器/枪支/弹药
-     - 色情/成人
-     - 暴力/血腥
-     - 政治/敏感内容
-     - 涉及人类未成年内容
-   - 如果图片中检测到违禁词或高危元素，不要停止生成，必须彻底剔除，并替换为中性、抽象、艺术化表达。
-   - 不要输出任何额外警告说明，只返回最终标题结果。
+3. 合规过滤：
+   - 绝对禁止出现毒品、武器、色情、暴力、政治敏感、涉及人类未成年等违禁内容及其同义表达。
+   - 如果图片中存在高危元素，不要停止生成，直接净化为中性、抽象、艺术化表达。
+   - 不要输出额外警告说明，只输出最终标题。
 
-4. 输出格式（纯文本强制要求）：
-   - 只返回两行结果，不要解释，不要编号，不要代码块，不要 markdown 标题。
-   - 第一行输出英文标题。
-   - 第二行输出中文标题。
-   - 不要写 EN:、CN:、英文标题：、中文标题： 这类标签。
+4. 输出格式：
+   - 只输出两行纯文本
+   - 第一行：英文标题
+   - 第二行：中文标题
+   - 不要解释，不要编号，不要代码块，不要字段标签
 
-5. 🛑 严格语言隔离（Language Purity）：
-   - 英文标题必须是 100% 纯英文（含数字和标准标点符号），绝对禁止混入中文汉字。
-   - 中文标题必须是自然中文，不得混入英文关键词堆砌。
+5. 语言与标点要求：
+   - 英文标题必须是纯英文，不得混入中文
+   - 中文标题必须是自然中文，不要变成营销文案
+   - 英文标题必须使用标准英文标点组织结构，至少使用 3 个英文逗号分隔主要语义块
+   - 中文标题必须使用自然中文标点，至少使用 3 个中文逗号分隔主要语义块
+   - 不允许输出没有标点的一整串文本
+   - 如果初稿没有标点，必须先补全标点后再输出最终结果
 
-# 🧠 Logic Rules (内容与排版逻辑)
+# Title Logic
 
-1. 图案文字提取（强制执行）：
-   - 如果图案中包含具体文字、标语，必须提取并在英文标题中使用双引号 \`""\` 括起来。
-   - 如果原文是中文拼音或汉字，必须先翻译成英文意思，再写进英文标题，绝不保留中文字符。
+1. 英文标题目标：
+   - 先服从已锁定的产品类型
+   - 再准确描述图案、风格、文字内容
+   - 在准确基础上做 SEO 组织，不要为了 SEO 牺牲识别准确性
+   - 相同图片多次生成时，应尽量保持产品名、主图案、核心风格一致
 
-2. 负向过滤（绝对禁止出现）：
-   - 禁止材质词：移除 \`Rubber\`, \`Polyester\` 等，统一替换为 \`Non-Slip Backing\`
-   - 禁止尺寸词：移除 \`XXL\`, \`XL\` 及任何具体数字尺寸
-   - 禁止封边词：移除 \`Edge\`, \`Stitched\`, \`Locked\` 等
-   - 禁止营销/虚词：移除 \`Outdoor\`, \`Washable\`, \`Super\`, \`Best Gift\` 等
+2. 负向过滤：
+   - 移除材质词：Rubber, Polyester 等，统一替换为 \`Non-Slip Backing\`
+   - 移除尺寸词：XL, XXL, 任何具体尺寸数字
+   - 移除封边词：Edge, Stitched, Locked 等
+   - 移除营销虚词：Outdoor, Washable, Super, Best Gift 等
 
-3. 英文标题构造公式：
-   - 默认公式：\`前缀\` + \`[核心产品名]\` + \`, \` + \`[图案描述/双引号文字]\` + \`, Non-Slip Backing, \` + \`[动态长尾词 3-5 个]\`
-   - 地垫专属规则：\`Doormats\` 位置动态化，不能一直固定在最前面；如放在后半段，首部请使用 \`Floor Mat\`、\`Accent Rug\` 等泛指词替代。
+3. 英文标题结构：
+   - 前缀 + 同类通用产品名 + 图案描述/文字内容 + Non-Slip Backing + 动态长尾词
+   - 不要限制长尾词数量，必须在识别准确的前提下自然补足标题长度
+   - 当英文标题明显短于目标字符范围时，应继续补充与图片内容强相关的长尾词、用途词、风格词与场景词，直到接近目标字符范围
+   - 如果英文标题低于 150 字符，视为不合格，必须继续扩充到 150 字符以上再输出
+   - 只允许补充与当前图片真实内容、真实产品用途相关的词，不要为了凑长度堆砌无关词
+   - 标题必须有清晰逗号分段，不能写成一整串无标点文本
+   - 不要把产品名固定成唯一写法，同类产品可自然变化，但必须保持产品类别正确
+   - 地垫类可自然使用：Floor Mat, Doormat, Bathroom Rug, Accent Rug, Entryway Rug, Decorative Rug 等
+   - 鼠标垫类可自然使用：Mouse Pad, Desk Mat, Mousepad, Desktop Mat, Office Desk Mat 等
+   - 咖啡机垫类可自然使用：Coffee Machine Mat, Coffee Bar Mat, Counter Mat, Espresso Machine Pad, Appliance Mat 等
 
-# 🎲 Dynamic Keyword Pool & Anti-Repetition (动态词库与绝对去重机制)
+4. 动态词库：
+   - 鼠标垫：Office Desk Mat, Gaming Accessories, Desktop Protector, Computer Mousepad, Workstation Decor, PC Keyboard Mat, Laptop Pad, Gamer Setup, Workspace Decoration, Typing Mat, PC Table Cover, Home Office Supply, Workroom Essential, Gamer Gear
+   - 咖啡机垫：Coffee Bar Mat, Kitchen Countertop Protector, Cafe Station, Espresso Machine Pad, Table Mat, Barista Station Accessory, Kitchen Counter Decor, Espresso Bar Setup, Coffee Maker Underpad, Tea Corner Mat, Dining Table Saver
+   - 地垫：Entryway Mat, Bathroom Rug, Kitchen Floor Mat, Welcome Mat, Home Decor Carpet, Area Rug, Porch Carpet, Hallway Rug, Shower Floor Pad, Living Room Accent, Indoor Entrance Mat, Vanity Rug, Bedside Carpet
 
-批量处理时，严禁结尾使用相同关键词序列。必须随机抽取 3-5 个词打乱组合，确保每一条英文标题 SEO 尾词不同。
+# Translation Rules
 
-- 【鼠标垫词库】: Office Desk Mat, Gaming Accessories, Desktop Protector, Computer Mousepad, Workstation Decor, PC Keyboard Mat, Laptop Pad, Gamer Setup, Workspace Decoration, Typing Mat, PC Table Cover, Home Office Supply, Workroom Essential, Gamer Gear.
+1. 中文标题必须以英文标题为唯一依据，逐段直译英文标题，不得自行补充、删减或改写信息。
+2. 英文标题确定后，中文标题必须严格按英文标题的逗号分段顺序一一对应翻译。
+3. 中文标题必须与英文标题语义完全一致，不允许英文写一种内容、中文写另一种内容。
+4. 中文标题必须保留清晰分段，不能输出成没有任何标点的一整句。
+5. 前缀强映射：
+   - \`[2D Flat Print]1pc \` 对应 \`【2D平面打印】一件\`
+   - \`1pc \` 对应 \`一件\`
+6. 产品词必须准确：
+   - 鼠标垫类必须体现鼠标垫/桌垫语义，但不要固定成唯一叫法
+   - 地垫类必须体现门垫/地垫/浴室垫/装饰地毯语义，但不要固定成唯一叫法
+   - 咖啡机垫类必须体现咖啡机垫/咖啡机台垫/咖啡吧台垫语义，但不要固定成唯一叫法
 
-- 【咖啡机垫词库】: Coffee Bar Mat, Kitchen Countertop Protector, Cafe Station, Espresso Machine Pad, Table Mat, Barista Station Accessory, Kitchen Counter Decor, Espresso Bar Setup, Coffee Maker Underpad, Tea Corner Mat, Dining Table Saver.
+# Reference Examples
 
-- 【地垫词库】: Entryway Mat, Bathroom Rug, Kitchen Floor Mat, Welcome Mat, Home Decor Carpet, Area Rug, Porch Carpet, Hallway Rug, Shower Floor Pad, Living Room Accent, Indoor Entrance Mat, Vanity Rug, Bedside Carpet.
+以下示例只用于学习格式、标点和节奏，不可照抄内容：
 
-# 🌐 Translation Rules (中文翻译强制合规)
+1pc Desk Mat, Watercolor Cat Floral Pattern, "Hello Summer", Non-Slip Backing, Office Mousepad, Desktop Protector, Gamer Setup, Workspace Decoration, Computer Mouse Pad, Home Office Supply, Typing Mat
+一件 桌垫，水彩猫花卉图案，“Hello Summer”字样，防滑底，办公鼠标垫，桌面保护垫，游戏桌搭配，工作区装饰，电脑鼠标垫，居家办公用品，打字桌垫
 
-1. 中文标题必须与英文标题语义一致，不要漏掉关键产品词、主题词和风格词。
-2. 中文不要润色成夸张广告句，不要添加“可用作”“带有”“超值”等无关表达。
-3. 前缀强映射：
-   - \`[2D Flat Print]1pc \` 必须对应为 \`【2D平面打印】一件\`
-   - \`1pc \` 必须对应为 \`一件\`
-4. 产品词必须准确：
-   - 鼠标垫类中文必须明确体现鼠标垫/桌垫语义
-   - 地垫类中文必须明确体现门垫/地垫/浴室垫语义
-   - 咖啡机垫类中文必须明确体现咖啡机垫/咖啡垫语义
+[2D Flat Print]1pc Bathroom Rug, Vintage Botanical Leaves Pattern, Non-Slip Backing, Entryway Mat, Decorative Accent Rug, Kitchen Floor Mat, Indoor Entrance Rug, Hallway Carpet, Living Room Accent
+【2D平面打印】一件 浴室垫，复古植物叶片图案，防滑底，门垫，装饰地毯，厨房地垫，室内入口地毯，走廊地毯，客厅点缀地毯
 
 # Final Instruction
 
-请基于图片内容与产品类型约束，生成一组最终结果：
+请严格基于当前上传图片与产品类型约束输出最终结果：
 - 第一行：英文标题
 - 第二行：中文标题
 - 不要解释
 - 不要编号
-- 不要代码块
-- 不要输出任何额外提醒
-- 不要输出字段标签`;
+- 不要额外提醒
+- 不要输出字段标签
+- 英文标题必须带标准英文标点
+- 中文标题必须带中文标点
+- 必须先写英文标题，再把英文标题逐段翻译成中文标题
+- 中文标题不得新增英文标题中没有的信息
+- 中文标题不得省略英文标题中已有的信息
+- 先稳定识别，再生成标题，不要为了变化而变化
+- 如果结果没有标点或结构混乱，先自行修正后再输出`;
 
 function createDefaultProductPublishPromptPresets() {
     return [
@@ -514,6 +594,7 @@ function normalizeProductPublishPromptPresets(presets, selectedId = '') {
     const defaultPresets = createDefaultProductPublishPromptPresets();
     const normalized = [];
     const seenIds = new Set();
+    const hasExplicitPresets = Array.isArray(presets);
     (Array.isArray(presets) ? presets : []).forEach((preset, index) => {
         const id = String(preset?.id || `preset-${Date.now()}-${index + 1}`).trim();
         const name = String(preset?.name || '').trim();
@@ -524,17 +605,19 @@ function normalizeProductPublishPromptPresets(presets, selectedId = '') {
         seenIds.add(id);
         normalized.push({ id, name, doc });
     });
-    defaultPresets.forEach((preset) => {
-        if (seenIds.has(preset.id)) {
-            return;
-        }
-        seenIds.add(preset.id);
-        normalized.unshift({ ...preset });
-    });
+    if (!hasExplicitPresets) {
+        defaultPresets.forEach((preset) => {
+            if (seenIds.has(preset.id)) {
+                return;
+            }
+            seenIds.add(preset.id);
+            normalized.unshift({ ...preset });
+        });
+    }
     const activeId = normalized.some((preset) => preset.id === selectedId)
         ? selectedId
-        : (normalized[0]?.id || defaultPresets[0].id);
-    const activePreset = normalized.find((preset) => preset.id === activeId) || normalized[0] || defaultPresets[0];
+        : (normalized[0]?.id || '');
+    const activePreset = normalized.find((preset) => preset.id === activeId) || normalized[0] || null;
     return {
         presets: normalized,
         activeId,
@@ -682,6 +765,7 @@ function createDefaultProductPublishConfig() {
         titlePromptPresetId: 'default-general',
         titlePromptPresets: createDefaultProductPublishPromptPresets(),
         titlePromptDoc: DEFAULT_PRODUCT_PUBLISH_PROMPT_DOC,
+        productTypeMappings: createDefaultProductPublishTypeMappings(),
         exportTemplateDefaults: {
             mainCodePrefix: 'A',
             categoryId: '124300',
@@ -815,10 +899,12 @@ function loadProductPublishConfig() {
     const defaults = createDefaultProductPublishConfig();
     try {
         const parsed = JSON.parse(fs.readFileSync(PRODUCT_PUBLISH_CONFIG_FILE, 'utf-8'));
-        return {
+        const cfg = {
             ...defaults,
             ...(parsed || {})
         };
+        cfg.productTypeMappings = normalizeProductPublishTypeMappings(cfg.productTypeMappings);
+        return cfg;
     } catch {
         return defaults;
     }
@@ -829,6 +915,7 @@ function saveProductPublishConfig(cfg) {
         ...createDefaultProductPublishConfig(),
         ...(cfg || {})
     };
+    nextCfg.productTypeMappings = normalizeProductPublishTypeMappings(nextCfg.productTypeMappings);
     nextCfg.aiModelHistory = Array.from(new Set((Array.isArray(nextCfg.aiModelHistory) ? nextCfg.aiModelHistory : [])
         .map((item) => String(item || '').trim())
         .filter(Boolean))).slice(0, 30);
@@ -906,6 +993,26 @@ function normalizeProductPublishImage(item, index = 0) {
     };
 }
 
+function inferProductPublishTypeFromNames(values, mappings = createDefaultProductPublishTypeMappings()) {
+    const joined = values
+        .flatMap((value) => Array.isArray(value) ? value : [value])
+        .map((value) => String(value || '').trim().toLowerCase())
+        .filter(Boolean)
+        .join(' ');
+    if (!joined) return '';
+    for (const mapping of Array.isArray(mappings) ? mappings : []) {
+        const name = String(mapping?.name || '').trim();
+        const keywords = getProductPublishTypeKeywords(mapping);
+        if (!name || !keywords.length) continue;
+        const matched = keywords.some((keyword) => {
+            const normalized = String(keyword || '').trim().toLowerCase();
+            return normalized && joined.includes(normalized);
+        });
+        if (matched) return name;
+    }
+    return '其他';
+}
+
 function normalizeProductPublishRecord(record, index = 0) {
     const id = String(record?.id || `product-${Date.now()}-${index + 1}`).trim() || `product-${Date.now()}-${index + 1}`;
     const legacyTitle = String(record?.title || '').trim();
@@ -920,11 +1027,34 @@ function normalizeProductPublishRecord(record, index = 0) {
     const images = Array.isArray(record?.images)
         ? record.images.map((item, itemIndex) => normalizeProductPublishImage(item, itemIndex)).filter((item) => item.path)
         : [];
+    const titleHistory = Array.isArray(record?.titleHistory)
+        ? record.titleHistory
+            .map((item, itemIndex) => {
+                const historyTitleEn = String(item?.titleEn || '').trim();
+                const historyTitleZh = String(item?.titleZh || '').trim();
+                if (!historyTitleEn && !historyTitleZh) return null;
+                return {
+                    id: String(item?.id || `title-history-${id}-${itemIndex + 1}`).trim() || `title-history-${id}-${itemIndex + 1}`,
+                    titleEn: historyTitleEn,
+                    titleZh: historyTitleZh,
+                    createdAt: String(item?.createdAt || item?.updatedAt || new Date().toISOString()).trim() || new Date().toISOString()
+                };
+            })
+            .filter(Boolean)
+            .slice(0, 20)
+        : [];
+    const inferredProductType = inferProductPublishTypeFromNames([
+        record?.groupName || '',
+        record?.designName || '',
+        Array.isArray(record?.sceneNames) ? record.sceneNames : [],
+        images.map((item) => item.name),
+        images.map((item) => item.sceneName)
+    ]);
     return {
         id,
         sourceTaskKey: String(record?.sourceTaskKey || '').trim(),
         groupName: String(record?.groupName || '').trim(),
-        productType: String(record?.productType || '').trim(),
+        productType: String(inferredProductType || record?.productType || '').trim(),
         categoryId: String(record?.categoryId || '').trim(),
         mainCode: String(record?.mainCode || record?.groupName || '').trim(),
         shipLeadTime: String(record?.shipLeadTime || '').trim(),
@@ -951,6 +1081,7 @@ function normalizeProductPublishRecord(record, index = 0) {
         images,
         titleEn,
         titleZh,
+        titleHistory,
         titleStatus,
         urls,
         urlStatus: String(record?.urlStatus || (urls.length ? 'ready' : 'pending')).trim() || 'pending',
@@ -1246,7 +1377,7 @@ function ensureUniqueFilePath(filePath) {
 function buildProductPublishVisionInputs(images) {
     return (Array.isArray(images) ? images : [])
         .filter((item) => item && item.path && fs.existsSync(item.path))
-        .slice(0, 3)
+        .slice(0, 1)
         .map((item) => {
             const buffer = fs.readFileSync(item.path);
             const mime = getProductPublishImageMimeType(item.path);
@@ -1262,7 +1393,7 @@ function buildProductPublishVisionInputs(images) {
 function buildProductPublishGeminiVisionParts(images) {
     return (Array.isArray(images) ? images : [])
         .filter((item) => item && item.path && fs.existsSync(item.path))
-        .slice(0, 3)
+        .slice(0, 1)
         .map((item) => {
             const buffer = fs.readFileSync(item.path);
             const mime = getProductPublishImageMimeType(item.path);
@@ -1305,9 +1436,17 @@ function importProductPublishRecordFromTemplateTask(payload) {
     if (!sourceTaskKey || !groupName) {
         throw new Error('缺少模板任务信息，无法导入产品发布');
     }
+    const cfg = loadProductPublishConfig();
     const normalizedImages = Array.isArray(payload?.images)
         ? payload.images.map((item, index) => normalizeProductPublishImage(item, index)).filter((item) => item.path)
         : [];
+    const inferredProductType = inferProductPublishTypeFromNames([
+        payload?.groupName || '',
+        payload?.designName || '',
+        Array.isArray(payload?.sceneNames) ? payload.sceneNames : [],
+        normalizedImages.map((item) => item.name),
+        normalizedImages.map((item) => item.sceneName)
+    ], cfg.productTypeMappings);
     const existingIndex = currentData.records.findIndex((item) => item.sourceTaskKey === sourceTaskKey);
     const now = new Date().toISOString();
     if (existingIndex >= 0) {
@@ -1315,6 +1454,7 @@ function importProductPublishRecordFromTemplateTask(payload) {
         currentData.records[existingIndex] = normalizeProductPublishRecord({
             ...existing,
             groupName,
+            productType: inferredProductType || existing.productType || '',
             mainCode: String(existing.mainCode || groupName || '').trim(),
             outputDir: String(payload?.outputDir || existing.outputDir || '').trim(),
             designName: String(payload?.designName || existing.designName || '').trim(),
@@ -1331,6 +1471,7 @@ function importProductPublishRecordFromTemplateTask(payload) {
             id: `product-${Date.now()}`,
             sourceTaskKey,
             groupName,
+            productType: inferredProductType,
             mainCode: groupName,
             outputDir: String(payload?.outputDir || '').trim(),
             designName: String(payload?.designName || '').trim(),
@@ -1438,23 +1579,56 @@ function resolveProductPublishAiProvider(cfg, modelName) {
     return inferProductPublishAiProviderFromModel(modelName || cfg?.aiModel);
 }
 
-function buildProductPublishUserPrompt(record) {
+function buildProductPublishUserPrompt(record, promptDoc = '') {
     const sceneNames = Array.isArray(record?.sceneNames) && record.sceneNames.length
         ? record.sceneNames.join('、')
         : '未命名场景';
     const imageCount = Array.isArray(record?.images) ? record.images.length : 0;
     const productType = String(record?.productType || '').trim();
-    return [
+    const sections = [
+        String(promptDoc || '').trim(),
         `产品模板组：${record?.groupName || '未命名产品'}`,
-        `产品类型：${productType || '未指定，请根据图片识别'}`,
+        `产品类型：${productType || '其他（已按文件夹名或图片名锁定，请严格服从，不要重新识别产品类型）'}`,
         `场景列表：${sceneNames}`,
         `图片数量：${imageCount}`,
-        '请综合识别这些图片内容，只返回两行：第一行英文标题，第二行中文标题。不要解释，不要编号，不要输出 EN: 或 CN: 标签。'
-    ].join('\n');
+        '请严格依据以上用户提示词与当前上传图片完成任务，不要额外发挥。'
+    ].filter(Boolean);
+    return sections.join('\n\n');
+}
+
+function shouldUseProductPublish2DPrefix(record) {
+    const joined = [
+        record?.productType || '',
+        record?.groupName || '',
+        ...(Array.isArray(record?.sceneNames) ? record.sceneNames : [])
+    ].join(' ').toLowerCase();
+    return /2d|flat print|地垫|门垫|浴室垫|floor mat|doormat|accent rug|bathroom rug|entryway mat|rug/.test(joined);
+}
+
+function stripProductPublishPrefixes(titleEn, titleZh) {
+    const cleanEn = String(titleEn || '')
+        .replace(/^\s*\[2d flat print\]\s*1pc\s*/i, '')
+        .replace(/^\s*1pc\s*/i, '')
+        .trim();
+    const cleanZh = String(titleZh || '')
+        .replace(/^\s*【2d平面打印】\s*一件\s*/i, '')
+        .replace(/^\s*一件\s*/i, '')
+        .trim();
+    return { cleanEn, cleanZh };
+}
+
+function enforceProductPublishTitleRules(record, result) {
+    const use2D = shouldUseProductPublish2DPrefix(record);
+    const { cleanEn, cleanZh } = stripProductPublishPrefixes(result?.titleEn, result?.titleZh);
+    return {
+        titleEn: `${use2D ? '[2D Flat Print]1pc ' : '1pc '}${cleanEn}`.trim(),
+        titleZh: `${use2D ? '【2D平面打印】一件' : '一件'}${cleanZh}`.trim()
+    };
 }
 
 function parseProductPublishTitleResult(rawContent) {
-    const lines = String(rawContent || '')
+    const raw = String(rawContent || '').trim();
+    const lines = raw
         .trim()
         .replace(/\r/g, '\n')
         .split('\n')
@@ -1479,7 +1653,8 @@ function parseProductPublishTitleResult(rawContent) {
         titleZh = titleZh || lines[1].replace(/^["“”']+|["“”']+$/g, '');
     }
     if (!titleEn || !titleZh) {
-        throw new Error('AI 未返回可用的中英双标题');
+        const rawPreview = raw ? raw.slice(0, 1200) : '(空)';
+        throw new Error(`AI 未返回可用的中英双标题。\n\nAI 原始返回：\n${rawPreview}`);
     }
     return { titleEn, titleZh };
 }
@@ -1546,7 +1721,7 @@ function parseProductPublishGeminiTitleResult(payload) {
     return parseProductPublishTitleResult(text);
 }
 
-async function requestProductPublishGeminiGenerateContent(apiUrl, apiKey, systemPrompt, userPrompt, images, model) {
+async function requestProductPublishGeminiGenerateContent(apiUrl, apiKey, userPrompt, images, model) {
     const finalUrl = appendApiKeyQueryParam(apiUrl, apiKey);
     const response = await fetch(finalUrl, {
         method: 'POST',
@@ -1554,10 +1729,9 @@ async function requestProductPublishGeminiGenerateContent(apiUrl, apiKey, system
             'Content-Type': 'application/json'
         },
         body: JSON.stringify({
-            systemInstruction: {
-                parts: [
-                    { text: systemPrompt }
-                ]
+            generationConfig: {
+                temperature: 0.2,
+                topP: 0.2
             },
             contents: [
                 {
@@ -1730,17 +1904,17 @@ async function generateProductPublishTitle(record, cfg) {
     if (!apiUrl || !model) {
         throw new Error('请先填写 AI 接口地址和模型名称');
     }
-    const systemPrompt = String(config.titlePromptDoc || '').trim() || createDefaultProductPublishConfig().titlePromptDoc;
-    const userPrompt = buildProductPublishUserPrompt(record);
+    const promptDoc = String(config.titlePromptDoc || '').trim() || createDefaultProductPublishConfig().titlePromptDoc;
+    const userPrompt = buildProductPublishUserPrompt(record, promptDoc);
     const visionInputs = buildProductPublishVisionInputs(record?.images);
     if (!visionInputs.length) {
         throw new Error('当前记录没有可供识别的图片');
     }
     const textOnlyBody = {
         model,
-        temperature: 0.7,
+        temperature: 0.2,
+        top_p: 0.2,
         messages: [
-            { role: 'system', content: systemPrompt },
             {
                 role: 'user',
                 content: userPrompt
@@ -1748,14 +1922,14 @@ async function generateProductPublishTitle(record, cfg) {
         ]
     };
     if (provider === 'gemini') {
-        return requestProductPublishGeminiGenerateContent(
+        const result = await requestProductPublishGeminiGenerateContent(
             apiUrl,
             apiKey,
-            systemPrompt,
             userPrompt,
             record?.images,
             model
         );
+        return enforceProductPublishTitleRules(record, result);
     }
     const headers = {
         'Content-Type': 'application/json'
@@ -1764,13 +1938,14 @@ async function generateProductPublishTitle(record, cfg) {
         headers.Authorization = `Bearer ${apiKey}`;
     }
     if (provider === 'text') {
-        return requestProductPublishChatCompletion(apiUrl, headers, textOnlyBody, model);
+        const result = await requestProductPublishChatCompletion(apiUrl, headers, textOnlyBody, model);
+        return enforceProductPublishTitleRules(record, result);
     }
     const visionBody = {
             model,
-            temperature: 0.7,
+            temperature: 0.2,
+            top_p: 0.2,
             messages: [
-                { role: 'system', content: systemPrompt },
                 {
                     role: 'user',
                     content: [
@@ -1784,13 +1959,16 @@ async function generateProductPublishTitle(record, cfg) {
             ]
         };
     try {
-        return await requestProductPublishChatCompletion(apiUrl, headers, visionBody, model);
+        const result = await requestProductPublishChatCompletion(apiUrl, headers, visionBody, model);
+        return enforceProductPublishTitleRules(record, result);
     } catch (error) {
         if (provider === 'openai' && isProductPublishVisionUnsupportedError(error.message || '')) {
-            return requestProductPublishChatCompletion(apiUrl, headers, textOnlyBody, model);
+            const result = await requestProductPublishChatCompletion(apiUrl, headers, textOnlyBody, model);
+            return enforceProductPublishTitleRules(record, result);
         }
         if (provider === 'auto' && isProductPublishVisionUnsupportedError(error.message || '')) {
-            return requestProductPublishChatCompletion(apiUrl, headers, textOnlyBody, model);
+            const result = await requestProductPublishChatCompletion(apiUrl, headers, textOnlyBody, model);
+            return enforceProductPublishTitleRules(record, result);
         }
         throw error;
     }
@@ -1854,10 +2032,17 @@ function buildProductPublishRecordFromFolder(folderPath) {
         path: filePath,
         sceneName: path.basename(filePath, path.extname(filePath))
     }));
+    const cfg = loadProductPublishConfig();
+    const productType = inferProductPublishTypeFromNames([
+        groupName,
+        images.map((item) => item.name),
+        images.map((item) => item.sceneName)
+    ], cfg.productTypeMappings);
     return normalizeProductPublishRecord({
         id: `product-${Date.now()}-${Math.random().toString(36).slice(2, 8)}`,
         sourceTaskKey: `folder::${resolvedFolder}`,
         groupName,
+        productType,
         mainCode: groupName,
         outputDir: resolvedFolder,
         designName: '',

@@ -1,0 +1,674 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Vision Probe</title>
+  <style>
+    :root {
+      --bg: #f4f1ea;
+      --panel: #fffdf9;
+      --line: #d7cfbf;
+      --text: #1f1d19;
+      --muted: #716858;
+      --accent: #17624f;
+      --accent-2: #d97706;
+      --danger: #c2410c;
+      --shadow: 0 20px 40px rgba(33, 29, 20, 0.08);
+      --radius: 16px;
+    }
+
+    * { box-sizing: border-box; }
+
+    body {
+      margin: 0;
+      font-family: "Segoe UI", "PingFang SC", "Microsoft YaHei", sans-serif;
+      background:
+        radial-gradient(circle at top left, rgba(23, 98, 79, 0.08), transparent 24%),
+        linear-gradient(180deg, #f8f5ef 0%, var(--bg) 100%);
+      color: var(--text);
+    }
+
+    .page {
+      max-width: 1320px;
+      margin: 0 auto;
+      padding: 28px;
+    }
+
+    .hero {
+      display: flex;
+      justify-content: space-between;
+      align-items: end;
+      gap: 24px;
+      margin-bottom: 20px;
+    }
+
+    .hero h1 {
+      margin: 0;
+      font-size: 32px;
+      line-height: 1;
+      letter-spacing: -0.03em;
+    }
+
+    .hero p {
+      margin: 8px 0 0;
+      color: var(--muted);
+      font-size: 14px;
+    }
+
+    .layout {
+      display: grid;
+      grid-template-columns: 420px 1fr;
+      gap: 20px;
+      align-items: start;
+    }
+
+    .panel {
+      background: var(--panel);
+      border: 1px solid rgba(121, 109, 88, 0.18);
+      border-radius: var(--radius);
+      box-shadow: var(--shadow);
+      overflow: hidden;
+    }
+
+    .panel-head {
+      padding: 18px 20px 14px;
+      border-bottom: 1px solid rgba(121, 109, 88, 0.14);
+    }
+
+    .panel-head h2 {
+      margin: 0;
+      font-size: 18px;
+    }
+
+    .panel-body {
+      padding: 18px 20px 20px;
+    }
+
+    .field {
+      display: grid;
+      gap: 8px;
+      margin-bottom: 14px;
+    }
+
+    .label {
+      font-size: 13px;
+      color: var(--muted);
+    }
+
+    input, select, textarea, button {
+      font: inherit;
+    }
+
+    input[type="text"], input[type="password"], textarea, select {
+      width: 100%;
+      border: 1px solid var(--line);
+      background: #fff;
+      color: var(--text);
+      border-radius: 12px;
+      padding: 11px 13px;
+      outline: none;
+      transition: border-color 0.2s ease, box-shadow 0.2s ease;
+    }
+
+    input:focus, textarea:focus, select:focus {
+      border-color: rgba(23, 98, 79, 0.55);
+      box-shadow: 0 0 0 4px rgba(23, 98, 79, 0.12);
+    }
+
+    textarea {
+      min-height: 124px;
+      resize: vertical;
+      line-height: 1.5;
+    }
+
+    .row {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 12px;
+    }
+
+    .actions {
+      display: flex;
+      gap: 10px;
+      flex-wrap: wrap;
+      margin-top: 8px;
+    }
+
+    button {
+      border: 0;
+      border-radius: 12px;
+      padding: 11px 16px;
+      cursor: pointer;
+      transition: transform 0.15s ease, opacity 0.15s ease, box-shadow 0.15s ease;
+    }
+
+    button:hover { transform: translateY(-1px); }
+    button:disabled { opacity: 0.5; cursor: not-allowed; transform: none; }
+
+    .btn-primary {
+      background: var(--accent);
+      color: #fff;
+      box-shadow: 0 10px 20px rgba(23, 98, 79, 0.2);
+    }
+
+    .btn-secondary {
+      background: #ece6d9;
+      color: var(--text);
+    }
+
+    .btn-ghost {
+      background: transparent;
+      color: var(--muted);
+      border: 1px solid rgba(121, 109, 88, 0.18);
+    }
+
+    .dropzone {
+      border: 1px dashed rgba(23, 98, 79, 0.36);
+      background: linear-gradient(180deg, rgba(23, 98, 79, 0.04), rgba(23, 98, 79, 0.01));
+      border-radius: 14px;
+      padding: 18px;
+      min-height: 180px;
+      display: grid;
+      place-items: center;
+      text-align: center;
+      color: var(--muted);
+      position: relative;
+      overflow: hidden;
+    }
+
+    .dropzone.dragover {
+      border-color: var(--accent);
+      background: linear-gradient(180deg, rgba(23, 98, 79, 0.10), rgba(23, 98, 79, 0.04));
+    }
+
+    .dropzone img {
+      max-width: 100%;
+      max-height: 280px;
+      display: block;
+      border-radius: 10px;
+      object-fit: contain;
+      box-shadow: 0 12px 28px rgba(31, 29, 25, 0.12);
+    }
+
+    .hint {
+      margin-top: 8px;
+      font-size: 12px;
+      color: var(--muted);
+    }
+
+    .status {
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      padding: 8px 12px;
+      border-radius: 999px;
+      background: rgba(121, 109, 88, 0.08);
+      color: var(--muted);
+      font-size: 13px;
+      margin-bottom: 12px;
+    }
+
+    .status-dot {
+      width: 8px;
+      height: 8px;
+      border-radius: 999px;
+      background: currentColor;
+    }
+
+    .status.ok { color: #15803d; background: rgba(21, 128, 61, 0.10); }
+    .status.error { color: var(--danger); background: rgba(194, 65, 12, 0.10); }
+    .status.loading { color: #1d4ed8; background: rgba(29, 78, 216, 0.10); }
+
+    .result-grid {
+      display: grid;
+      gap: 16px;
+    }
+
+    pre {
+      margin: 0;
+      white-space: pre-wrap;
+      word-break: break-word;
+      background: #f8f5ef;
+      border: 1px solid rgba(121, 109, 88, 0.16);
+      border-radius: 14px;
+      padding: 14px;
+      line-height: 1.5;
+      min-height: 180px;
+    }
+
+    .small {
+      font-size: 12px;
+      color: var(--muted);
+    }
+
+    @media (max-width: 1024px) {
+      .layout {
+        grid-template-columns: 1fr;
+      }
+    }
+  </style>
+</head>
+<body>
+  <div class="page">
+    <div class="hero">
+      <div>
+        <h1>Vision Probe</h1>
+        <p>独立识图测试页，不走 IF 的标题链，只看接口真实识图能力。</p>
+      </div>
+      <button class="btn-ghost" id="resetSettingsBtn" type="button">清空本地配置</button>
+    </div>
+
+    <div class="layout">
+      <section class="panel">
+        <div class="panel-head">
+          <h2>请求配置</h2>
+        </div>
+        <div class="panel-body">
+          <div class="field">
+            <label class="label" for="apiUrl">API 地址</label>
+            <input id="apiUrl" type="text" placeholder="例如：https://api.example.com/v1">
+          </div>
+
+          <div class="row">
+            <div class="field">
+              <label class="label" for="provider">接口类型</label>
+              <select id="provider">
+                <option value="auto">自动识别</option>
+                <option value="openai">OpenAI 兼容</option>
+                <option value="gemini">Gemini</option>
+              </select>
+            </div>
+            <div class="field">
+              <label class="label" for="model">模型名</label>
+              <input id="model" type="text" placeholder="例如：gemini-2.5-flash">
+            </div>
+          </div>
+
+          <div class="field">
+            <label class="label" for="apiKey">API Key</label>
+            <input id="apiKey" type="password" placeholder="可为空，按你的接口要求填写">
+          </div>
+
+          <div class="field">
+            <label class="label" for="systemPrompt">系统提示词</label>
+            <textarea id="systemPrompt">请严格根据当前上传图片识别内容，只做客观描述。返回中文短句即可，不要生成商品标题，不要营销，不要补充图片里看不出的内容。重点识别：产品类型、主体、图案、文字、风格、颜色。</textarea>
+          </div>
+
+          <div class="field">
+            <label class="label" for="userPrompt">用户提示词</label>
+            <textarea id="userPrompt">这张图里是什么？请用中文简洁说明：1. 产品类型 2. 主体/图案 3. 风格 4. 图片文字（如有）</textarea>
+          </div>
+
+          <div class="field">
+            <label class="label">图片</label>
+            <div class="dropzone" id="dropzone">
+              <div id="dropzoneText">
+                <div>拖拽图片到这里，或点击选择</div>
+                <div class="hint">目前默认只发送 1 张图，用来测识图能力</div>
+              </div>
+              <img id="previewImage" alt="" hidden>
+              <input id="imageInput" type="file" accept="image/*" hidden>
+            </div>
+            <div class="hint" id="imageMeta">未选择图片</div>
+          </div>
+
+          <div class="actions">
+            <button class="btn-primary" id="sendBtn" type="button">开始识图</button>
+            <button class="btn-secondary" id="detectModelsBtn" type="button">识别模型</button>
+            <button class="btn-ghost" id="copyRawBtn" type="button">复制原始返回</button>
+          </div>
+        </div>
+      </section>
+
+      <section class="panel">
+        <div class="panel-head">
+          <h2>返回结果</h2>
+        </div>
+        <div class="panel-body">
+          <div class="status" id="statusBadge">
+            <span class="status-dot"></span>
+            <span id="statusText">等待开始</span>
+          </div>
+
+          <div class="result-grid">
+            <div>
+              <div class="label">识图结果</div>
+              <pre id="resultText"></pre>
+            </div>
+            <div>
+              <div class="label">原始返回</div>
+              <pre id="rawText"></pre>
+            </div>
+            <div class="small">
+              提示：如果这里返回正常，但 IF 里生成标题不正常，问题就不在接口识图本身，而在 IF 的标题链。
+            </div>
+          </div>
+        </div>
+      </section>
+    </div>
+  </div>
+
+  <script>
+    const STORAGE_KEY = 'imageflow-vision-probe-settings-v1';
+    const els = {
+      apiUrl: document.getElementById('apiUrl'),
+      provider: document.getElementById('provider'),
+      model: document.getElementById('model'),
+      apiKey: document.getElementById('apiKey'),
+      systemPrompt: document.getElementById('systemPrompt'),
+      userPrompt: document.getElementById('userPrompt'),
+      imageInput: document.getElementById('imageInput'),
+      dropzone: document.getElementById('dropzone'),
+      dropzoneText: document.getElementById('dropzoneText'),
+      previewImage: document.getElementById('previewImage'),
+      imageMeta: document.getElementById('imageMeta'),
+      sendBtn: document.getElementById('sendBtn'),
+      detectModelsBtn: document.getElementById('detectModelsBtn'),
+      copyRawBtn: document.getElementById('copyRawBtn'),
+      resultText: document.getElementById('resultText'),
+      rawText: document.getElementById('rawText'),
+      statusBadge: document.getElementById('statusBadge'),
+      statusText: document.getElementById('statusText'),
+      resetSettingsBtn: document.getElementById('resetSettingsBtn')
+    };
+
+    let currentImage = null;
+    let lastRaw = '';
+
+    function saveSettings() {
+      const payload = {
+        apiUrl: els.apiUrl.value.trim(),
+        provider: els.provider.value,
+        model: els.model.value.trim(),
+        apiKey: els.apiKey.value,
+        systemPrompt: els.systemPrompt.value,
+        userPrompt: els.userPrompt.value
+      };
+      localStorage.setItem(STORAGE_KEY, JSON.stringify(payload));
+    }
+
+    function loadSettings() {
+      try {
+        const raw = localStorage.getItem(STORAGE_KEY);
+        if (!raw) return;
+        const data = JSON.parse(raw);
+        els.apiUrl.value = String(data.apiUrl || '');
+        els.provider.value = String(data.provider || 'auto');
+        els.model.value = String(data.model || '');
+        els.apiKey.value = String(data.apiKey || '');
+        els.systemPrompt.value = String(data.systemPrompt || els.systemPrompt.value);
+        els.userPrompt.value = String(data.userPrompt || els.userPrompt.value);
+      } catch {}
+    }
+
+    function setStatus(type, text) {
+      els.statusBadge.className = `status ${type || ''}`.trim();
+      els.statusText.textContent = text;
+    }
+
+    function resolveProvider(apiUrl, model, explicit) {
+      if (explicit && explicit !== 'auto') return explicit;
+      const lowerModel = String(model || '').toLowerCase();
+      if (lowerModel.includes('gemini')) return 'gemini';
+      const lowerUrl = String(apiUrl || '').toLowerCase();
+      if (lowerUrl.includes('generativelanguage.googleapis.com')) return 'gemini';
+      return 'openai';
+    }
+
+    function resolveOpenAiUrl(base) {
+      const value = String(base || '').trim().replace(/\/+$/, '');
+      if (!value) return '';
+      if (/\/v1\/chat\/completions$/i.test(value) || /\/chat\/completions$/i.test(value)) return value;
+      if (/\/v1$/i.test(value)) return `${value}/chat/completions`;
+      return `${value}/v1/chat/completions`;
+    }
+
+    function resolveModelsUrl(base) {
+      const value = String(base || '').trim().replace(/\/+$/, '');
+      if (!value) return '';
+      if (/\/v1\/models$/i.test(value) || /\/models$/i.test(value)) return value;
+      if (/\/v1$/i.test(value)) return `${value}/models`;
+      return `${value}/v1/models`;
+    }
+
+    function resolveGeminiUrl(base, model) {
+      const value = String(base || '').trim().replace(/\/+$/, '');
+      const modelName = String(model || '').trim();
+      if (!value || !modelName) return '';
+      if (/\/v1beta\/models\/[^/]+:generateContent$/i.test(value)) {
+        return value.replace(/\/v1beta\/models\/[^/]+:generateContent$/i, `/v1beta/models/${modelName}:generateContent`);
+      }
+      if (/\/v1beta$/i.test(value)) return `${value}/models/${modelName}:generateContent`;
+      if (/\/v1$/i.test(value)) return `${value.replace(/\/v1$/i, '/v1beta')}/models/${modelName}:generateContent`;
+      return `${value}/v1beta/models/${modelName}:generateContent`;
+    }
+
+    function appendApiKey(url, apiKey) {
+      const cleanUrl = String(url || '').trim();
+      const cleanKey = String(apiKey || '').trim();
+      if (!cleanKey) return cleanUrl;
+      return `${cleanUrl}${cleanUrl.includes('?') ? '&' : '?'}key=${encodeURIComponent(cleanKey)}`;
+    }
+
+    function stripMarkdownCodeFences(text) {
+      const raw = String(text || '').trim();
+      return raw.replace(/^```[\w-]*\n?/i, '').replace(/\n?```$/i, '').trim();
+    }
+
+    async function fileToDataUrl(file) {
+      return new Promise((resolve, reject) => {
+        const reader = new FileReader();
+        reader.onload = () => resolve(String(reader.result || ''));
+        reader.onerror = reject;
+        reader.readAsDataURL(file);
+      });
+    }
+
+    async function setImage(file) {
+      if (!file) return;
+      const dataUrl = await fileToDataUrl(file);
+      currentImage = {
+        file,
+        dataUrl,
+        mime: file.type || 'image/png',
+        name: file.name,
+        size: file.size
+      };
+      els.previewImage.src = dataUrl;
+      els.previewImage.hidden = false;
+      els.dropzoneText.hidden = true;
+      const kb = Math.max(1, Math.round(file.size / 1024));
+      els.imageMeta.textContent = `${file.name} · ${kb} KB`;
+    }
+
+    async function detectModels() {
+      saveSettings();
+      const provider = resolveProvider(els.apiUrl.value, els.model.value, els.provider.value);
+      const apiKey = els.apiKey.value.trim();
+      const url = provider === 'gemini' ? resolveModelsUrl(els.apiUrl.value) : resolveModelsUrl(els.apiUrl.value);
+      if (!url) {
+        setStatus('error', '请先填写 API 地址');
+        return;
+      }
+      setStatus('loading', '识别模型中...');
+      els.resultText.textContent = '';
+      try {
+        const headers = {};
+        if (provider !== 'gemini' && apiKey) headers.Authorization = `Bearer ${apiKey}`;
+        const finalUrl = provider === 'gemini' ? appendApiKey(url, apiKey) : url;
+        const res = await fetch(finalUrl, { headers });
+        const raw = await res.text();
+        lastRaw = raw;
+        els.rawText.textContent = raw || '(空)';
+        if (!res.ok) throw new Error(`${res.status} ${raw}`);
+        const json = raw ? JSON.parse(raw) : {};
+        let models = [];
+        if (Array.isArray(json?.data)) {
+          models = json.data.map(item => String(item?.id || '').trim()).filter(Boolean);
+        } else if (Array.isArray(json?.models)) {
+          models = json.models.map(item => String(item?.name || item?.id || '').trim()).filter(Boolean);
+        }
+        els.resultText.textContent = models.length ? models.join('\n') : '没有识别到模型列表';
+        setStatus('ok', `已识别 ${models.length} 个模型`);
+      } catch (error) {
+        els.resultText.textContent = error.message || String(error);
+        setStatus('error', '识别模型失败');
+      }
+    }
+
+    async function runVisionProbe() {
+      saveSettings();
+      if (!currentImage) {
+        setStatus('error', '请先上传图片');
+        return;
+      }
+      const apiUrl = els.apiUrl.value.trim();
+      const model = els.model.value.trim();
+      const apiKey = els.apiKey.value.trim();
+      const systemPrompt = els.systemPrompt.value.trim();
+      const userPrompt = els.userPrompt.value.trim();
+      const provider = resolveProvider(apiUrl, model, els.provider.value);
+      if (!apiUrl || !model) {
+        setStatus('error', '请先填写 API 地址和模型名');
+        return;
+      }
+
+      setStatus('loading', '识图中...');
+      els.resultText.textContent = '';
+      els.rawText.textContent = '';
+
+      try {
+        if (provider === 'gemini') {
+          const [meta, base64] = currentImage.dataUrl.split(',');
+          const mime = meta.match(/data:(.*?);base64/)?.[1] || currentImage.mime || 'image/png';
+          const finalUrl = appendApiKey(resolveGeminiUrl(apiUrl, model), apiKey);
+          const body = {
+            systemInstruction: {
+              parts: [{ text: systemPrompt }]
+            },
+            contents: [
+              {
+                role: 'user',
+                parts: [
+                  { text: userPrompt },
+                  {
+                    inlineData: {
+                      mimeType: mime,
+                      data: base64
+                    }
+                  }
+                ]
+              }
+            ]
+          };
+          const res = await fetch(finalUrl, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(body)
+          });
+          const raw = await res.text();
+          lastRaw = raw;
+          els.rawText.textContent = raw || '(空)';
+          if (!res.ok) throw new Error(`${res.status} ${raw}`);
+          const json = raw ? JSON.parse(raw) : {};
+          const text = (Array.isArray(json?.candidates?.[0]?.content?.parts) ? json.candidates[0].content.parts : [])
+            .map(item => String(item?.text || '').trim())
+            .filter(Boolean)
+            .join('\n');
+          els.resultText.textContent = stripMarkdownCodeFences(text) || '(空)';
+          setStatus('ok', '识图完成');
+          return;
+        }
+
+        const finalUrl = resolveOpenAiUrl(apiUrl);
+        const headers = { 'Content-Type': 'application/json' };
+        if (apiKey) headers.Authorization = `Bearer ${apiKey}`;
+        const body = {
+          model,
+          temperature: 0.2,
+          top_p: 0.2,
+          messages: [
+            { role: 'system', content: systemPrompt },
+            {
+              role: 'user',
+              content: [
+                { type: 'text', text: userPrompt },
+                { type: 'image_url', image_url: { url: currentImage.dataUrl } }
+              ]
+            }
+          ]
+        };
+        const res = await fetch(finalUrl, {
+          method: 'POST',
+          headers,
+          body: JSON.stringify(body)
+        });
+        const raw = await res.text();
+        lastRaw = raw;
+        els.rawText.textContent = raw || '(空)';
+        if (!res.ok) throw new Error(`${res.status} ${raw}`);
+        const json = raw ? JSON.parse(raw) : {};
+        const text = String(json?.choices?.[0]?.message?.content || '').trim();
+        els.resultText.textContent = stripMarkdownCodeFences(text) || '(空)';
+        setStatus('ok', '识图完成');
+      } catch (error) {
+        els.resultText.textContent = error.message || String(error);
+        setStatus('error', '识图失败');
+      }
+    }
+
+    function bindEvents() {
+      [
+        els.apiUrl,
+        els.provider,
+        els.model,
+        els.apiKey,
+        els.systemPrompt,
+        els.userPrompt
+      ].forEach(el => el.addEventListener('change', saveSettings));
+
+      els.dropzone.addEventListener('click', () => els.imageInput.click());
+      els.imageInput.addEventListener('change', async (event) => {
+        const file = event.target.files?.[0];
+        if (file) await setImage(file);
+      });
+
+      ['dragenter', 'dragover'].forEach(type => {
+        els.dropzone.addEventListener(type, (event) => {
+          event.preventDefault();
+          els.dropzone.classList.add('dragover');
+        });
+      });
+      ['dragleave', 'drop'].forEach(type => {
+        els.dropzone.addEventListener(type, (event) => {
+          event.preventDefault();
+          els.dropzone.classList.remove('dragover');
+        });
+      });
+      els.dropzone.addEventListener('drop', async (event) => {
+        const file = event.dataTransfer?.files?.[0];
+        if (file) await setImage(file);
+      });
+
+      els.sendBtn.addEventListener('click', runVisionProbe);
+      els.detectModelsBtn.addEventListener('click', detectModels);
+      els.copyRawBtn.addEventListener('click', async () => {
+        try {
+          await navigator.clipboard.writeText(lastRaw || els.rawText.textContent || '');
+          setStatus('ok', '原始返回已复制');
+        } catch {
+          setStatus('error', '复制失败');
+        }
+      });
+      els.resetSettingsBtn.addEventListener('click', () => {
+        localStorage.removeItem(STORAGE_KEY);
+        location.reload();
+      });
+    }
+
+    loadSettings();
+    bindEvents();
+  </script>
+</body>
+</html>

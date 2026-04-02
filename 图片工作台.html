@@ -3544,10 +3544,17 @@
             flex-wrap: nowrap;
         }
 
+        .product-publish-panel-head-left {
+            flex: 1 1 auto;
+            overflow: hidden;
+        }
+
         .product-publish-panel-title {
             font-size: 14px;
             font-weight: 700;
             color: #111827;
+            white-space: nowrap;
+            flex: 0 0 auto;
         }
 
         .product-publish-panel-count,
@@ -3556,6 +3563,55 @@
             line-height: 1;
             color: #6b7280;
             white-space: nowrap;
+        }
+        .product-publish-preset-summary {
+            flex: 1 1 auto;
+            min-width: 0;
+            color: #6b7280;
+            font-size: 12px;
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+        }
+        .product-publish-type-list {
+            display: flex;
+            flex-direction: column;
+            gap: 8px;
+            align-items: center;
+        }
+        .product-publish-type-item {
+            border: 1px solid #E9EDF3;
+            border-radius: 12px;
+            background: #FFFFFF;
+            padding: 9px 10px;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            transition: border-color 0.18s ease, box-shadow 0.18s ease, transform 0.18s ease;
+            align-self: center;
+            max-width: 100%;
+        }
+
+        .product-publish-type-item:hover {
+            border-color: #CBD5E1;
+            box-shadow: 0 8px 18px rgba(15, 23, 42, 0.06);
+            transform: translateY(-1px);
+        }
+
+        .product-publish-type-item-copy {
+            flex: 0 1 180px;
+            width: 180px;
+            max-width: 180px;
+            min-width: 0;
+        }
+
+        .product-publish-type-item .product-publish-preset-list-input {
+            font-size: 13px;
+            font-weight: 700;
+            color: #1F2937;
+            width: 100%;
+            max-width: 180px;
+            text-align: left;
         }
 
         .product-publish-inline-hint.success {
@@ -3753,6 +3809,102 @@
             box-shadow: 0 12px 30px rgba(37, 99, 235, 0.12);
         }
 
+        @keyframes productPublishDotPulse {
+            0% {
+                transform: scale(1);
+                box-shadow: 0 0 0 0 rgba(37, 99, 235, 0.30);
+            }
+            70% {
+                transform: scale(1.06);
+                box-shadow: 0 0 0 7px rgba(37, 99, 235, 0);
+            }
+            100% {
+                transform: scale(1);
+                box-shadow: 0 0 0 0 rgba(37, 99, 235, 0);
+            }
+        }
+
+        @keyframes productPublishDotBlink {
+            0%, 100% {
+                opacity: 1;
+                transform: scale(1);
+            }
+            50% {
+                opacity: 0.28;
+                transform: scale(0.84);
+            }
+        }
+
+        @keyframes productPublishDotFlash {
+            0%, 100% {
+                transform: scale(1);
+                box-shadow: 0 0 0 0 rgba(239, 68, 68, 0);
+            }
+            20% {
+                transform: scale(1.12);
+                box-shadow: 0 0 0 6px rgba(239, 68, 68, 0.12);
+            }
+            40% {
+                transform: scale(0.96);
+            }
+            60% {
+                transform: scale(1.08);
+                box-shadow: 0 0 0 4px rgba(239, 68, 68, 0);
+            }
+        }
+
+        @keyframes productPublishDoneRing {
+            0%, 100% {
+                box-shadow: 0 0 0 2px rgba(34, 197, 94, 0.14);
+            }
+            50% {
+                box-shadow: 0 0 0 3px rgba(34, 197, 94, 0.22);
+            }
+        }
+
+        .product-publish-record-dot {
+            width: 14px;
+            height: 14px;
+            border-radius: 999px;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            flex: 0 0 auto;
+            background: #94A3B8;
+            box-shadow: 0 0 0 2px rgba(148, 163, 184, 0.12);
+            transition: background 0.18s ease, box-shadow 0.18s ease, transform 0.18s ease;
+        }
+
+        .product-publish-record-dot.pending {
+            background: #94A3B8;
+            box-shadow: 0 0 0 2px rgba(148, 163, 184, 0.16);
+        }
+
+        .product-publish-record-dot.generating {
+            background: #2563EB;
+            animation: productPublishDotBlink 0.95s ease-in-out infinite;
+        }
+
+        .product-publish-record-dot.ready {
+            background: #22C55E;
+            box-shadow: 0 0 0 2px rgba(34, 197, 94, 0.18);
+        }
+
+        .product-publish-record-dot.edited {
+            background: #F59E0B;
+            animation: productPublishDotBlink 1.15s ease-in-out infinite;
+        }
+
+        .product-publish-record-dot.failed {
+            background: #EF4444;
+            animation: productPublishDotFlash 0.9s ease-out 1;
+        }
+
+        .product-publish-record-dot.done {
+            background: #16A34A;
+            animation: productPublishDoneRing 2.2s ease-in-out infinite;
+        }
+
         .product-publish-record-top {
             display: grid;
             grid-template-columns: 22px 56px minmax(0, 1fr);
@@ -3788,26 +3940,37 @@
             align-self: center;
             background: #CBD5E1;
             box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.7);
+            transition: background 0.18s ease, box-shadow 0.18s ease, opacity 0.18s ease, transform 0.18s ease;
         }
 
         .product-publish-record-status-dot.pending {
             background: #94A3B8;
         }
 
-        .product-publish-record-status-dot.generated {
+        .product-publish-record-status-dot.generated,
+        .product-publish-record-status-dot.ready {
             background: #22C55E;
+            box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.72), 0 0 0 2px rgba(34, 197, 94, 0.16);
         }
 
         .product-publish-record-status-dot.edited {
             background: #F59E0B;
+            box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.72), 0 0 0 2px rgba(245, 158, 11, 0.16);
         }
 
         .product-publish-record-status-dot.generating {
             background: #3B82F6;
+            animation: productPublishDotBlink 0.95s ease-in-out infinite;
         }
 
         .product-publish-record-status-dot.failed {
             background: #EF4444;
+            animation: productPublishDotFlash 0.9s ease-out 1;
+        }
+
+        .product-publish-record-status-dot.done {
+            background: #16A34A;
+            animation: productPublishDoneRing 2.2s ease-in-out infinite;
         }
 
         .product-publish-record-thumb {
@@ -3831,6 +3994,44 @@
             font-weight: 700;
             color: #111827;
             line-height: 1.4;
+            min-width: 0;
+            flex: 0 1 108px;
+            max-width: 108px;
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+        }
+
+        .product-publish-record-title-row {
+            display: flex;
+            align-items: center;
+            gap: 6px;
+            min-width: 0;
+        }
+
+        .product-publish-record-tag-row {
+            margin-top: 5px;
+            display: flex;
+            align-items: center;
+            gap: 6px;
+            min-width: 0;
+        }
+
+        .product-publish-record-tag {
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            flex: 0 0 auto;
+            max-width: 100%;
+            min-height: 22px;
+            padding: 0 8px;
+            border-radius: 999px;
+            background: #EEF4FF;
+            border: 1px solid #D7E5FF;
+            color: #1D4ED8;
+            font-size: 11px;
+            font-weight: 700;
+            line-height: 1;
             white-space: nowrap;
             overflow: hidden;
             text-overflow: ellipsis;
@@ -4081,6 +4282,29 @@
             max-height: min(82vh, 760px);
         }
 
+        .product-publish-type-shell {
+            width: min(340px, 100%);
+            max-height: min(62vh, 460px);
+        }
+
+        .product-publish-type-shell .product-publish-config-modal-body {
+            padding: 14px 14px 16px;
+        }
+
+        .product-publish-type-shell .product-publish-prompt-body {
+            gap: 10px;
+        }
+
+        .product-publish-type-shell .product-publish-prompt-toolbar {
+            width: 232px;
+            align-self: center;
+            justify-content: flex-start;
+        }
+
+        .product-publish-type-shell .product-publish-settings-footer {
+            padding: 0 14px 14px;
+        }
+
         .product-publish-export-body {
             display: flex;
             flex-direction: column;
@@ -4251,10 +4475,19 @@
         }
 
         .product-publish-settings-footer {
+            display: flex;
+            align-items: center;
             justify-content: flex-end;
             padding: 0 22px 22px;
             margin-top: auto;
             flex-wrap: nowrap;
+            width: 100%;
+            align-self: stretch;
+            margin-left: auto;
+        }
+
+        .product-publish-settings-footer .btn {
+            flex: 0 0 auto;
         }
 
         .product-publish-export-list {
@@ -4342,11 +4575,23 @@
             width: 100%;
         }
 
+        .product-publish-ai-field.product-publish-type-field {
+            display: flex;
+            align-items: center;
+            justify-content: flex-start;
+            gap: 10px;
+        }
+
         .product-publish-ai-label {
             font-size: 13px;
             font-weight: 700;
             color: #1A1D1F;
             line-height: 1.4;
+        }
+
+        .product-publish-ai-field.product-publish-type-field .product-publish-ai-label {
+            margin: 0;
+            flex: 0 0 auto;
         }
 
         .product-publish-ai-hint {
@@ -4360,6 +4605,8 @@
             align-items: center;
             gap: 8px;
             min-width: 0;
+            justify-content: flex-start;
+            flex-wrap: nowrap;
         }
 
         .product-publish-ai-inline .form-input,
@@ -6604,9 +6851,7 @@
                                 </div>
                                 <div class="product-publish-header-right">
                                     <div class="template-upload-actions">
-                                        <select id="productPublishHeaderPromptPreset" class="template-select product-publish-header-preset-select" data-searchable="true" onchange="handleProductPublishPromptPresetQuickChange(event, 'header')">
-                                            <option value="">通用标题</option>
-                                        </select>
+                                        <select id="productPublishHeaderPromptPreset" class="template-select product-publish-header-preset-select" data-searchable="true" onchange="handleProductPublishPromptPresetQuickChange(event, 'header')"></select>
                                         <button class="btn btn-secondary" type="button" onclick="openProductPublishPromptPresetModal()">管理预设</button>
                                         <button class="btn btn-secondary" type="button" onclick="importProductPublishFolders()">导入</button>
                                         <button class="btn btn-secondary" type="button" onclick="generateAllProductPublishTitles()">批量生成标题</button>
@@ -6621,7 +6866,6 @@
                                         <div class="product-publish-panel-head">
                                             <div class="product-publish-panel-head-left">
                                                 <div id="productPublishListTitle" class="product-publish-panel-title">产品列表</div>
-                                                <div id="productPublishListSelectedCount" class="product-publish-panel-count"></div>
                                                 <div id="productPublishListTabs" class="product-publish-list-tabs"></div>
                                             </div>
                                             <div id="productPublishListTools" class="product-publish-panel-head-right"></div>
@@ -6826,7 +7070,7 @@
                             <div class="product-publish-ai-stack">
                                 <div class="product-publish-ai-field">
                                     <span class="product-publish-ai-label">AI配置</span>
-                                    <div class="product-publish-ai-inline">
+                                    <div class="product-publish-ai-inline product-publish-type-inline">
                                         <select id="productPublishAiPresetQuick" class="template-select product-publish-preset-quick-select" data-searchable="true" onchange="handleProductPublishAiPresetQuickChange(event)">
                                             <option value="">默认AI配置</option>
                                         </select>
@@ -6847,12 +7091,14 @@
                                 <div class="product-publish-ai-field">
                                     <span class="product-publish-ai-label">预设提示词</span>
                                     <div class="product-publish-ai-inline">
-                                        <select id="productPublishAiPromptPresetQuick" class="template-select product-publish-preset-quick-select" data-searchable="true" onchange="handleProductPublishPromptPresetQuickChange(event, 'settings')">
-                                            <option value="">通用标题</option>
-                                        </select>
+                                        <select id="productPublishAiPromptPresetQuick" class="template-select product-publish-preset-quick-select" data-searchable="true" onchange="handleProductPublishPromptPresetQuickChange(event, 'settings')"></select>
                                         <button class="btn btn-secondary" type="button" onclick="openProductPublishPromptPresetModal()">管理预设</button>
                                     </div>
                                     <div class="product-publish-ai-hint">统一管理产品发布标题生成使用的提示词预设。</div>
+                                </div>
+                                <div class="product-publish-ai-field product-publish-type-field">
+                                    <span class="product-publish-ai-label">产品类型</span>
+                                    <button class="btn btn-secondary" type="button" onclick="openProductPublishTypeMappingsModal()">管理类型</button>
                                 </div>
                             </div>
                         </div>
@@ -7656,7 +7902,7 @@
     </div>
 
     <div id="productPublishOssPresetModal" class="modal-overlay">
-        <div class="product-publish-config-modal-shell product-publish-prompt-shell">
+        <div class="product-publish-config-modal-shell product-publish-prompt-shell product-publish-type-shell">
             <div class="modal-header">
                 <div>
                     <div class="modal-title">OSS配置</div>
@@ -7706,6 +7952,27 @@
             <div class="modal-actions product-publish-settings-footer">
                 <button class="btn btn-secondary" type="button" onclick="closeProductPublishOssPresetModal()">取消</button>
                 <button class="btn btn-primary" type="button" onclick="saveProductPublishOssPreset()">保存预设</button>
+            </div>
+        </div>
+    </div>
+
+    <div id="productPublishTypeMappingsModal" class="modal-overlay">
+        <div class="product-publish-config-modal-shell product-publish-type-shell">
+            <div class="modal-header">
+                <div class="modal-title">产品类型</div>
+                <button class="modal-close" type="button" onclick="closeProductPublishTypeMappingsModal()">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><path d="M6 6l12 12M18 6l-12 12"/></svg>
+                </button>
+            </div>
+            <div class="product-publish-config-modal-body product-publish-prompt-body">
+                <div class="product-publish-prompt-toolbar">
+                    <button class="btn btn-secondary" type="button" onclick="createProductPublishTypeMapping()">新建类型</button>
+                </div>
+                <div id="productPublishTypeMappingsList" class="product-publish-type-list"></div>
+            </div>
+            <div class="modal-actions product-publish-settings-footer">
+                <button class="btn btn-secondary" type="button" onclick="closeProductPublishTypeMappingsModal()">取消</button>
+                <button class="btn btn-primary" type="button" onclick="saveProductPublishTypeMappings()">保存</button>
             </div>
         </div>
     </div>
@@ -9671,6 +9938,19 @@
             const legacyTitle = String(record?.title || '');
             const titleEn = String(record?.titleEn || '').trim();
             const titleZh = String(record?.titleZh || '').trim() || ((!titleEn && legacyTitle.trim()) ? legacyTitle : '');
+            const titleHistory = Array.isArray(record?.titleHistory)
+                ? record.titleHistory.map((item, itemIndex) => {
+                    const historyTitleEn = String(item?.titleEn || '').trim();
+                    const historyTitleZh = String(item?.titleZh || '').trim();
+                    if (!historyTitleEn && !historyTitleZh) return null;
+                    return {
+                        id: String(item?.id || `title-history-${index + 1}-${itemIndex + 1}`),
+                        titleEn: historyTitleEn,
+                        titleZh: historyTitleZh,
+                        createdAt: String(item?.createdAt || item?.updatedAt || new Date().toISOString()).trim() || new Date().toISOString()
+                    };
+                }).filter(Boolean).slice(0, 20)
+                : [];
             return {
                 id: String(record?.id || `product-${Date.now()}-${index + 1}`),
                 sourceTaskKey: String(record?.sourceTaskKey || '').trim(),
@@ -9702,6 +9982,7 @@
                 images,
                 titleEn,
                 titleZh,
+                titleHistory,
                 titleStatus: ['pending', 'generated', 'edited'].includes(record?.titleStatus)
                     ? record.titleStatus
                     : ((titleEn || titleZh) ? 'generated' : 'pending'),
@@ -9718,6 +9999,43 @@
                 createdAt: String(record?.createdAt || ''),
                 updatedAt: String(record?.updatedAt || '')
             };
+        }
+
+        function createProductPublishTitleHistoryEntry(titleEn = '', titleZh = '') {
+            const nextTitleEn = String(titleEn || '').trim();
+            const nextTitleZh = String(titleZh || '').trim();
+            if (!nextTitleEn && !nextTitleZh) return null;
+            return {
+                id: `title-history-${Date.now()}-${Math.random().toString(36).slice(2, 8)}`,
+                titleEn: nextTitleEn,
+                titleZh: nextTitleZh,
+                createdAt: new Date().toISOString()
+            };
+        }
+
+        function appendProductPublishTitleHistory(record, titleEn = '', titleZh = '') {
+            if (!record) return;
+            const entry = createProductPublishTitleHistoryEntry(titleEn, titleZh);
+            if (!entry) return;
+            const history = Array.isArray(record.titleHistory) ? record.titleHistory.slice() : [];
+            const duplicateIndex = history.findIndex((item) => String(item?.titleEn || '').trim() === entry.titleEn && String(item?.titleZh || '').trim() === entry.titleZh);
+            if (duplicateIndex >= 0) {
+                const existing = history.splice(duplicateIndex, 1)[0];
+                history.unshift({
+                    ...existing,
+                    createdAt: new Date().toISOString()
+                });
+            } else {
+                history.unshift(entry);
+            }
+            record.titleHistory = history.slice(0, 20);
+        }
+
+        function formatProductPublishHistoryTime(value) {
+            const date = new Date(value);
+            if (Number.isNaN(date.getTime())) return '刚刚';
+            const pad = (num) => String(num).padStart(2, '0');
+            return `${date.getMonth() + 1}-${date.getDate()} ${pad(date.getHours())}:${pad(date.getMinutes())}`;
         }
 
         function getProductPublishTypeOptionsHtml(selectedValue = '') {
@@ -9741,6 +10059,42 @@
                 { value: '9', label: '9天' }
             ];
             return options.map((option) => `<option value="${escapeHtml(option.value)}" ${option.value === current ? 'selected' : ''}>${escapeHtml(option.label)}</option>`).join('');
+        }
+
+        function getDefaultProductPublishTypeMappingsLocal() {
+            return [
+                { id: 'type-rug', name: '地垫', keywords: ['地垫', '门垫', '浴室垫', 'floor mat', 'doormat', 'door mat', 'bath mat', 'bathroom rug', 'entryway mat', 'accent rug', 'rug'] },
+                { id: 'type-mousepad', name: '鼠标垫', keywords: ['鼠标垫', 'mouse pad', 'mousepad', 'computer mousepad', 'gaming mousepad'] },
+                { id: 'type-coffee-machine', name: '咖啡机垫', keywords: ['咖啡机垫', 'espresso machine pad', 'coffee maker underpad', 'coffee machine pad'] }
+            ];
+        }
+
+        function normalizeProductPublishTypeMappingsLocal(mappings) {
+            const defaults = getDefaultProductPublishTypeMappingsLocal();
+            const fallbackMap = new Map(defaults.map((item) => [item.id, item]));
+            const source = Array.isArray(mappings) && mappings.length ? mappings : defaults;
+            const normalized = source.map((item, index) => {
+                const rawId = String(item?.id || '').trim();
+                const rawName = String(item?.name || '').trim();
+                if (!rawName || rawName === '咖啡垫') return null;
+                return {
+                    id: rawId || `product-type-${Date.now()}-${index + 1}`,
+                    name: rawName,
+                    keywords: []
+                };
+            }).filter((item) => item && item.name);
+            if (!normalized.some((item) => item.id === 'type-coffee-machine' || item.name === '咖啡机垫')) {
+                normalized.push({ ...fallbackMap.get('type-coffee-machine') });
+            }
+            return normalized;
+        }
+
+        function normalizeProductPublishTypeMappingsDraftLocal(mappings) {
+            const source = Array.isArray(mappings) ? mappings : [];
+            return source.map((item, index) => ({
+                id: String(item?.id || `product-type-${Date.now()}-${index + 1}`).trim() || `product-type-${Date.now()}-${index + 1}`,
+                name: String(item?.name || '')
+            }));
         }
 
         function getProductPublishYesNoOptionsHtml(selectedValue = '否') {
@@ -9834,6 +10188,7 @@
                 checkedIds.push(recordId);
             }
             productPublishState.selectedRecordIds = checkedIds;
+            renderProductPublishListTools();
             renderProductPublishRecordList();
         }
 
@@ -9843,6 +10198,7 @@
             const allIds = records.map((item) => item.id);
             const allSelected = allIds.length > 0 && allIds.every((id) => isProductPublishRecordChecked(id));
             productPublishState.selectedRecordIds = allSelected ? [] : allIds;
+            renderProductPublishListTools();
             renderProductPublishRecordList();
         }
 
@@ -9853,21 +10209,17 @@
             productPublishState.selectedRecordIds = records
                 .map((item) => item.id)
                 .filter((id) => !checkedIds.has(id));
+            renderProductPublishListTools();
             renderProductPublishRecordList();
         }
 
         function renderProductPublishListTabs() {
             const host = document.getElementById('productPublishListTabs');
             const title = document.getElementById('productPublishListTitle');
-            const selectedCountHost = document.getElementById('productPublishListSelectedCount');
             const nextMode = productPublishState.listMode === 'completed' ? 'active' : 'completed';
             const nextLabel = nextMode === 'completed' ? '切换到完成列表' : '切换到产品列表';
             if (title) {
                 title.textContent = productPublishState.listMode === 'completed' ? '完成列表' : '产品列表';
-            }
-            if (selectedCountHost) {
-                const selectedCount = Array.isArray(productPublishState.selectedRecordIds) ? productPublishState.selectedRecordIds.length : 0;
-                selectedCountHost.textContent = selectedCount > 0 ? `已勾选 ${selectedCount}` : '';
             }
             if (!host) return;
             host.innerHTML = `
@@ -9884,8 +10236,9 @@
         function getProductPublishRecordStateClass(record) {
             if (record?.generationState === 'generating') return 'generating';
             if (record?.generationState === 'failed') return 'failed';
-            if (record?.titleStatus === 'generated') return 'generated';
+            if (String(record?.exportStatus || '').trim() === 'done') return 'done';
             if (record?.titleStatus === 'edited') return 'edited';
+            if (record?.titleStatus === 'generated') return 'ready';
             return 'pending';
         }
 
@@ -9952,20 +10305,24 @@
                 const subtitle = productPublishState.listMode === 'completed'
                     ? (exportedMeta || '已导出')
                     : (titlePreview || stateText);
+                const typeTag = String(record.productType || '').trim();
                 const checked = isProductPublishRecordChecked(record.id) ? 'checked' : '';
                 const encodedRecordId = encodeURIComponent(record.id);
                 return `
                 <div class="product-publish-record-card ${record.id === productPublishState.selectedRecordId ? 'active' : ''}" onclick="selectProductPublishRecord('${encodedRecordId}')">
                     <div class="product-publish-record-top">
                         <label class="task-select-check product-publish-record-check" title="勾选记录" onclick="toggleProductPublishRecordChecked('${encodedRecordId}', event)">
-                            <input type="checkbox" ${checked}>
+                            <input type="checkbox" ${checked} onclick="event.preventDefault(); event.stopPropagation();">
                         </label>
                         <div class="product-publish-record-thumb">
                             ${record.images[0]?.path ? `<img src="${toFileUrl(record.images[0].path)}" alt="${escapeHtml(record.groupName)}">` : ''}
                         </div>
                         <div class="product-publish-record-head">
                             <div class="product-publish-record-copy">
-                                <div class="product-publish-record-name">${escapeHtml(record.groupName)}</div>
+                                <div class="product-publish-record-title-row">
+                                    <div class="product-publish-record-name">${escapeHtml(record.groupName)}</div>
+                                    ${typeTag ? `<span class="product-publish-record-tag">${escapeHtml(typeTag)}</span>` : ''}
+                                </div>
                                 <div class="product-publish-record-meta" title="${escapeHtml(subtitle)}">${escapeHtml(subtitle)}</div>
                             </div>
                             <span class="product-publish-record-status-dot ${stateClass}" title="${escapeHtml(stateText)}"></span>
@@ -9979,25 +10336,18 @@
         function renderProductPublishListTools() {
             const host = document.getElementById('productPublishListTools');
             if (!host) return;
+            const selectedCount = Array.isArray(productPublishState.selectedRecordIds) ? productPublishState.selectedRecordIds.length : 0;
+            const selectedCountHtml = selectedCount > 0
+                ? `<span class="product-publish-panel-count">已勾选 ${selectedCount}</span>`
+                : '';
             if (productPublishState.listMode === 'completed') {
                 host.innerHTML = `
+                    ${selectedCountHtml}
                     <button class="btn btn-secondary" type="button" onclick="restoreCheckedProductPublishRecords()">拉回产品列表</button>
                 `;
                 return;
             }
-            const checkedRecords = getCheckedProductPublishRecords();
-            const checkedTypes = checkedRecords
-                .map((item) => String(item?.productType || '').trim())
-                .filter((item, index, array) => array.indexOf(item) === index);
-            const currentType = checkedTypes.length === 1 ? checkedTypes[0] : '';
-            host.innerHTML = `
-                <div class="product-publish-toolbar-field product-publish-toolbar-field-type product-publish-toolbar-field-plain">
-                    <select id="productPublishBulkTypeSelect" class="template-select product-publish-bulk-type" onchange="applyProductPublishTypeToChecked(event)">
-                        ${getProductPublishTypeOptionsHtml(currentType)}
-                    </select>
-                </div>
-            `;
-            initializeVirtualSelect('productPublishBulkTypeSelect');
+            host.innerHTML = `${selectedCountHtml}`;
         }
 
         function renderProductPublishDetail() {
@@ -10021,7 +10371,7 @@
                 statusHost.innerHTML = `<span class="product-publish-title-status ${titleMeta.className}">${titleMeta.text}</span>`;
             }
             if (tools) {
-                tools.innerHTML = '';
+                tools.innerHTML = `<button class="btn btn-secondary" type="button" onclick="generateSelectedProductPublishTitle()">单独生成</button>`;
             }
             detail.innerHTML = `
                 <div class="product-publish-detail-stack">
@@ -10060,6 +10410,22 @@
                         </div>
                     </div>
                     <div>
+                        <div class="product-publish-title-top" style="margin-bottom:10px;">
+                            <span class="form-label">生成历史</span>
+                            <span class="product-publish-inline-hint">${record.titleHistory.length ? `共 ${record.titleHistory.length} 条` : '暂无历史'}</span>
+                        </div>
+                        ${record.titleHistory.length ? `
+                            <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(180px,1fr));gap:8px;">
+                                ${record.titleHistory.map((item, index) => `
+                                    <button type="button" class="btn btn-secondary" style="justify-content:flex-start;min-width:0;overflow:hidden;" onclick="restoreProductPublishTitleHistory(${index})" title="${escapeHtml(item.titleZh || item.titleEn || '未命名标题')}">
+                                        <span style="flex:0 0 auto;opacity:.7;margin-right:8px;">${escapeHtml(formatProductPublishHistoryTime(item.createdAt))}</span>
+                                        <span style="overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">${escapeHtml(item.titleZh || item.titleEn || '未命名标题')}</span>
+                                    </button>
+                                `).join('')}
+                            </div>
+                        ` : '<div class="product-publish-detail-empty" style="min-height:auto;padding:12px 14px;">当前还没有生成历史。</div>'}
+                    </div>
+                    <div>
                         <div class="product-publish-panel-title" style="margin-bottom:12px;">结果预览</div>
                         <div class="product-publish-gallery">
                             ${record.images.map((image) => `
@@ -10093,6 +10459,15 @@
                     aiApiUrl: String(config?.aiApiUrl || ''),
                     aiApiKey: String(config?.aiApiKey || ''),
                     aiModel: String(config?.aiModel || ''),
+                    productTypeMappings: Array.isArray(config?.productTypeMappings)
+                        ? config.productTypeMappings.map((item, index) => ({
+                            id: String(item?.id || `product-type-${Date.now()}-${index + 1}`).trim(),
+                            name: String(item?.name || '').trim(),
+                            keywords: Array.isArray(item?.keywords)
+                                ? item.keywords.map((keyword) => String(keyword || '').trim()).filter(Boolean)
+                                : String(item?.keywords || '').split(/[,\n]/).map((keyword) => String(keyword || '').trim()).filter(Boolean)
+                        })).filter((item) => item.id && item.name)
+                        : [],
                     aiPresetId: String(config?.aiPresetId || 'default-ai'),
                     aiPresets: Array.isArray(config?.aiPresets)
                         ? config.aiPresets.map((item, index) => ({
@@ -10173,7 +10548,121 @@
         }
 
         function getDefaultProductPublishPromptDoc() {
-            return '请根据我提供的产品图片与指定产品类型（如有）生成适合跨境电商发布的中英双标题。优先识别图片内容；如果指定了产品类型，必须严格按该产品类型生成。保留 1pc / [2D Flat Print]1pc 等前缀规则，过滤敏感词，不要解释，不要编号，不要代码块。只输出两行：第一行英文标题，第二行中文标题，不要写 EN: 或 CN:。';
+            return `# Role
+
+跨境电商中英标题生成助手（Vision + SEO + Compliance）
+
+# Task
+
+根据当前上传图片与已锁定的产品类型，生成一组可直接用于商品发布的英文标题和中文标题。
+
+# Vision Rules
+
+1. 识别优先级：
+   - 产品类型已经由文件夹名称或图片名称锁定，必须严格服从，不要重新识别产品类型。
+   - 重点识别图片中的图案、风格、配色、文字内容。
+2. 图片理解范围：
+   - 只能基于当前上传图片识别，不要编造图片里没有的元素。
+   - 如果上传多张图片，请综合当前上传图片内容，为同一条产品记录生成一组统一标题，不要逐图编号输出。
+3. 稳定识别要求：
+   - 先在脑中提取稳定的识别摘要：产品类型、主图案、风格、颜色、文字内容。
+   - 标题只能使用这份稳定摘要里的信息，不要为了差异化随意替换主题词。
+   - 对地垫类产品，优先稳定识别主图案和核心风格，不要频繁改变产品名和场景词。
+4. 图案文字识别：
+   - 如果图片中有可辨认文字、标语、短句，必须提取。
+   - 英文标题里用双引号包裹文字内容。
+   - 如果图片文字是中文，英文标题中必须翻译成英文，不得保留中文字符。
+
+# Critical Rules
+
+1. 长度严格限制（英文标题，包含空格和标点，必须严格命中，不可超出）：
+   - 鼠标垫（Mouse Pad）：150 - 200 字符
+   - 其他产品（如地垫、咖啡机垫）：150 - 250 字符
+   - 如果初稿超长，必须主动压缩到合规长度后再输出。
+
+2. 强制前缀：
+   - 地垫或用户明确要求 2D 的产品：英文必须以 \`[2D Flat Print]1pc \` 开头
+   - 其他默认产品：英文必须以 \`1pc \` 开头
+
+3. 合规过滤：
+   - 绝对禁止出现毒品、武器、色情、暴力、政治敏感、涉及人类未成年等违禁内容及其同义表达。
+   - 如果图片中存在高危元素，不要停止生成，直接净化为中性、抽象、艺术化表达。
+   - 不要输出额外警告说明，只输出最终标题。
+
+4. 输出格式：
+   - 只输出两行纯文本
+   - 第一行：英文标题
+   - 第二行：中文标题
+   - 不要解释，不要编号，不要代码块，不要字段标签
+
+5. 语言与标点要求：
+   - 英文标题必须是纯英文，不得混入中文
+   - 中文标题必须是自然中文，不要变成营销文案
+   - 英文标题必须使用标准英文标点组织结构，至少使用 3 个英文逗号分隔主要语义块
+   - 中文标题必须使用自然中文标点，至少使用 3 个中文逗号分隔主要语义块
+   - 不允许输出没有标点的一整串文本
+   - 如果初稿没有标点，必须先补全标点后再输出最终结果
+
+# Title Logic
+
+1. 英文标题目标：
+   - 先服从已锁定的产品类型
+   - 再准确描述图案、风格、文字内容
+   - 在准确基础上做 SEO 组织，不要为了 SEO 牺牲识别准确性
+   - 相同图片多次生成时，应尽量保持产品名、主图案、核心风格一致
+
+2. 负向过滤：
+   - 移除材质词：Rubber, Polyester 等，统一替换为 \`Non-Slip Backing\`
+   - 移除尺寸词：XL, XXL, 任何具体尺寸数字
+   - 移除封边词：Edge, Stitched, Locked 等
+   - 移除营销虚词：Outdoor, Washable, Super, Best Gift 等
+
+3. 英文标题结构：
+   - 前缀 + 核心产品名 + 图案描述/文字内容 + Non-Slip Backing + 动态长尾词
+   - 长尾词控制在 2-3 个，必须以识别准确为前提，不要堆砌无关词
+   - 标题必须有清晰逗号分段，不能写成一整串无标点文本
+   - 地垫类标题优先使用稳定结构：前缀 + Floor Mat/Doormat + 主图案 + Non-Slip Backing + 2-3 个长尾词
+
+4. 动态词库：
+   - 鼠标垫：Office Desk Mat, Gaming Accessories, Desktop Protector, Computer Mousepad, Workstation Decor, PC Keyboard Mat, Laptop Pad, Gamer Setup, Workspace Decoration, Typing Mat, PC Table Cover, Home Office Supply, Workroom Essential, Gamer Gear
+   - 咖啡机垫：Coffee Bar Mat, Kitchen Countertop Protector, Cafe Station, Espresso Machine Pad, Table Mat, Barista Station Accessory, Kitchen Counter Decor, Espresso Bar Setup, Coffee Maker Underpad, Tea Corner Mat, Dining Table Saver
+   - 地垫：Entryway Mat, Bathroom Rug, Kitchen Floor Mat, Welcome Mat, Home Decor Carpet, Area Rug, Porch Carpet, Hallway Rug, Shower Floor Pad, Living Room Accent, Indoor Entrance Mat, Vanity Rug, Bedside Carpet
+
+# Translation Rules
+
+1. 中文标题必须与英文标题语义一致。
+2. 中文标题必须保留清晰分段，不能输出成没有任何标点的一整句。
+3. 前缀强映射：
+   - \`[2D Flat Print]1pc \` 对应 \`【2D平面打印】一件\`
+   - \`1pc \` 对应 \`一件\`
+4. 产品词必须准确：
+   - 鼠标垫类必须体现鼠标垫/桌垫语义
+   - 地垫类必须体现门垫/地垫/浴室垫语义
+   - 咖啡机垫类必须体现咖啡机垫/咖啡垫语义
+
+# Reference Examples
+
+以下示例只用于学习格式、标点和节奏，不可照抄内容：
+
+1pc Mouse Pad, Watercolor Cat Floral Pattern, "Hello Summer", Non-Slip Backing, Office Desk Mat, Desktop Protector, Gamer Setup
+一件 鼠标垫，水彩猫花卉图案，“Hello Summer”字样，防滑底，办公桌垫，桌面保护垫，游戏桌搭配
+
+[2D Flat Print]1pc Floor Mat, Vintage Botanical Leaves Pattern, Non-Slip Backing, Entryway Mat, Bathroom Rug, Home Decor Carpet
+【2D平面打印】一件 地垫，复古植物叶片图案，防滑底，门垫，浴室垫，家居装饰地毯
+
+# Final Instruction
+
+请严格基于当前上传图片与产品类型约束输出最终结果：
+- 第一行：英文标题
+- 第二行：中文标题
+- 不要解释
+- 不要编号
+- 不要额外提醒
+- 不要输出字段标签
+- 英文标题必须带标准英文标点
+- 中文标题必须带中文标点
+- 先稳定识别，再生成标题，不要为了变化而变化
+- 如果结果没有标点或结构混乱，先自行修正后再输出`;
         }
 
         function getDefaultProductPublishPromptPresets() {
@@ -10322,6 +10811,9 @@
                 selectedValue || productPublishState.config?.titlePromptPresetId,
                 productPublishState.config?.titlePromptDoc
             );
+            if (!presetState.presets.length) {
+                return '<option value="">无预设</option>';
+            }
             return presetState.presets.map((preset) => `<option value="${escapeHtml(preset.id)}" ${preset.id === presetState.activeId ? 'selected' : ''}>${escapeHtml(preset.name || '未命名预设')}</option>`).join('');
         }
 
@@ -10347,9 +10839,9 @@
             try {
                 const snapshot = JSON.parse(snapshotText);
                 productPublishState.config.titlePromptPresets = Array.isArray(snapshot?.presets) ? snapshot.presets : getDefaultProductPublishPromptPresets();
-                productPublishState.config.titlePromptPresetId = String(snapshot?.selectedId || 'default-general').trim() || 'default-general';
+                productPublishState.config.titlePromptPresetId = String(snapshot?.selectedId || '').trim();
                 productPublishState.config.titlePromptDoc = String(snapshot?.doc || '').trim();
-                applyProductPublishPromptPresetById(productPublishState.config.titlePromptPresetId || 'default-general');
+                applyProductPublishPromptPresetById(productPublishState.config.titlePromptPresetId || '');
             } catch {}
         }
 
@@ -10393,9 +10885,10 @@
             renderProductPublishPromptPresetList();
         }
 
-        function handleProductPublishPromptPresetChange(event) {
+        async function handleProductPublishPromptPresetChange(event) {
             const presetId = String(event?.target?.value || '').trim();
             applyProductPublishPromptPresetById(presetId);
+            await saveProductPublishSettingsNow(true);
         }
 
         async function handleProductPublishPromptPresetQuickChange(event) {
@@ -10440,7 +10933,7 @@
         function openProductPublishPromptPresetModal() {
             document.getElementById('productPublishPromptPresetModal')?.classList.add('active');
             renderProductPublishPromptPresetList();
-            applyProductPublishPromptPresetById(productPublishState.config.titlePromptPresetId || 'default-general');
+            applyProductPublishPromptPresetById(productPublishState.config.titlePromptPresetId || '');
             markProductPublishPromptPresetBaseline();
         }
 
@@ -10573,7 +11066,7 @@
             productPublishState.config.titlePromptDoc = presetState.activePreset?.doc || presetState.doc;
             await saveProductPublishSettingsNow(true);
             renderProductPublishPromptPresetList();
-            applyProductPublishPromptPresetById(productPublishState.config.titlePromptPresetId || 'default-general');
+            applyProductPublishPromptPresetById(productPublishState.config.titlePromptPresetId || '');
             markProductPublishPromptPresetBaseline();
         }
 
@@ -11593,6 +12086,7 @@
             if (ossAccessKeySecretInput) ossAccessKeySecretInput.value = cfg.exportTemplateDefaults?.ossAccessKeySecret || '';
             if (ossObjectPrefixInput) ossObjectPrefixInput.value = cfg.exportTemplateDefaults?.ossObjectPrefix || 'products';
             if (urlPrefixInput) urlPrefixInput.value = cfg.exportTemplateDefaults?.urlPrefix || '';
+            cfg.productTypeMappings = normalizeProductPublishTypeMappingsLocal(cfg.productTypeMappings);
             if (apiKeyInput) {
                 apiKeyInput.type = productPublishState.apiKeyVisible ? 'text' : 'password';
             }
@@ -11607,6 +12101,72 @@
             initializeVirtualSelect('productPublishAiPromptPresetQuick');
             initializeVirtualSelect('productPublishHeaderPromptPreset');
             initializeVirtualSelect('productPublishAiPromptPreset');
+        }
+
+        function renderProductPublishTypeMappingsList() {
+            const host = document.getElementById('productPublishTypeMappingsList');
+            if (!host) return;
+            const mappings = normalizeProductPublishTypeMappingsDraftLocal(productPublishState.typeMappingsDraft);
+            productPublishState.typeMappingsDraft = mappings;
+            host.innerHTML = mappings.map((item, index) => `
+                <div class="product-publish-type-item">
+                    <div class="product-publish-type-item-copy">
+                        <input class="product-publish-preset-list-input" type="text" value="${escapeHtml(item.name)}" placeholder="输入产品类型名称" onclick="event.stopPropagation()" onmousedown="event.stopPropagation()" oninput="updateProductPublishTypeMappingField(${index}, 'name', this.value)">
+                    </div>
+                    <button class="product-publish-prompt-icon-btn danger" type="button" title="删除" onclick="deleteProductPublishTypeMapping(${index})">
+                        <svg viewBox="0 0 24 24" width="12" height="12" fill="none" stroke="currentColor" stroke-width="2.1" stroke-linecap="round"><path d="M7 7l10 10"/><path d="M17 7L7 17"/></svg>
+                    </button>
+                </div>
+            `).join('');
+        }
+
+        function openProductPublishTypeMappingsModal() {
+            productPublishState.typeMappingsDraft = normalizeProductPublishTypeMappingsDraftLocal(productPublishState.config?.productTypeMappings);
+            document.getElementById('productPublishTypeMappingsModal')?.classList.add('active');
+            renderProductPublishTypeMappingsList();
+        }
+
+        function closeProductPublishTypeMappingsModal() {
+            document.getElementById('productPublishTypeMappingsModal')?.classList.remove('active');
+        }
+
+        function createProductPublishTypeMapping() {
+            const draft = normalizeProductPublishTypeMappingsDraftLocal(productPublishState.typeMappingsDraft);
+            draft.unshift({ id: `product-type-${Date.now()}`, name: '', keywords: [] });
+            productPublishState.typeMappingsDraft = draft;
+            renderProductPublishTypeMappingsList();
+            requestAnimationFrame(() => {
+                const input = document.querySelector('#productPublishTypeMappingsList .product-publish-type-item:first-child .product-publish-preset-list-input');
+                input?.focus();
+            });
+        }
+
+        function updateProductPublishTypeMappingField(index, field, value) {
+            const draft = normalizeProductPublishTypeMappingsDraftLocal(productPublishState.typeMappingsDraft);
+            const item = draft[index];
+            if (!item) return;
+            item[field] = String(value || '');
+            productPublishState.typeMappingsDraft = draft;
+        }
+
+        function deleteProductPublishTypeMapping(index) {
+            const draft = normalizeProductPublishTypeMappingsDraftLocal(productPublishState.typeMappingsDraft);
+            draft.splice(index, 1);
+            productPublishState.typeMappingsDraft = draft;
+            renderProductPublishTypeMappingsList();
+        }
+
+        async function saveProductPublishTypeMappings() {
+            const mappings = normalizeProductPublishTypeMappingsDraftLocal(productPublishState.typeMappingsDraft)
+                .map((item) => ({ ...item, name: String(item.name || '').trim(), keywords: [] }))
+                .filter((item) => item.name);
+            if (!mappings.length) {
+                await showNoticeDialog('产品类型', '至少保留一个产品类型。');
+                return;
+            }
+            productPublishState.config.productTypeMappings = mappings;
+            await saveProductPublishSettingsNow(true);
+            closeProductPublishTypeMappingsModal();
         }
 
         function getProductPublishExportTemplateDefaults() {
@@ -12558,6 +13118,20 @@
             syncProductPublishTitleCounters();
         }
 
+        function restoreProductPublishTitleHistory(index) {
+            const record = getSelectedProductPublishRecord();
+            if (!record) return;
+            const history = Array.isArray(record.titleHistory) ? record.titleHistory : [];
+            const entry = history[index];
+            if (!entry) return;
+            record.titleEn = String(entry.titleEn || '').trim();
+            record.titleZh = String(entry.titleZh || '').trim();
+            record.titleStatus = record.titleEn || record.titleZh ? 'edited' : 'pending';
+            record.updatedAt = new Date().toISOString();
+            persistProductPublishData();
+            renderProductPublishModule();
+        }
+
         async function saveProductPublishSettingsNow(silent = false) {
             try {
                 const selectedAiPresetId = String(document.getElementById('productPublishAiPresetQuick')?.value || productPublishState.config.aiPresetId || '').trim();
@@ -12630,6 +13204,7 @@
                     aiPresets,
                     ossPresetId: ossPresetState.activeId,
                     ossPresets,
+                    productTypeMappings: normalizeProductPublishTypeMappingsLocal(productPublishState.config.productTypeMappings),
                     titlePromptPresetId: promptPresetState.activeId,
                     titlePromptPresets: promptPresets,
                     titlePromptDoc: selectedPromptDoc || promptPresetState.activePreset?.doc || getDefaultProductPublishPromptDoc(),
@@ -12836,6 +13411,7 @@
                 const result = await ipcRenderer.invoke('product-publish:generate-title', { record });
                 record.titleEn = String(result?.titleEn || '').trim();
                 record.titleZh = String(result?.titleZh || '').trim();
+                appendProductPublishTitleHistory(record, record.titleEn, record.titleZh);
                 record.titleStatus = record.titleEn || record.titleZh ? 'generated' : 'pending';
                 record.generationState = 'idle';
                 record.generationMessage = '';
@@ -18242,6 +18818,9 @@
             });
             document.getElementById('productPublishOssPresetModal').addEventListener('mousedown', (event) => {
                 if (event.target.id === 'productPublishOssPresetModal') closeProductPublishOssPresetModal();
+            });
+            document.getElementById('productPublishTypeMappingsModal').addEventListener('mousedown', (event) => {
+                if (event.target.id === 'productPublishTypeMappingsModal') closeProductPublishTypeMappingsModal();
             });
 
             window.addEventListener('keydown', (event) => {
