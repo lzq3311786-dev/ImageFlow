@@ -361,41 +361,385 @@ function saveTemplateParameterPresets(presets) {
     fs.writeFileSync(TEMPLATE_PARAMETER_PRESETS_FILE, JSON.stringify(Array.isArray(presets) ? presets : [], null, 2), 'utf-8');
 }
 
+const DEFAULT_PRODUCT_PUBLISH_PROMPT_DOC = `# Role
+
+跨境电商标题重构大师 3.5 (SEO, Vision, Auto-Filtering & Compliance Expert)
+
+# Task
+
+根据用户提供的【产品图片】与【指定产品类型（如有）】，生成专业且高度差异化的英文 SEO 标题，并提供对应中文对照。同时严格审查敏感词汇，自动过滤违禁词，确保店铺合规安全与高效产出。
+
+# 🖼️ Vision Processing Rules (图像识别专属逻辑)
+
+1. 自动识别：请直接识别图片中的【核心图案/风格】以及【文字内容】。
+2. 产品类型优先：如果用户额外指定了产品类型（如鼠标垫、地垫、咖啡机垫等），必须严格按该产品类型生成，绝对不要自行改成别的产品。
+3. 多图处理：如果用户一次性发送多张图片，请综合所有图片内容，为当前产品记录生成一组统一的标题，不要逐图编号输出。
+
+# 🚨 CRITICAL RULES (强制执行)
+
+1. 长度严格限制（英文标题，包含空格和标点）：
+   - 鼠标垫 (Mouse Pad)：150 - 200 字符
+   - 其他产品（如地垫/咖啡机垫）：150 - 250 字符
+
+2. 强制前缀（严格区分）：
+   - 地垫（或用户指定需要 2D 的产品）：英文必须以 \`[2D Flat Print]1pc \` 开头。
+   - 其他默认产品（鼠标垫/咖啡机垫）：英文必须以 \`1pc \` 开头。
+
+3. 🛡️ 违禁词自动过滤与彻底净化（Safety & Compliance）：
+   - 绝对禁止在生成的标题中包含以下违禁元素及其任何同义词、衍生词或相关部件：
+     - 毒品/致幻物
+     - 武器/枪支/弹药
+     - 色情/成人
+     - 暴力/血腥
+     - 政治/敏感内容
+     - 涉及人类未成年内容
+   - 如果图片中检测到违禁词或高危元素，不要停止生成，必须彻底剔除，并替换为中性、抽象、艺术化表达。
+   - 不要输出任何额外警告说明，只返回最终标题结果。
+
+4. 输出格式（纯文本强制要求）：
+   - 只返回两行结果，不要解释，不要编号，不要代码块，不要 markdown 标题。
+   - 第一行输出英文标题。
+   - 第二行输出中文标题。
+   - 不要写 EN:、CN:、英文标题：、中文标题： 这类标签。
+
+5. 🛑 严格语言隔离（Language Purity）：
+   - 英文标题必须是 100% 纯英文（含数字和标准标点符号），绝对禁止混入中文汉字。
+   - 中文标题必须是自然中文，不得混入英文关键词堆砌。
+
+# 🧠 Logic Rules (内容与排版逻辑)
+
+1. 图案文字提取（强制执行）：
+   - 如果图案中包含具体文字、标语，必须提取并在英文标题中使用双引号 \`""\` 括起来。
+   - 如果原文是中文拼音或汉字，必须先翻译成英文意思，再写进英文标题，绝不保留中文字符。
+
+2. 负向过滤（绝对禁止出现）：
+   - 禁止材质词：移除 \`Rubber\`, \`Polyester\` 等，统一替换为 \`Non-Slip Backing\`
+   - 禁止尺寸词：移除 \`XXL\`, \`XL\` 及任何具体数字尺寸
+   - 禁止封边词：移除 \`Edge\`, \`Stitched\`, \`Locked\` 等
+   - 禁止营销/虚词：移除 \`Outdoor\`, \`Washable\`, \`Super\`, \`Best Gift\` 等
+
+3. 英文标题构造公式：
+   - 默认公式：\`前缀\` + \`[核心产品名]\` + \`, \` + \`[图案描述/双引号文字]\` + \`, Non-Slip Backing, \` + \`[动态长尾词 3-5 个]\`
+   - 地垫专属规则：\`Doormats\` 位置动态化，不能一直固定在最前面；如放在后半段，首部请使用 \`Floor Mat\`、\`Accent Rug\` 等泛指词替代。
+
+# 🎲 Dynamic Keyword Pool & Anti-Repetition (动态词库与绝对去重机制)
+
+批量处理时，严禁结尾使用相同关键词序列。必须随机抽取 3-5 个词打乱组合，确保每一条英文标题 SEO 尾词不同。
+
+- 【鼠标垫词库】: Office Desk Mat, Gaming Accessories, Desktop Protector, Computer Mousepad, Workstation Decor, PC Keyboard Mat, Laptop Pad, Gamer Setup, Workspace Decoration, Typing Mat, PC Table Cover, Home Office Supply, Workroom Essential, Gamer Gear.
+
+- 【咖啡机垫词库】: Coffee Bar Mat, Kitchen Countertop Protector, Cafe Station, Espresso Machine Pad, Table Mat, Barista Station Accessory, Kitchen Counter Decor, Espresso Bar Setup, Coffee Maker Underpad, Tea Corner Mat, Dining Table Saver.
+
+- 【地垫词库】: Entryway Mat, Bathroom Rug, Kitchen Floor Mat, Welcome Mat, Home Decor Carpet, Area Rug, Porch Carpet, Hallway Rug, Shower Floor Pad, Living Room Accent, Indoor Entrance Mat, Vanity Rug, Bedside Carpet.
+
+# 🌐 Translation Rules (中文翻译强制合规)
+
+1. 中文标题必须与英文标题语义一致，不要漏掉关键产品词、主题词和风格词。
+2. 中文不要润色成夸张广告句，不要添加“可用作”“带有”“超值”等无关表达。
+3. 前缀强映射：
+   - \`[2D Flat Print]1pc \` 必须对应为 \`【2D平面打印】一件\`
+   - \`1pc \` 必须对应为 \`一件\`
+4. 产品词必须准确：
+   - 鼠标垫类中文必须明确体现鼠标垫/桌垫语义
+   - 地垫类中文必须明确体现门垫/地垫/浴室垫语义
+   - 咖啡机垫类中文必须明确体现咖啡机垫/咖啡垫语义
+
+# Final Instruction
+
+请基于图片内容与产品类型约束，生成一组最终结果：
+- 第一行：英文标题
+- 第二行：中文标题
+- 不要解释
+- 不要编号
+- 不要代码块
+- 不要输出任何额外提醒
+- 不要输出字段标签`;
+
+function createDefaultProductPublishPromptPresets() {
+    return [
+        {
+            id: 'default-general',
+            name: '通用标题',
+            doc: DEFAULT_PRODUCT_PUBLISH_PROMPT_DOC
+        }
+    ];
+}
+
+function createDefaultProductPublishSettingsPresets() {
+    return [
+        {
+            id: 'default-publish',
+            name: '默认发布',
+            aiApiUrl: '',
+            aiApiKey: '',
+            aiModel: '',
+            urlPrefix: '',
+            ossBucket: '',
+            ossRegion: '',
+            ossAccessKeyId: '',
+            ossAccessKeySecret: '',
+            ossObjectPrefix: 'products'
+        }
+    ];
+}
+
+function createDefaultProductPublishAiPresets() {
+    return [
+        {
+            id: 'default-ai',
+            name: '默认AI配置',
+            aiApiUrl: 'https://www.vivaapi.cn',
+            aiApiKey: '',
+            aiModel: 'gpt-5.4-nano-2026-03-17'
+        }
+    ];
+}
+
+function createDefaultProductPublishOssPresets() {
+    return [
+        {
+            id: 'default-oss',
+            name: '默认OSS配置',
+            urlPrefix: 'https://imageflow.oss-cn-hangzhou.aliyuncs.com',
+            ossBucket: 'imageflow',
+            ossRegion: 'oss-cn-hangzhou',
+            ossAccessKeyId: '',
+            ossAccessKeySecret: '',
+            ossObjectPrefix: 'products'
+        }
+    ];
+}
+
+function normalizeProductPublishPromptPresets(presets, selectedId = '') {
+    const defaultPresets = createDefaultProductPublishPromptPresets();
+    const normalized = [];
+    const seenIds = new Set();
+    (Array.isArray(presets) ? presets : []).forEach((preset, index) => {
+        const id = String(preset?.id || `preset-${Date.now()}-${index + 1}`).trim();
+        const name = String(preset?.name || '').trim();
+        const doc = String(preset?.doc || '').trim();
+        if (!id || !name || !doc || seenIds.has(id)) {
+            return;
+        }
+        seenIds.add(id);
+        normalized.push({ id, name, doc });
+    });
+    defaultPresets.forEach((preset) => {
+        if (seenIds.has(preset.id)) {
+            return;
+        }
+        seenIds.add(preset.id);
+        normalized.unshift({ ...preset });
+    });
+    const activeId = normalized.some((preset) => preset.id === selectedId)
+        ? selectedId
+        : (normalized[0]?.id || defaultPresets[0].id);
+    const activePreset = normalized.find((preset) => preset.id === activeId) || normalized[0] || defaultPresets[0];
+    return {
+        presets: normalized,
+        activeId,
+        activePreset
+    };
+}
+
+function normalizeProductPublishSettingsPresets(presets, selectedId = '', currentValues = {}) {
+    const defaults = createDefaultProductPublishSettingsPresets();
+    const normalized = (Array.isArray(presets) ? presets : [])
+        .map((preset, index) => ({
+            id: String(preset?.id || `publish-preset-${Date.now()}-${index + 1}`).trim(),
+            name: String(preset?.name || '未命名发布预设').trim() || '未命名发布预设',
+            aiApiUrl: String(preset?.aiApiUrl || '').trim(),
+            aiApiKey: String(preset?.aiApiKey || '').trim(),
+            aiModel: String(preset?.aiModel || '').trim(),
+            urlPrefix: String(preset?.urlPrefix || '').trim(),
+            ossBucket: String(preset?.ossBucket || '').trim(),
+            ossRegion: String(preset?.ossRegion || '').trim(),
+            ossAccessKeyId: String(preset?.ossAccessKeyId || '').trim(),
+            ossAccessKeySecret: String(preset?.ossAccessKeySecret || '').trim(),
+            ossObjectPrefix: String(preset?.ossObjectPrefix || 'products').trim() || 'products'
+        }))
+        .filter((preset) => preset.id && preset.name);
+    if (!normalized.length) {
+        normalized.push(...defaults);
+    }
+    let activeId = String(selectedId || normalized[0]?.id || defaults[0].id).trim();
+    let activePreset = normalized.find((preset) => preset.id === activeId);
+    if (!activePreset) {
+        activeId = normalized[0]?.id || defaults[0].id;
+        activePreset = normalized.find((preset) => preset.id === activeId) || normalized[0] || defaults[0];
+    }
+    const current = {
+        aiApiUrl: String(currentValues?.aiApiUrl || '').trim(),
+        aiApiKey: String(currentValues?.aiApiKey || '').trim(),
+        aiModel: String(currentValues?.aiModel || '').trim(),
+        urlPrefix: String(currentValues?.urlPrefix || '').trim(),
+        ossBucket: String(currentValues?.ossBucket || '').trim(),
+        ossRegion: String(currentValues?.ossRegion || '').trim(),
+        ossAccessKeyId: String(currentValues?.ossAccessKeyId || '').trim(),
+        ossAccessKeySecret: String(currentValues?.ossAccessKeySecret || '').trim(),
+        ossObjectPrefix: String(currentValues?.ossObjectPrefix || 'products').trim() || 'products'
+    };
+    const activeIndex = normalized.findIndex((preset) => preset.id === activeId);
+    if (activeIndex >= 0) {
+        normalized[activeIndex] = {
+            ...normalized[activeIndex],
+            ...current
+        };
+        activePreset = normalized[activeIndex];
+    }
+    return {
+        presets: normalized,
+        activeId,
+        activePreset
+    };
+}
+
+function normalizeProductPublishAiPresets(presets, selectedId = '', currentValues = {}) {
+    const defaults = createDefaultProductPublishAiPresets();
+    const normalized = (Array.isArray(presets) ? presets : [])
+        .map((preset, index) => ({
+            id: String(preset?.id || `ai-preset-${Date.now()}-${index + 1}`).trim(),
+            name: String(preset?.name || '未命名AI配置').trim() || '未命名AI配置',
+            aiApiUrl: String(preset?.aiApiUrl || '').trim(),
+            aiApiKey: String(preset?.aiApiKey || '').trim(),
+            aiModel: String(preset?.aiModel || '').trim()
+        }))
+        .filter((preset) => preset.id && preset.name);
+    if (!normalized.length) normalized.push(...defaults);
+    let activeId = String(selectedId || normalized[0]?.id || defaults[0].id).trim();
+    let activePreset = normalized.find((preset) => preset.id === activeId);
+    if (!activePreset) {
+        activeId = normalized[0]?.id || defaults[0].id;
+        activePreset = normalized.find((preset) => preset.id === activeId) || normalized[0] || defaults[0];
+    }
+    const current = {
+        aiApiUrl: String(currentValues?.aiApiUrl || '').trim(),
+        aiApiKey: String(currentValues?.aiApiKey || '').trim(),
+        aiModel: String(currentValues?.aiModel || '').trim()
+    };
+    const activeIndex = normalized.findIndex((preset) => preset.id === activeId);
+    if (activeIndex >= 0) {
+        normalized[activeIndex] = { ...normalized[activeIndex], ...current };
+        activePreset = normalized[activeIndex];
+    }
+    return { presets: normalized, activeId, activePreset };
+}
+
+function normalizeProductPublishOssPresets(presets, selectedId = '', currentValues = {}) {
+    const defaults = createDefaultProductPublishOssPresets();
+    const normalized = (Array.isArray(presets) ? presets : [])
+        .map((preset, index) => ({
+            id: String(preset?.id || `oss-preset-${Date.now()}-${index + 1}`).trim(),
+            name: String(preset?.name || '未命名OSS配置').trim() || '未命名OSS配置',
+            urlPrefix: String(preset?.urlPrefix || '').trim(),
+            ossBucket: String(preset?.ossBucket || '').trim(),
+            ossRegion: String(preset?.ossRegion || '').trim(),
+            ossAccessKeyId: String(preset?.ossAccessKeyId || '').trim(),
+            ossAccessKeySecret: String(preset?.ossAccessKeySecret || '').trim(),
+            ossObjectPrefix: String(preset?.ossObjectPrefix || 'products').trim() || 'products'
+        }))
+        .filter((preset) => preset.id && preset.name);
+    if (!normalized.length) normalized.push(...defaults);
+    let activeId = String(selectedId || normalized[0]?.id || defaults[0].id).trim();
+    let activePreset = normalized.find((preset) => preset.id === activeId);
+    if (!activePreset) {
+        activeId = normalized[0]?.id || defaults[0].id;
+        activePreset = normalized.find((preset) => preset.id === activeId) || normalized[0] || defaults[0];
+    }
+    const current = {
+        urlPrefix: String(currentValues?.urlPrefix || '').trim(),
+        ossBucket: String(currentValues?.ossBucket || '').trim(),
+        ossRegion: String(currentValues?.ossRegion || '').trim(),
+        ossAccessKeyId: String(currentValues?.ossAccessKeyId || '').trim(),
+        ossAccessKeySecret: String(currentValues?.ossAccessKeySecret || '').trim(),
+        ossObjectPrefix: String(currentValues?.ossObjectPrefix || 'products').trim() || 'products'
+    };
+    const activeIndex = normalized.findIndex((preset) => preset.id === activeId);
+    if (activeIndex >= 0) {
+        normalized[activeIndex] = { ...normalized[activeIndex], ...current };
+        activePreset = normalized[activeIndex];
+    }
+    return { presets: normalized, activeId, activePreset };
+}
+
 function createDefaultProductPublishConfig() {
     return {
         aiProvider: 'auto',
-        aiApiUrl: '',
+        aiApiUrl: 'https://www.vivaapi.cn',
         aiApiKey: '',
-        aiModel: '',
-        aiModelHistory: [],
-        titlePromptDoc: '请根据我提供的产品图片与指定产品类型（如有）生成适合跨境电商发布的中英双标题。优先识别图片内容；如果指定了产品类型，必须严格按该产品类型生成。保留 1pc / [2D Flat Print]1pc 等前缀规则，过滤敏感词，不要解释，不要编号，不要代码块。只输出两行：第一行英文标题，第二行中文标题，不要写 EN: 或 CN:。',
+        aiModel: 'gpt-5.4-nano-2026-03-17',
+        aiModelHistory: [
+            'gpt-5.4-nano-2026-03-17',
+            'gpt-5.4',
+            'gpt-5.3-codex'
+        ],
+        aiPresetId: 'default-ai',
+        aiPresets: createDefaultProductPublishAiPresets(),
+        ossPresetId: 'default-oss',
+        ossPresets: createDefaultProductPublishOssPresets(),
+        settingsPresetId: 'default-publish',
+        settingsPresets: createDefaultProductPublishSettingsPresets(),
+        titlePromptPresetId: 'default-general',
+        titlePromptPresets: createDefaultProductPublishPromptPresets(),
+        titlePromptDoc: DEFAULT_PRODUCT_PUBLISH_PROMPT_DOC,
         exportTemplateDefaults: {
             mainCodePrefix: 'A',
             categoryId: '124300',
             outputDir: getDefaultProductPublishOutputDir(),
-            urlPrefix: '',
-            ossBucket: '',
-            ossRegion: '',
+            urlPrefix: 'https://imageflow.oss-cn-hangzhou.aliyuncs.com',
+            ossBucket: 'imageflow',
+            ossRegion: 'oss-cn-hangzhou',
             ossAccessKeyId: '',
             ossAccessKeySecret: '',
             ossObjectPrefix: 'products',
             shipLeadTime: '2',
             originPlace: '中国-浙江省',
             customized: '否',
-            specName1: '尺寸',
-            specName2: '颜色',
+            specName1: '颜色',
+            specName2: '尺寸',
             specValue1: '白色',
-            specValue2: '0',
-            declaredPrice: '0.01',
-            suggestedPrice: '',
-            lengthCm: '0',
-            widthCm: '0',
-            heightCm: '0',
-            weightG: '0',
-            inventory: '0',
+            specValue2: 'xl',
+            declaredPrice: '10',
+            suggestedPrice: '10',
+            lengthCm: '10',
+            widthCm: '10',
+            heightCm: '10',
+            weightG: '10',
+            inventory: '10',
             sensitive: '否'
         },
-        exportTemplateProfiles: []
+        exportTemplateProfiles: [
+            {
+                id: 'default-flannel-rug',
+                name: '法兰绒地垫',
+                fields: {
+                    mainCodePrefix: 'A',
+                    categoryId: '124300',
+                    outputDir: '',
+                    urlPrefix: 'https://imageflow.oss-cn-hangzhou.aliyuncs.com',
+                    ossBucket: 'imageflow',
+                    ossRegion: 'oss-cn-hangzhou',
+                    ossAccessKeyId: '',
+                    ossAccessKeySecret: '',
+                    ossObjectPrefix: 'products',
+                    shipLeadTime: '2',
+                    originPlace: '中国-浙江省',
+                    customized: '否',
+                    specName1: '颜色',
+                    specName2: '尺寸',
+                    specValue1: '白色',
+                    specValue2: 'xl',
+                    declaredPrice: '10',
+                    suggestedPrice: '10',
+                    lengthCm: '10',
+                    widthCm: '10',
+                    heightCm: '10',
+                    weightG: '10',
+                    inventory: '10',
+                    sensitive: '否'
+                }
+            }
+        ]
     };
 }
 
@@ -496,6 +840,56 @@ function saveProductPublishConfig(cfg) {
         nextCfg.exportTemplateDefaults.outputDir,
         getDefaultProductPublishOutputDir()
     );
+    const aiPresetState = normalizeProductPublishAiPresets(
+        nextCfg.aiPresets,
+        nextCfg.aiPresetId,
+        {
+            aiApiUrl: nextCfg.aiApiUrl,
+            aiApiKey: nextCfg.aiApiKey,
+            aiModel: nextCfg.aiModel
+        }
+    );
+    nextCfg.aiPresets = aiPresetState.presets;
+    nextCfg.aiPresetId = aiPresetState.activeId;
+    nextCfg.aiApiUrl = aiPresetState.activePreset?.aiApiUrl || '';
+    nextCfg.aiApiKey = aiPresetState.activePreset?.aiApiKey || '';
+    nextCfg.aiModel = aiPresetState.activePreset?.aiModel || '';
+    const ossPresetState = normalizeProductPublishOssPresets(
+        nextCfg.ossPresets,
+        nextCfg.ossPresetId,
+        {
+            urlPrefix: nextCfg.exportTemplateDefaults?.urlPrefix,
+            ossBucket: nextCfg.exportTemplateDefaults?.ossBucket,
+            ossRegion: nextCfg.exportTemplateDefaults?.ossRegion,
+            ossAccessKeyId: nextCfg.exportTemplateDefaults?.ossAccessKeyId,
+            ossAccessKeySecret: nextCfg.exportTemplateDefaults?.ossAccessKeySecret,
+            ossObjectPrefix: nextCfg.exportTemplateDefaults?.ossObjectPrefix
+        }
+    );
+    nextCfg.ossPresets = ossPresetState.presets;
+    nextCfg.ossPresetId = ossPresetState.activeId;
+    nextCfg.exportTemplateDefaults = {
+        ...nextCfg.exportTemplateDefaults,
+        urlPrefix: ossPresetState.activePreset?.urlPrefix || '',
+        ossBucket: ossPresetState.activePreset?.ossBucket || '',
+        ossRegion: ossPresetState.activePreset?.ossRegion || '',
+        ossAccessKeyId: ossPresetState.activePreset?.ossAccessKeyId || '',
+        ossAccessKeySecret: ossPresetState.activePreset?.ossAccessKeySecret || '',
+        ossObjectPrefix: ossPresetState.activePreset?.ossObjectPrefix || 'products'
+    };
+    const promptPresetState = normalizeProductPublishPromptPresets(nextCfg.titlePromptPresets, nextCfg.titlePromptPresetId);
+    nextCfg.titlePromptPresets = promptPresetState.presets;
+    nextCfg.titlePromptPresetId = promptPresetState.activeId;
+    nextCfg.titlePromptDoc = String(
+        nextCfg.titlePromptDoc || promptPresetState.activePreset?.doc || DEFAULT_PRODUCT_PUBLISH_PROMPT_DOC
+    ).trim() || DEFAULT_PRODUCT_PUBLISH_PROMPT_DOC;
+    const selectedPresetIndex = nextCfg.titlePromptPresets.findIndex((preset) => preset.id === nextCfg.titlePromptPresetId);
+    if (selectedPresetIndex >= 0) {
+        nextCfg.titlePromptPresets[selectedPresetIndex] = {
+            ...nextCfg.titlePromptPresets[selectedPresetIndex],
+            doc: nextCfg.titlePromptDoc
+        };
+    }
     fs.writeFileSync(PRODUCT_PUBLISH_CONFIG_FILE, JSON.stringify(nextCfg, null, 2), 'utf-8');
     return nextCfg;
 }

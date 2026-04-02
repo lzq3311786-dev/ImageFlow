@@ -3550,6 +3550,52 @@
             color: #111827;
         }
 
+        .product-publish-panel-count,
+        .product-publish-inline-hint {
+            font-size: 12px;
+            line-height: 1;
+            color: #6b7280;
+            white-space: nowrap;
+        }
+
+        .product-publish-inline-hint.success {
+            color: #15803d;
+        }
+
+        .product-publish-inline-hint.error {
+            color: #b91c1c;
+        }
+
+        .product-publish-inline-hint.testing {
+            color: #2563eb;
+        }
+
+        .product-publish-inline-status {
+            display: inline-flex;
+            align-items: center;
+            gap: 6px;
+            min-height: 20px;
+        }
+
+        .product-publish-inline-status-btn {
+            width: 18px;
+            height: 18px;
+            border: none;
+            border-radius: 999px;
+            background: transparent;
+            color: #b91c1c;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            cursor: pointer;
+            padding: 0;
+            flex: 0 0 auto;
+        }
+
+        .product-publish-inline-status-btn:hover {
+            background: rgba(185, 28, 28, 0.08);
+        }
+
         .product-publish-list-tabs {
             display: flex;
             align-items: center;
@@ -3615,6 +3661,30 @@
             min-width: 220px;
         }
 
+        .product-publish-header-preset-select,
+        .product-publish-header-preset-select + .virtual-select {
+            width: 180px !important;
+            min-width: 180px !important;
+            max-width: 180px !important;
+            flex: 0 0 180px !important;
+        }
+
+        .product-publish-header-preset-select + .virtual-select .virtual-select-trigger,
+        .product-publish-header-preset-select + .virtual-select .virtual-select-menu {
+            width: 180px !important;
+            min-width: 180px !important;
+            max-width: 180px !important;
+        }
+
+        .product-publish-header-right .virtual-select-trigger,
+        .product-publish-header-right .virtual-select-label,
+        .product-publish-header-right .virtual-select-option,
+        .product-publish-header-right .virtual-select-option-label {
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+        }
+
         .product-publish-toolbar-field {
             display: grid;
             gap: 4px;
@@ -3655,7 +3725,7 @@
             overflow: auto;
             scrollbar-width: none;
             flex: 1;
-            padding: 4px 2px 2px;
+            padding: 12px 2px 2px;
             box-sizing: border-box;
         }
 
@@ -4006,10 +4076,185 @@
             max-height: min(80vh, 720px);
         }
 
+        .product-publish-prompt-shell {
+            width: min(920px, 100%);
+            max-height: min(82vh, 760px);
+        }
+
         .product-publish-export-body {
             display: flex;
             flex-direction: column;
             gap: 14px;
+        }
+
+        .product-publish-prompt-body {
+            display: flex;
+            flex-direction: column;
+            gap: 14px;
+        }
+
+        .product-publish-prompt-layout {
+            display: grid;
+            grid-template-columns: 260px minmax(0, 1fr);
+            gap: 18px;
+            min-height: 420px;
+        }
+
+        .product-publish-prompt-list-panel {
+            min-width: 0;
+            display: flex;
+            flex-direction: column;
+            gap: 12px;
+        }
+
+        .product-publish-prompt-list-head {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            gap: 10px;
+        }
+
+        .product-publish-prompt-list {
+            flex: 1;
+            min-height: 0;
+            overflow-y: auto;
+            display: flex;
+            flex-direction: column;
+            gap: 8px;
+            padding: 10px 4px 2px 0;
+            box-sizing: border-box;
+        }
+
+        .product-publish-prompt-list::-webkit-scrollbar {
+            display: none;
+        }
+
+        .product-publish-prompt-item {
+            border: 1px solid #E9EDF3;
+            border-radius: 14px;
+            background: #FFFFFF;
+            padding: 12px 14px;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            cursor: pointer;
+            transition: border-color 0.18s ease, box-shadow 0.18s ease, transform 0.18s ease;
+        }
+
+        .product-publish-prompt-item:hover {
+            border-color: #CBD5E1;
+            box-shadow: 0 8px 18px rgba(15, 23, 42, 0.06);
+            transform: translateY(-1px);
+        }
+
+        .product-publish-prompt-item.active {
+            border-color: #2563EB;
+            box-shadow: 0 10px 22px rgba(37, 99, 235, 0.12);
+            background: linear-gradient(180deg, rgba(239, 246, 255, 0.9) 0%, #FFFFFF 100%);
+        }
+
+        .product-publish-prompt-item-copy {
+            flex: 1;
+            min-width: 0;
+        }
+
+        .product-publish-preset-list-input {
+            width: 100%;
+            min-width: 0;
+            border: 0;
+            background: transparent;
+            padding: 0;
+            margin: 0;
+            font-size: 14px;
+            font-weight: 700;
+            color: #1F2937;
+            outline: none;
+            box-shadow: none;
+        }
+
+        .product-publish-preset-list-input::placeholder {
+            color: #94A3B8;
+        }
+
+        .product-publish-prompt-item-name {
+            font-size: 14px;
+            font-weight: 700;
+            color: #1F2937;
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+        }
+
+        .product-publish-prompt-item-meta {
+            margin-top: 4px;
+            font-size: 12px;
+            color: #6B7280;
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+        }
+
+        .product-publish-prompt-item-actions {
+            display: inline-flex;
+            align-items: center;
+            gap: 6px;
+            flex-shrink: 0;
+        }
+
+        .product-publish-prompt-icon-btn {
+            width: 24px;
+            height: 24px;
+            border-radius: 8px;
+            border: 0;
+            background: transparent;
+            color: #6B7280;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            cursor: pointer;
+            transition: background 0.18s ease, color 0.18s ease;
+        }
+
+        .product-publish-prompt-icon-btn:hover {
+            background: rgba(15, 23, 42, 0.06);
+            color: #111827;
+        }
+
+        .product-publish-prompt-icon-btn.danger:hover {
+            background: rgba(220, 38, 38, 0.10);
+            color: #B91C1C;
+        }
+
+        .product-publish-prompt-editor {
+            min-width: 0;
+            display: flex;
+            flex-direction: column;
+            gap: 14px;
+        }
+
+        .product-publish-settings-section {
+            display: flex;
+            flex-direction: column;
+            gap: 12px;
+            padding: 14px 16px;
+            border: 1px solid rgba(15, 23, 42, 0.08);
+            border-radius: 14px;
+            background: #FAFBFC;
+        }
+
+        .product-publish-settings-section-title {
+            font-size: 12px;
+            font-weight: 700;
+            letter-spacing: 0.04em;
+            text-transform: uppercase;
+            color: #5F6B7A;
+        }
+
+        .product-publish-settings-footer {
+            justify-content: flex-end;
+            padding: 0 22px 22px;
+            margin-top: auto;
+            flex-wrap: nowrap;
         }
 
         .product-publish-export-list {
@@ -4124,6 +4369,30 @@
             max-width: 100%;
         }
 
+        .product-publish-ai-inline .product-publish-preset-quick-select,
+        .product-publish-ai-inline .product-publish-preset-quick-select + .virtual-select {
+            width: 220px;
+            min-width: 220px;
+            max-width: 220px;
+            flex: 0 0 220px;
+        }
+
+        .product-publish-ai-inline .product-publish-preset-quick-select + .virtual-select .virtual-select-trigger,
+        .product-publish-ai-inline .product-publish-preset-quick-select + .virtual-select .virtual-select-menu {
+            width: 220px;
+            min-width: 220px;
+            max-width: 220px;
+        }
+
+        .product-publish-ai-inline .virtual-select-trigger,
+        .product-publish-ai-inline .virtual-select-label,
+        .product-publish-ai-inline .virtual-select-option,
+        .product-publish-ai-inline .virtual-select-option-label {
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+        }
+
         .product-publish-ai-actions {
             display: flex;
             justify-content: flex-end;
@@ -4131,13 +4400,22 @@
             flex-wrap: wrap;
         }
 
+        .product-publish-ai-action-row {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            flex-wrap: wrap;
+        }
+
         .product-publish-ai-actions .btn,
         .product-publish-ai-inline .btn {
-            min-width: 74px;
+            min-width: 92px;
+            width: 92px;
             height: 36px;
             padding: 0 14px;
             border-radius: 10px;
             font-size: 13px;
+            justify-content: center;
         }
 
         .product-publish-ai-stack textarea.form-input {
@@ -6326,6 +6604,10 @@
                                 </div>
                                 <div class="product-publish-header-right">
                                     <div class="template-upload-actions">
+                                        <select id="productPublishHeaderPromptPreset" class="template-select product-publish-header-preset-select" data-searchable="true" onchange="handleProductPublishPromptPresetQuickChange(event, 'header')">
+                                            <option value="">通用标题</option>
+                                        </select>
+                                        <button class="btn btn-secondary" type="button" onclick="openProductPublishPromptPresetModal()">管理预设</button>
                                         <button class="btn btn-secondary" type="button" onclick="importProductPublishFolders()">导入</button>
                                         <button class="btn btn-secondary" type="button" onclick="generateAllProductPublishTitles()">批量生成标题</button>
                                         <button class="btn btn-primary" type="button" onclick="openProductPublishExportModal()">导出模板</button>
@@ -6339,6 +6621,7 @@
                                         <div class="product-publish-panel-head">
                                             <div class="product-publish-panel-head-left">
                                                 <div id="productPublishListTitle" class="product-publish-panel-title">产品列表</div>
+                                                <div id="productPublishListSelectedCount" class="product-publish-panel-count"></div>
                                                 <div id="productPublishListTabs" class="product-publish-list-tabs"></div>
                                             </div>
                                             <div id="productPublishListTools" class="product-publish-panel-head-right"></div>
@@ -6538,68 +6821,39 @@
                         </div>
                         <div class="card-body">
                             <div class="settings-section-intro">
-                                统一配置产品发布使用的 AI 标题生成和图片 OSS 上传信息。保存后，产品发布页和导出模板会直接复用这些配置。
+                                分开管理产品发布使用的 AI 接口、OSS 上传配置和提示词预设。平时直接切换，需要修改时再进入各自的管理窗口。
                             </div>
                             <div class="product-publish-ai-stack">
                                 <div class="product-publish-ai-field">
-                                    <span class="product-publish-ai-label">API 地址</span>
-                                    <input type="text" id="productPublishAiApiUrl" class="form-input" placeholder="例如：https://api.openai.com/v1" style="max-width:100%;">
-                                    <div class="product-publish-ai-hint">填写聚合接口根地址。识别模型会优先读取标准列表，并补充常见 GPT / Gemini / Claude / DeepSeek 等模型。</div>
-                                </div>
-                                <div class="product-publish-ai-field">
-                                    <span class="product-publish-ai-label">API Key</span>
+                                    <span class="product-publish-ai-label">AI配置</span>
                                     <div class="product-publish-ai-inline">
-                                        <input type="password" id="productPublishAiApiKey" class="form-input" placeholder="输入接口密钥" style="max-width:100%;">
-                                        <button class="btn btn-secondary" type="button" onclick="toggleProductPublishApiKeyVisibility()">显示</button>
+                                        <select id="productPublishAiPresetQuick" class="template-select product-publish-preset-quick-select" data-searchable="true" onchange="handleProductPublishAiPresetQuickChange(event)">
+                                            <option value="">默认AI配置</option>
+                                        </select>
+                                        <button class="btn btn-secondary" type="button" onclick="openProductPublishAiPresetModal()">管理预设</button>
                                     </div>
+                                    <div class="product-publish-ai-hint">统一管理 API 地址、API Key 和模型名。</div>
                                 </div>
                                 <div class="product-publish-ai-field">
-                                    <span class="product-publish-ai-label">模型名</span>
-                                    <select id="productPublishAiModel" class="template-select" data-searchable="true" style="width:100%;">
-                                        <option value="">请先识别模型</option>
-                                    </select>
-                                    <div class="product-publish-ai-actions">
-                                        <button class="btn btn-secondary" type="button" onclick="detectProductPublishModels()">识别模型</button>
-                                        <button class="btn btn-secondary" type="button" onclick="testProductPublishModel()">测试模型</button>
+                                    <span class="product-publish-ai-label">OSS配置</span>
+                                    <div class="product-publish-ai-inline">
+                                        <select id="productPublishOssPresetQuick" class="template-select product-publish-preset-quick-select" data-searchable="true" onchange="handleProductPublishOssPresetQuickChange(event)">
+                                            <option value="">默认OSS配置</option>
+                                        </select>
+                                        <button class="btn btn-secondary" type="button" onclick="openProductPublishOssPresetModal()">管理预设</button>
                                     </div>
-                                    <div class="product-publish-ai-hint">Gemini 模型会自动走原生接口；GPT / Claude 继续走 chat/completions。</div>
+                                    <div class="product-publish-ai-hint">统一管理 OSS 上传和固定 URL 前缀。</div>
                                 </div>
                                 <div class="product-publish-ai-field">
-                                    <span class="product-publish-ai-label">生成文档</span>
-                                    <textarea id="productPublishAiPromptDoc" class="form-input" placeholder="填写产品发布标题生成规则" style="min-height:180px;resize:vertical;"></textarea>
+                                    <span class="product-publish-ai-label">预设提示词</span>
+                                    <div class="product-publish-ai-inline">
+                                        <select id="productPublishAiPromptPresetQuick" class="template-select product-publish-preset-quick-select" data-searchable="true" onchange="handleProductPublishPromptPresetQuickChange(event, 'settings')">
+                                            <option value="">通用标题</option>
+                                        </select>
+                                        <button class="btn btn-secondary" type="button" onclick="openProductPublishPromptPresetModal()">管理预设</button>
+                                    </div>
+                                    <div class="product-publish-ai-hint">统一管理产品发布标题生成使用的提示词预设。</div>
                                 </div>
-                            </div>
-                            <div class="settings-section-intro" style="margin-top: 18px;">
-                                OSS 配置用于导出 Temu 表格时自动上传图片并回填 URL。
-                            </div>
-                            <div class="product-publish-export-grid">
-                                <div class="product-publish-export-field">
-                                    <span class="product-publish-info-label">OSS Bucket</span>
-                                    <input id="productPublishSettingsOssBucket" class="form-input" type="text" placeholder="例如：imageflow">
-                                </div>
-                                <div class="product-publish-export-field">
-                                    <span class="product-publish-info-label">OSS 地域</span>
-                                    <input id="productPublishSettingsOssRegion" class="form-input" type="text" placeholder="例如：oss-cn-hangzhou">
-                                </div>
-                                <div class="product-publish-export-field">
-                                    <span class="product-publish-info-label">AccessKey ID</span>
-                                    <input id="productPublishSettingsOssAccessKeyId" class="form-input" type="text" placeholder="填写 OSS AccessKey ID">
-                                </div>
-                                <div class="product-publish-export-field">
-                                    <span class="product-publish-info-label">AccessKey Secret</span>
-                                    <input id="productPublishSettingsOssAccessKeySecret" class="form-input" type="password" placeholder="填写 OSS AccessKey Secret">
-                                </div>
-                                <div class="product-publish-export-field">
-                                    <span class="product-publish-info-label">上传目录</span>
-                                    <input id="productPublishSettingsOssObjectPrefix" class="form-input" type="text" placeholder="例如：products">
-                                </div>
-                                <div class="product-publish-export-field full">
-                                    <span class="product-publish-info-label">固定 URL 前缀（可选）</span>
-                                    <input id="productPublishSettingsUrlPrefix" class="form-input" type="text" placeholder="不使用 OSS 时，可改用固定前缀拼接 URL">
-                                </div>
-                            </div>
-                            <div class="settings-actions">
-                                <button class="btn btn-primary" type="button" onclick="saveProductPublishSettingsNow()">保存发布设置</button>
                             </div>
                         </div>
                     </div>
@@ -7309,6 +7563,153 @@
         </div>
     </div>
 
+    <div id="productPublishPromptPresetModal" class="modal-overlay">
+        <div class="product-publish-config-modal-shell product-publish-prompt-shell">
+            <div class="modal-header">
+                <div>
+                    <div class="modal-title">预设提示词</div>
+                </div>
+            </div>
+            <div class="product-publish-config-modal-body product-publish-prompt-body">
+                <div class="product-publish-prompt-layout">
+                    <div class="product-publish-prompt-list-panel">
+                        <div class="product-publish-prompt-list-head">
+                            <span class="product-publish-panel-title">预设列表</span>
+                            <button class="btn btn-secondary" type="button" onclick="createProductPublishPromptPreset()">新建预设</button>
+                        </div>
+                        <div id="productPublishPromptPresetList" class="product-publish-prompt-list"></div>
+                    </div>
+                    <div class="product-publish-prompt-editor">
+                        <div class="product-publish-export-field full">
+                            <span class="product-publish-info-label">提示词内容</span>
+                            <textarea id="productPublishAiPromptDoc" class="form-input" placeholder="填写产品发布标题生成规则" style="min-height:260px;resize:vertical;"></textarea>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <div class="product-publish-config-modal-footer">
+                <button class="btn btn-secondary" type="button" onclick="closeProductPublishPromptPresetModal()">取消</button>
+                <button class="btn btn-primary" type="button" onclick="saveProductPublishPromptPreset()">保存预设</button>
+            </div>
+        </div>
+    </div>
+
+    <div id="productPublishAiPresetModal" class="modal-overlay">
+        <div class="product-publish-config-modal-shell product-publish-prompt-shell">
+            <div class="modal-header">
+                <div>
+                    <div class="modal-title">AI配置</div>
+                </div>
+            </div>
+            <div class="product-publish-config-modal-body product-publish-prompt-body">
+                <div class="product-publish-prompt-layout">
+                    <div class="product-publish-prompt-list-panel">
+                        <div class="product-publish-prompt-list-head">
+                            <span>预设列表</span>
+                            <button class="btn btn-secondary" type="button" onclick="createProductPublishAiPreset()">新建预设</button>
+                        </div>
+                        <div id="productPublishAiPresetList" class="product-publish-prompt-list"></div>
+                    </div>
+                    <div class="product-publish-prompt-editor">
+                        <div id="productPublishSettingsSectionAi" class="product-publish-settings-section">
+                            <div class="product-publish-ai-stack">
+                                <div class="product-publish-ai-field">
+                                    <span class="product-publish-ai-label">API 地址</span>
+                                    <input type="text" id="productPublishAiApiUrl" class="form-input" placeholder="例如：https://api.openai.com/v1" style="max-width:100%;">
+                                </div>
+                                <div class="product-publish-ai-field">
+                                    <span class="product-publish-ai-label">API Key</span>
+                                    <div class="product-publish-ai-inline">
+                                        <input type="password" id="productPublishAiApiKey" class="form-input" placeholder="输入接口密钥" style="max-width:100%;">
+                                        <button id="productPublishApiKeyToggle" class="btn btn-secondary" type="button" onclick="toggleProductPublishApiKeyVisibility()">显示</button>
+                                    </div>
+                                </div>
+                                <div class="product-publish-ai-field">
+                                    <span class="product-publish-ai-label">模型名</span>
+                                    <select id="productPublishAiModel" class="template-select" data-searchable="true" style="width:100%;">
+                                        <option value="">请先识别模型</option>
+                                    </select>
+                                    <div class="product-publish-ai-action-row">
+                                        <div class="product-publish-ai-actions">
+                                            <button class="btn btn-secondary" type="button" onclick="detectProductPublishModels()">识别模型</button>
+                                            <button class="btn btn-secondary" type="button" onclick="testProductPublishModel()">测试模型</button>
+                                        </div>
+                                        <span id="productPublishModelDetectStatus" class="product-publish-inline-hint"></span>
+                                        <span class="product-publish-inline-status">
+                                            <span id="productPublishModelTestStatus" class="product-publish-inline-hint"></span>
+                                            <button id="productPublishModelTestErrorBtn" class="product-publish-inline-status-btn template-hidden" type="button" title="查看错误" onclick="openProductPublishModelTestError()">
+                                                <svg viewBox="0 0 24 24" width="12" height="12" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="9"></circle><path d="M12 8.2v.1"></path><path d="M12 11v5"></path></svg>
+                                            </button>
+                                        </span>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <div class="modal-actions product-publish-settings-footer">
+                <button class="btn btn-secondary" type="button" onclick="closeProductPublishAiPresetModal()">取消</button>
+                <button class="btn btn-primary" type="button" onclick="saveProductPublishAiPreset()">保存预设</button>
+            </div>
+        </div>
+    </div>
+
+    <div id="productPublishOssPresetModal" class="modal-overlay">
+        <div class="product-publish-config-modal-shell product-publish-prompt-shell">
+            <div class="modal-header">
+                <div>
+                    <div class="modal-title">OSS配置</div>
+                </div>
+            </div>
+            <div class="product-publish-config-modal-body product-publish-prompt-body">
+                <div class="product-publish-prompt-layout">
+                    <div class="product-publish-prompt-list-panel">
+                        <div class="product-publish-prompt-list-head">
+                            <span>预设列表</span>
+                            <button class="btn btn-secondary" type="button" onclick="createProductPublishOssPreset()">新建预设</button>
+                        </div>
+                        <div id="productPublishOssPresetList" class="product-publish-prompt-list"></div>
+                    </div>
+                    <div class="product-publish-prompt-editor">
+                        <div class="product-publish-settings-section">
+                            <div class="product-publish-export-grid">
+                                <div class="product-publish-export-field">
+                                    <span class="product-publish-info-label">OSS Bucket</span>
+                                    <input id="productPublishSettingsOssBucket" class="form-input" type="text" placeholder="例如：imageflow">
+                                </div>
+                                <div class="product-publish-export-field">
+                                    <span class="product-publish-info-label">OSS 地域</span>
+                                    <input id="productPublishSettingsOssRegion" class="form-input" type="text" placeholder="例如：oss-cn-hangzhou">
+                                </div>
+                                <div class="product-publish-export-field">
+                                    <span class="product-publish-info-label">AccessKey ID</span>
+                                    <input id="productPublishSettingsOssAccessKeyId" class="form-input" type="text" placeholder="填写 OSS AccessKey ID">
+                                </div>
+                                <div class="product-publish-export-field">
+                                    <span class="product-publish-info-label">AccessKey Secret</span>
+                                    <input id="productPublishSettingsOssAccessKeySecret" class="form-input" type="password" placeholder="填写 OSS AccessKey Secret">
+                                </div>
+                                <div class="product-publish-export-field">
+                                    <span class="product-publish-info-label">上传目录</span>
+                                    <input id="productPublishSettingsOssObjectPrefix" class="form-input" type="text" placeholder="例如：products">
+                                </div>
+                                <div class="product-publish-export-field full">
+                                    <span class="product-publish-info-label">固定 URL 前缀（可选）</span>
+                                    <input id="productPublishSettingsUrlPrefix" class="form-input" type="text" placeholder="不使用 OSS 时，可改用固定前缀拼接 URL">
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <div class="modal-actions product-publish-settings-footer">
+                <button class="btn btn-secondary" type="button" onclick="closeProductPublishOssPresetModal()">取消</button>
+                <button class="btn btn-primary" type="button" onclick="saveProductPublishOssPreset()">保存预设</button>
+            </div>
+        </div>
+    </div>
+
     <div id="confirmDialogModal" class="modal-overlay">
         <div class="confirm-dialog-shell">
             <div class="confirm-dialog-body">
@@ -8007,19 +8408,25 @@
                 pendingPresetId: ''
             }
         };
-        const productPublishState = {
-            records: [],
-            selectedRecordId: '',
-            selectedRecordIds: [],
-            listMode: 'active',
-            config: {
-                aiProvider: 'auto',
-                aiApiUrl: '',
-                aiApiKey: '',
-                aiModel: '',
-                aiModelHistory: [],
-                titlePromptDoc: '',
-                exportTemplateDefaults: {
+            const productPublishState = {
+                records: [],
+                selectedRecordId: '',
+                selectedRecordIds: [],
+                listMode: 'active',
+                config: {
+                    aiProvider: 'auto',
+                    aiApiUrl: '',
+                    aiApiKey: '',
+                    aiModel: '',
+                    aiModelHistory: [],
+                    aiPresetId: 'default-ai',
+                    aiPresets: [],
+                    ossPresetId: 'default-oss',
+                    ossPresets: [],
+                    titlePromptPresetId: 'default-general',
+                    titlePromptPresets: [],
+                    titlePromptDoc: '',
+                    exportTemplateDefaults: {
                     mainCodePrefix: 'A',
                     categoryId: '124300',
                     outputDir: '',
@@ -8049,6 +8456,8 @@
             },
             detectedModels: [],
             apiKeyVisible: false,
+            modelTestStatus: '',
+            modelTestError: '',
             generatingRecordId: '',
             generatingAll: false,
             exportDraft: {
@@ -9450,10 +9859,15 @@
         function renderProductPublishListTabs() {
             const host = document.getElementById('productPublishListTabs');
             const title = document.getElementById('productPublishListTitle');
+            const selectedCountHost = document.getElementById('productPublishListSelectedCount');
             const nextMode = productPublishState.listMode === 'completed' ? 'active' : 'completed';
             const nextLabel = nextMode === 'completed' ? '切换到完成列表' : '切换到产品列表';
             if (title) {
                 title.textContent = productPublishState.listMode === 'completed' ? '完成列表' : '产品列表';
+            }
+            if (selectedCountHost) {
+                const selectedCount = Array.isArray(productPublishState.selectedRecordIds) ? productPublishState.selectedRecordIds.length : 0;
+                selectedCountHost.textContent = selectedCount > 0 ? `已勾选 ${selectedCount}` : '';
             }
             if (!host) return;
             host.innerHTML = `
@@ -9679,6 +10093,37 @@
                     aiApiUrl: String(config?.aiApiUrl || ''),
                     aiApiKey: String(config?.aiApiKey || ''),
                     aiModel: String(config?.aiModel || ''),
+                    aiPresetId: String(config?.aiPresetId || 'default-ai'),
+                    aiPresets: Array.isArray(config?.aiPresets)
+                        ? config.aiPresets.map((item, index) => ({
+                            id: String(item?.id || `ai-preset-${Date.now()}-${index + 1}`).trim(),
+                            name: String(item?.name || '未命名AI配置').trim() || '未命名AI配置',
+                            aiApiUrl: String(item?.aiApiUrl || '').trim(),
+                            aiApiKey: String(item?.aiApiKey || '').trim(),
+                            aiModel: String(item?.aiModel || '').trim()
+                        })).filter((item) => item.id && item.name)
+                        : [],
+                    ossPresetId: String(config?.ossPresetId || 'default-oss'),
+                    ossPresets: Array.isArray(config?.ossPresets)
+                        ? config.ossPresets.map((item, index) => ({
+                            id: String(item?.id || `oss-preset-${Date.now()}-${index + 1}`).trim(),
+                            name: String(item?.name || '未命名OSS配置').trim() || '未命名OSS配置',
+                            urlPrefix: String(item?.urlPrefix || '').trim(),
+                            ossBucket: String(item?.ossBucket || '').trim(),
+                            ossRegion: String(item?.ossRegion || '').trim(),
+                            ossAccessKeyId: String(item?.ossAccessKeyId || '').trim(),
+                            ossAccessKeySecret: String(item?.ossAccessKeySecret || '').trim(),
+                            ossObjectPrefix: String(item?.ossObjectPrefix || 'products').trim() || 'products'
+                        })).filter((item) => item.id && item.name)
+                        : [],
+                    titlePromptPresetId: String(config?.titlePromptPresetId || 'default-general'),
+                    titlePromptPresets: Array.isArray(config?.titlePromptPresets)
+                        ? config.titlePromptPresets.map((item, index) => ({
+                            id: String(item?.id || `preset-${Date.now()}-${index + 1}`).trim(),
+                            name: String(item?.name || '未命名预设').trim() || '未命名预设',
+                            doc: String(item?.doc || '').trim()
+                        })).filter((item) => item.id && item.name && item.doc)
+                        : [],
                     titlePromptDoc: String(config?.titlePromptDoc || ''),
                     aiModelHistory: Array.isArray(config?.aiModelHistory) ? config.aiModelHistory.slice() : [],
                     exportTemplateDefaults: {
@@ -9727,11 +10172,1323 @@
             }
         }
 
+        function getDefaultProductPublishPromptDoc() {
+            return '请根据我提供的产品图片与指定产品类型（如有）生成适合跨境电商发布的中英双标题。优先识别图片内容；如果指定了产品类型，必须严格按该产品类型生成。保留 1pc / [2D Flat Print]1pc 等前缀规则，过滤敏感词，不要解释，不要编号，不要代码块。只输出两行：第一行英文标题，第二行中文标题，不要写 EN: 或 CN:。';
+        }
+
+        function getDefaultProductPublishPromptPresets() {
+            return [
+                {
+                    id: 'default-general',
+                    name: '通用标题',
+                    doc: getDefaultProductPublishPromptDoc()
+                }
+            ];
+        }
+
+        function getDefaultProductPublishSettingsPresets() {
+            return [
+                {
+                    id: 'default-publish',
+                    name: '默认发布',
+                    aiApiUrl: '',
+                    aiApiKey: '',
+                    aiModel: '',
+                    urlPrefix: '',
+                    ossBucket: '',
+                    ossRegion: '',
+                    ossAccessKeyId: '',
+                    ossAccessKeySecret: '',
+                    ossObjectPrefix: 'products'
+                }
+            ];
+        }
+
+        function getProductPublishSettingsPresetSnapshot(source = productPublishState.config) {
+            const defaults = source?.exportTemplateDefaults || {};
+            return {
+                aiApiUrl: String(source?.aiApiUrl || '').trim(),
+                aiApiKey: String(source?.aiApiKey || '').trim(),
+                aiModel: String(source?.aiModel || '').trim(),
+                urlPrefix: String(defaults.urlPrefix || '').trim(),
+                ossBucket: String(defaults.ossBucket || '').trim(),
+                ossRegion: String(defaults.ossRegion || '').trim(),
+                ossAccessKeyId: String(defaults.ossAccessKeyId || '').trim(),
+                ossAccessKeySecret: String(defaults.ossAccessKeySecret || '').trim(),
+                ossObjectPrefix: String(defaults.ossObjectPrefix || 'products').trim() || 'products'
+            };
+        }
+
+        function normalizeProductPublishSettingsPresetsLocal(presets, selectedId = '', currentValues = null) {
+            const defaults = getDefaultProductPublishSettingsPresets();
+            const normalized = [];
+            const seenIds = new Set();
+            (Array.isArray(presets) ? presets : []).forEach((preset, index) => {
+                const id = String(preset?.id || `publish-preset-${Date.now()}-${index + 1}`).trim();
+                const name = String(preset?.name || '').trim();
+                if (!id || !name || seenIds.has(id)) return;
+                seenIds.add(id);
+                normalized.push({
+                    id,
+                    name,
+                    aiApiUrl: String(preset?.aiApiUrl || '').trim(),
+                    aiApiKey: String(preset?.aiApiKey || '').trim(),
+                    aiModel: String(preset?.aiModel || '').trim(),
+                    urlPrefix: String(preset?.urlPrefix || '').trim(),
+                    ossBucket: String(preset?.ossBucket || '').trim(),
+                    ossRegion: String(preset?.ossRegion || '').trim(),
+                    ossAccessKeyId: String(preset?.ossAccessKeyId || '').trim(),
+                    ossAccessKeySecret: String(preset?.ossAccessKeySecret || '').trim(),
+                    ossObjectPrefix: String(preset?.ossObjectPrefix || 'products').trim() || 'products'
+                });
+            });
+            if (!normalized.length) {
+                normalized.push(...defaults);
+            }
+            let activeId = String(selectedId || normalized[0]?.id || defaults[0].id).trim();
+            let activePreset = normalized.find((preset) => preset.id === activeId);
+            if (!activePreset) {
+                activeId = normalized[0]?.id || defaults[0].id;
+                activePreset = normalized.find((preset) => preset.id === activeId) || normalized[0] || defaults[0];
+            }
+            const current = currentValues ? {
+                aiApiUrl: String(currentValues?.aiApiUrl || '').trim(),
+                aiApiKey: String(currentValues?.aiApiKey || '').trim(),
+                aiModel: String(currentValues?.aiModel || '').trim(),
+                urlPrefix: String(currentValues?.urlPrefix || '').trim(),
+                ossBucket: String(currentValues?.ossBucket || '').trim(),
+                ossRegion: String(currentValues?.ossRegion || '').trim(),
+                ossAccessKeyId: String(currentValues?.ossAccessKeyId || '').trim(),
+                ossAccessKeySecret: String(currentValues?.ossAccessKeySecret || '').trim(),
+                ossObjectPrefix: String(currentValues?.ossObjectPrefix || 'products').trim() || 'products'
+            } : null;
+            const activeIndex = normalized.findIndex((preset) => preset.id === activeId);
+            if (activeIndex >= 0 && current) {
+                normalized[activeIndex] = {
+                    ...normalized[activeIndex],
+                    ...current
+                };
+                activePreset = normalized[activeIndex];
+            }
+            return {
+                presets: normalized,
+                activeId,
+                activePreset
+            };
+        }
+
+        function normalizeProductPublishPromptPresetsLocal(presets, selectedId = '', currentDoc = '') {
+            const defaults = getDefaultProductPublishPromptPresets();
+            const normalized = [];
+            const seenIds = new Set();
+            const hasExplicitPresets = Array.isArray(presets);
+            (Array.isArray(presets) ? presets : []).forEach((preset, index) => {
+                const id = String(preset?.id || `preset-${Date.now()}-${index + 1}`).trim();
+                const name = String(preset?.name || '').trim();
+                const doc = String(preset?.doc || '').trim();
+                if (!id || seenIds.has(id)) return;
+                seenIds.add(id);
+                normalized.push({ id, name, doc });
+            });
+            if (!hasExplicitPresets) {
+                defaults.forEach((preset) => {
+                    if (!seenIds.has(preset.id)) {
+                        normalized.push({ ...preset });
+                        seenIds.add(preset.id);
+                    }
+                });
+            }
+            normalized.sort((a, b) => {
+                const aDefault = String(a?.id || '').startsWith('default-') ? 0 : 1;
+                const bDefault = String(b?.id || '').startsWith('default-') ? 0 : 1;
+                if (aDefault !== bDefault) return aDefault - bDefault;
+                return 0;
+            });
+            const activeId = normalized.some((preset) => preset.id === selectedId)
+                ? selectedId
+                : (normalized[0]?.id || '');
+            const activePreset = normalized.find((preset) => preset.id === activeId) || normalized[0] || null;
+            return {
+                presets: normalized,
+                activeId,
+                activePreset,
+                doc: String(currentDoc ?? activePreset?.doc ?? '').trim()
+            };
+        }
+
+        function getProductPublishPromptPresetOptionsHtml(selectedValue = '') {
+            const presetState = normalizeProductPublishPromptPresetsLocal(
+                productPublishState.config?.titlePromptPresets,
+                selectedValue || productPublishState.config?.titlePromptPresetId,
+                productPublishState.config?.titlePromptDoc
+            );
+            return presetState.presets.map((preset) => `<option value="${escapeHtml(preset.id)}" ${preset.id === presetState.activeId ? 'selected' : ''}>${escapeHtml(preset.name || '未命名预设')}</option>`).join('');
+        }
+
+        function getProductPublishPromptPresetModalSnapshot() {
+            const presetState = normalizeProductPublishPromptPresetsLocal(
+                productPublishState.config?.titlePromptPresets,
+                productPublishState.config?.titlePromptPresetId,
+                String(document.getElementById('productPublishAiPromptDoc')?.value || productPublishState.config?.titlePromptDoc || '').trim()
+            );
+            return JSON.stringify({
+                selectedId: presetState.activeId,
+                doc: String(document.getElementById('productPublishAiPromptDoc')?.value || productPublishState.config?.titlePromptDoc || '').trim(),
+                presets: presetState.presets.map((preset) => ({
+                    id: preset.id,
+                    name: String(preset.name || '').trim(),
+                    doc: String(preset.doc || '').trim()
+                }))
+            });
+        }
+
+        function restoreProductPublishPromptPresetModalSnapshot(snapshotText) {
+            if (!snapshotText) return;
+            try {
+                const snapshot = JSON.parse(snapshotText);
+                productPublishState.config.titlePromptPresets = Array.isArray(snapshot?.presets) ? snapshot.presets : getDefaultProductPublishPromptPresets();
+                productPublishState.config.titlePromptPresetId = String(snapshot?.selectedId || 'default-general').trim() || 'default-general';
+                productPublishState.config.titlePromptDoc = String(snapshot?.doc || '').trim();
+                applyProductPublishPromptPresetById(productPublishState.config.titlePromptPresetId || 'default-general');
+            } catch {}
+        }
+
+        function markProductPublishPromptPresetBaseline() {
+            productPublishState.promptPresetBaseline = getProductPublishPromptPresetModalSnapshot();
+        }
+
+        function isProductPublishPromptPresetDirty() {
+            return String(productPublishState.promptPresetBaseline || '') !== getProductPublishPromptPresetModalSnapshot();
+        }
+
+        async function ensureProductPublishPromptPresetSafeToLeave() {
+            if (!document.getElementById('productPublishPromptPresetModal')?.classList.contains('active')) return true;
+            if (!isProductPublishPromptPresetDirty()) return true;
+            const confirmed = await showConfirmDialog('未保存', '当前预设还没保存，确定继续吗？', {
+                confirmText: '继续',
+                cancelText: '取消'
+            });
+            if (!confirmed) return false;
+            restoreProductPublishPromptPresetModalSnapshot(productPublishState.promptPresetBaseline);
+            return true;
+        }
+
+        function applyProductPublishPromptPresetById(presetId) {
+            const presetState = normalizeProductPublishPromptPresetsLocal(
+                productPublishState.config?.titlePromptPresets,
+                presetId,
+                productPublishState.config?.titlePromptDoc
+            );
+            productPublishState.config.titlePromptPresets = presetState.presets;
+            productPublishState.config.titlePromptPresetId = presetState.activeId;
+            productPublishState.config.titlePromptDoc = presetState.activePreset?.doc || presetState.doc;
+            const presetSelect = document.getElementById('productPublishAiPromptPreset');
+            const quickSelect = document.getElementById('productPublishAiPromptPresetQuick');
+            const headerSelect = document.getElementById('productPublishHeaderPromptPreset');
+            const promptInput = document.getElementById('productPublishAiPromptDoc');
+            if (presetSelect) presetSelect.value = productPublishState.config.titlePromptPresetId || '';
+            if (quickSelect) quickSelect.value = productPublishState.config.titlePromptPresetId || '';
+            if (headerSelect) headerSelect.value = productPublishState.config.titlePromptPresetId || '';
+            if (promptInput) promptInput.value = String(productPublishState.config.titlePromptDoc || '').trim();
+            renderProductPublishPromptPresetList();
+        }
+
+        function handleProductPublishPromptPresetChange(event) {
+            const presetId = String(event?.target?.value || '').trim();
+            applyProductPublishPromptPresetById(presetId);
+        }
+
+        async function handleProductPublishPromptPresetQuickChange(event) {
+            const presetId = String(event?.target?.value || '').trim();
+            applyProductPublishPromptPresetById(presetId);
+            await saveProductPublishSettingsNow(true);
+        }
+
+        function renderProductPublishPromptPresetList() {
+            const host = document.getElementById('productPublishPromptPresetList');
+            const currentLabel = document.getElementById('productPublishAiPromptPresetCurrent');
+            const presetState = normalizeProductPublishPromptPresetsLocal(
+                productPublishState.config?.titlePromptPresets,
+                productPublishState.config?.titlePromptPresetId,
+                productPublishState.config?.titlePromptDoc
+            );
+            productPublishState.config.titlePromptPresets = presetState.presets;
+            productPublishState.config.titlePromptPresetId = presetState.activeId;
+            productPublishState.config.titlePromptDoc = presetState.activePreset?.doc || presetState.doc;
+            if (currentLabel) {
+                currentLabel.textContent = `当前：${String(presetState.activePreset?.name || '通用标题').trim() || '通用标题'}`;
+            }
+            if (!host) return;
+            host.innerHTML = presetState.presets.map((preset) => {
+                const encodedId = encodeURIComponent(preset.id);
+                return `
+                    <div class="product-publish-prompt-item ${preset.id === presetState.activeId ? 'active' : ''}" onclick="selectProductPublishPromptPreset('${encodedId}')">
+                        <div class="product-publish-prompt-item-copy">
+                            <input class="product-publish-preset-list-input" type="text" value="${escapeHtml(preset.name)}" placeholder="预设名称" onclick="event.stopPropagation()" onmousedown="event.stopPropagation()" oninput="updateProductPublishPromptPresetName('${encodedId}', this.value, event)">
+                            <div class="product-publish-prompt-item-meta" title="${escapeHtml(preset.doc)}">${escapeHtml(preset.doc)}</div>
+                        </div>
+                        <div class="product-publish-prompt-item-actions">
+                            <button class="product-publish-prompt-icon-btn danger" type="button" title="删除" onclick="deleteProductPublishPromptPreset('${encodedId}', event)">
+                                <svg viewBox="0 0 24 24" width="12" height="12" fill="none" stroke="currentColor" stroke-width="2.1" stroke-linecap="round"><path d="M7 7l10 10"/><path d="M17 7L7 17"/></svg>
+                            </button>
+                        </div>
+                    </div>
+                `;
+            }).join('');
+        }
+
+        function openProductPublishPromptPresetModal() {
+            document.getElementById('productPublishPromptPresetModal')?.classList.add('active');
+            renderProductPublishPromptPresetList();
+            applyProductPublishPromptPresetById(productPublishState.config.titlePromptPresetId || 'default-general');
+            markProductPublishPromptPresetBaseline();
+        }
+
+        async function closeProductPublishPromptPresetModal() {
+            if (!(await ensureProductPublishPromptPresetSafeToLeave())) return;
+            document.getElementById('productPublishPromptPresetModal')?.classList.remove('active');
+            syncProductPublishSettingsFields();
+        }
+
+        function updateProductPublishPromptPresetName(presetIdEncoded, value, event) {
+            if (event) {
+                event.preventDefault();
+                event.stopPropagation();
+            }
+            const presetId = decodeURIComponent(String(presetIdEncoded || ''));
+            const presets = Array.isArray(productPublishState.config.titlePromptPresets) ? productPublishState.config.titlePromptPresets.slice() : [];
+            const index = presets.findIndex((preset) => preset.id === presetId);
+            if (index < 0) return;
+            presets[index] = {
+                ...presets[index],
+                name: String(value || '')
+            };
+            productPublishState.config.titlePromptPresets = presets;
+        }
+
+        async function selectProductPublishPromptPreset(presetIdEncoded, event) {
+            if (event) {
+                event.preventDefault();
+                event.stopPropagation();
+            }
+            const presetId = decodeURIComponent(String(presetIdEncoded || ''));
+            if (presetId === productPublishState.config.titlePromptPresetId) return;
+            if (!(await ensureProductPublishPromptPresetSafeToLeave())) return;
+            applyProductPublishPromptPresetById(presetId);
+            markProductPublishPromptPresetBaseline();
+        }
+
+        async function createProductPublishPromptPreset() {
+            if (!(await ensureProductPublishPromptPresetSafeToLeave())) return;
+            const presetId = `preset-${Date.now()}`;
+            const presets = Array.isArray(productPublishState.config.titlePromptPresets)
+                ? productPublishState.config.titlePromptPresets.slice()
+                : [];
+            presets.unshift({
+                id: presetId,
+                name: '',
+                doc: ''
+            });
+            productPublishState.config.titlePromptPresets = presets;
+            productPublishState.config.titlePromptPresetId = presetId;
+            productPublishState.config.titlePromptDoc = '';
+            const promptInput = document.getElementById('productPublishAiPromptDoc');
+            applyProductPublishPromptPresetById(presetId);
+            if (promptInput) {
+                promptInput.value = '';
+            }
+            requestAnimationFrame(() => {
+                const input = document.querySelector('#productPublishPromptPresetList .product-publish-prompt-item.active .product-publish-preset-list-input');
+                input?.focus();
+            });
+        }
+
+        async function saveProductPublishPromptPreset() {
+            const promptInput = document.getElementById('productPublishAiPromptDoc');
+            const activePreset = (Array.isArray(productPublishState.config.titlePromptPresets) ? productPublishState.config.titlePromptPresets : []).find((preset) => preset.id === productPublishState.config.titlePromptPresetId);
+            const presetName = String(activePreset?.name || '').trim();
+            const presetDoc = String(promptInput?.value || '').trim();
+            if (!presetName) {
+                await showNoticeDialog('保存预设', '请先填写预设名称。');
+                return;
+            }
+            if (!presetDoc) {
+                await showNoticeDialog('保存预设', '预设提示词不能为空。');
+                return;
+            }
+            const presetState = normalizeProductPublishPromptPresetsLocal(
+                productPublishState.config?.titlePromptPresets,
+                productPublishState.config?.titlePromptPresetId,
+                presetDoc
+            );
+            const presets = presetState.presets.slice();
+            let presetId = String(productPublishState.config?.titlePromptPresetId || '').trim();
+            const existingIndex = presetId ? presets.findIndex((preset) => preset.id === presetId) : -1;
+            if (existingIndex >= 0) {
+                presets[existingIndex] = {
+                    ...presets[existingIndex],
+                    name: presetName,
+                    doc: presetDoc
+                };
+            } else {
+                presetId = `preset-${Date.now()}`;
+                presets.push({
+                    id: presetId,
+                    name: presetName,
+                    doc: presetDoc
+                });
+            }
+            productPublishState.config.titlePromptPresets = presets;
+            productPublishState.config.titlePromptPresetId = presetId;
+            productPublishState.config.titlePromptDoc = presetDoc;
+            await saveProductPublishSettingsNow(true);
+            renderProductPublishPromptPresetList();
+            markProductPublishPromptPresetBaseline();
+            closeProductPublishPromptPresetModal();
+            appendTemplateLog('success', `已保存提示词预设：${presetName}`);
+        }
+
+        async function deleteProductPublishPromptPreset(presetIdEncoded, event) {
+            if (event) {
+                event.preventDefault();
+                event.stopPropagation();
+            }
+            const presetId = decodeURIComponent(String(presetIdEncoded || ''));
+            if (!presetId) return;
+            const preset = (Array.isArray(productPublishState.config.titlePromptPresets) ? productPublishState.config.titlePromptPresets : []).find((item) => item.id === presetId);
+            if (!preset) return;
+            const confirmed = await showConfirmDialog('删除预设', `确定删除提示词预设“${preset.name}”？`, { confirmText: '删除', cancelText: '取消', danger: true });
+            if (!confirmed) return;
+            productPublishState.config.titlePromptPresets = (Array.isArray(productPublishState.config.titlePromptPresets) ? productPublishState.config.titlePromptPresets : []).filter((item) => item.id !== presetId);
+            if (productPublishState.config.titlePromptPresetId === presetId) {
+                productPublishState.config.titlePromptPresetId = '';
+            }
+            const presetState = normalizeProductPublishPromptPresetsLocal(
+                productPublishState.config.titlePromptPresets,
+                productPublishState.config.titlePromptPresetId,
+                productPublishState.config.titlePromptDoc
+            );
+            productPublishState.config.titlePromptPresets = presetState.presets;
+            productPublishState.config.titlePromptPresetId = presetState.activeId;
+            productPublishState.config.titlePromptDoc = presetState.activePreset?.doc || presetState.doc;
+            await saveProductPublishSettingsNow(true);
+            renderProductPublishPromptPresetList();
+            applyProductPublishPromptPresetById(productPublishState.config.titlePromptPresetId || 'default-general');
+            markProductPublishPromptPresetBaseline();
+        }
+
+        function getDefaultProductPublishAiPresets() {
+            return [
+                {
+                    id: 'default-ai',
+                    name: '默认AI配置',
+                    aiApiUrl: '',
+                    aiApiKey: '',
+                    aiModel: ''
+                }
+            ];
+        }
+
+        function getProductPublishAiPresetSnapshot(source = productPublishState.config) {
+            return {
+                aiApiUrl: String(source?.aiApiUrl || '').trim(),
+                aiApiKey: String(source?.aiApiKey || '').trim(),
+                aiModel: String(source?.aiModel || '').trim()
+            };
+        }
+
+        function normalizeProductPublishAiPresetsLocal(presets, selectedId = '', currentValues = null) {
+            const defaults = getDefaultProductPublishAiPresets();
+            const normalized = [];
+            const seenIds = new Set();
+            const hasExplicitPresets = Array.isArray(presets);
+            (Array.isArray(presets) ? presets : []).forEach((preset, index) => {
+                const id = String(preset?.id || `ai-preset-${Date.now()}-${index + 1}`).trim();
+                const name = String(preset?.name || '').trim();
+                if (!id || seenIds.has(id)) return;
+                seenIds.add(id);
+                normalized.push({
+                    id,
+                    name,
+                    aiApiUrl: String(preset?.aiApiUrl || '').trim(),
+                    aiApiKey: String(preset?.aiApiKey || '').trim(),
+                    aiModel: String(preset?.aiModel || '').trim()
+                });
+            });
+            if (!hasExplicitPresets) {
+                defaults.forEach((preset) => {
+                    if (!seenIds.has(preset.id)) {
+                        normalized.push({ ...preset });
+                        seenIds.add(preset.id);
+                    }
+                });
+            }
+            normalized.sort((a, b) => {
+                const aDefault = String(a?.id || '').startsWith('default-') ? 0 : 1;
+                const bDefault = String(b?.id || '').startsWith('default-') ? 0 : 1;
+                if (aDefault !== bDefault) return aDefault - bDefault;
+                return 0;
+            });
+            let activeId = String(selectedId || normalized[0]?.id || '').trim();
+            let activePreset = normalized.find((preset) => preset.id === activeId);
+            if (!activePreset) {
+                activeId = normalized[0]?.id || '';
+                activePreset = normalized.find((preset) => preset.id === activeId) || normalized[0] || null;
+            }
+            const activeIndex = normalized.findIndex((preset) => preset.id === activeId);
+            if (activeIndex >= 0 && currentValues) {
+                normalized[activeIndex] = {
+                    ...normalized[activeIndex],
+                    aiApiUrl: String(currentValues?.aiApiUrl || '').trim(),
+                    aiApiKey: String(currentValues?.aiApiKey || '').trim(),
+                    aiModel: String(currentValues?.aiModel || '').trim()
+                };
+                activePreset = normalized[activeIndex];
+            }
+            return {
+                presets: normalized,
+                activeId,
+                activePreset
+            };
+        }
+
+        function getProductPublishAiPresetOptionsHtml(selectedValue = '') {
+            const presetState = normalizeProductPublishAiPresetsLocal(
+                productPublishState.config?.aiPresets,
+                selectedValue || productPublishState.config?.aiPresetId,
+                getProductPublishAiPresetSnapshot()
+            );
+            return presetState.presets.map((preset) => `<option value="${escapeHtml(preset.id)}" ${preset.id === presetState.activeId ? 'selected' : ''}>${escapeHtml(preset.name || '未命名AI配置')}</option>`).join('');
+        }
+
+        function getProductPublishAiPresetModalSnapshot() {
+            const presetState = normalizeProductPublishAiPresetsLocal(
+                productPublishState.config?.aiPresets,
+                productPublishState.config?.aiPresetId,
+                {
+                    aiApiUrl: String(document.getElementById('productPublishAiApiUrl')?.value || productPublishState.config?.aiApiUrl || '').trim(),
+                    aiApiKey: String(document.getElementById('productPublishAiApiKey')?.value || productPublishState.config?.aiApiKey || '').trim(),
+                    aiModel: String(document.getElementById('productPublishAiModel')?.value || productPublishState.config?.aiModel || '').trim()
+                }
+            );
+            return JSON.stringify({
+                selectedId: presetState.activeId,
+                presets: presetState.presets.map((preset) => ({
+                    id: preset.id,
+                    name: String(preset.name || '').trim(),
+                    aiApiUrl: String(preset.aiApiUrl || '').trim(),
+                    aiApiKey: String(preset.aiApiKey || '').trim(),
+                    aiModel: String(preset.aiModel || '').trim()
+                }))
+            });
+        }
+
+        function restoreProductPublishAiPresetModalSnapshot(snapshotText) {
+            if (!snapshotText) return;
+            try {
+                const snapshot = JSON.parse(snapshotText);
+                productPublishState.config.aiPresets = Array.isArray(snapshot?.presets) ? snapshot.presets : getDefaultProductPublishAiPresets();
+                productPublishState.config.aiPresetId = String(snapshot?.selectedId || 'default-ai').trim() || 'default-ai';
+                applyProductPublishAiPresetById(productPublishState.config.aiPresetId || 'default-ai');
+            } catch {}
+        }
+
+        function markProductPublishAiPresetBaseline() {
+            productPublishState.aiPresetBaseline = getProductPublishAiPresetModalSnapshot();
+        }
+
+        function isProductPublishAiPresetDirty() {
+            return String(productPublishState.aiPresetBaseline || '') !== getProductPublishAiPresetModalSnapshot();
+        }
+
+        async function ensureProductPublishAiPresetSafeToLeave() {
+            if (!document.getElementById('productPublishAiPresetModal')?.classList.contains('active')) return true;
+            if (!isProductPublishAiPresetDirty()) return true;
+            const confirmed = await showConfirmDialog('未保存', '当前预设还没保存，确定继续吗？', {
+                confirmText: '继续',
+                cancelText: '取消'
+            });
+            if (!confirmed) return false;
+            restoreProductPublishAiPresetModalSnapshot(productPublishState.aiPresetBaseline);
+            return true;
+        }
+
+        function applyProductPublishAiPresetById(presetId) {
+            const presetState = normalizeProductPublishAiPresetsLocal(
+                productPublishState.config?.aiPresets,
+                presetId,
+                null
+            );
+            productPublishState.config.aiPresets = presetState.presets;
+            productPublishState.config.aiPresetId = presetState.activeId;
+            productPublishState.config.aiApiUrl = presetState.activePreset?.aiApiUrl || '';
+            productPublishState.config.aiApiKey = presetState.activePreset?.aiApiKey || '';
+            productPublishState.config.aiModel = presetState.activePreset?.aiModel || '';
+            syncProductPublishSettingsFields();
+            renderProductPublishAiPresetList();
+        }
+
+        async function handleProductPublishAiPresetQuickChange(event) {
+            const presetId = String(event?.target?.value || '').trim();
+            applyProductPublishAiPresetById(presetId);
+            await saveProductPublishSettingsNow(true);
+        }
+
+        function renderProductPublishAiPresetList() {
+            const host = document.getElementById('productPublishAiPresetList');
+            if (!host) return;
+            const presetState = normalizeProductPublishAiPresetsLocal(
+                productPublishState.config?.aiPresets,
+                productPublishState.config?.aiPresetId,
+                getProductPublishAiPresetSnapshot()
+            );
+            productPublishState.config.aiPresets = presetState.presets;
+            productPublishState.config.aiPresetId = presetState.activeId;
+            host.innerHTML = presetState.presets.map((preset) => {
+                const encodedId = encodeURIComponent(preset.id);
+                return `
+                    <div class="product-publish-prompt-item ${preset.id === presetState.activeId ? 'active' : ''}" onclick="selectProductPublishAiPreset('${encodedId}')">
+                        <div class="product-publish-prompt-item-copy">
+                            <input class="product-publish-preset-list-input" type="text" value="${escapeHtml(preset.name)}" placeholder="AI配置名称" onclick="event.stopPropagation()" onmousedown="event.stopPropagation()" oninput="updateProductPublishAiPresetName('${encodedId}', this.value, event)">
+                            <div class="product-publish-prompt-item-meta" title="${escapeHtml(preset.aiApiUrl || '未配置接口')}">${escapeHtml(preset.aiApiUrl || '未配置接口')}</div>
+                        </div>
+                        <div class="product-publish-prompt-item-actions">
+                            <button class="product-publish-prompt-icon-btn danger" type="button" title="删除" onclick="deleteProductPublishAiPreset('${encodedId}', event)"><svg viewBox="0 0 24 24" width="12" height="12" fill="none" stroke="currentColor" stroke-width="2.1" stroke-linecap="round"><path d="M7 7l10 10"/><path d="M17 7L7 17"/></svg></button>
+                        </div>
+                    </div>`;
+            }).join('');
+        }
+
+        function openProductPublishAiPresetModal() {
+            document.getElementById('productPublishAiPresetModal')?.classList.add('active');
+            renderProductPublishAiPresetList();
+            applyProductPublishAiPresetById(productPublishState.config.aiPresetId || 'default-ai');
+            markProductPublishAiPresetBaseline();
+        }
+
+        async function closeProductPublishAiPresetModal() {
+            if (!(await ensureProductPublishAiPresetSafeToLeave())) return;
+            document.getElementById('productPublishAiPresetModal')?.classList.remove('active');
+            syncProductPublishSettingsFields();
+        }
+
+        function updateProductPublishAiPresetName(presetIdEncoded, value, event) {
+            if (event) {
+                event.preventDefault();
+                event.stopPropagation();
+            }
+            const presetId = decodeURIComponent(String(presetIdEncoded || ''));
+            const presets = Array.isArray(productPublishState.config.aiPresets) ? productPublishState.config.aiPresets.slice() : [];
+            const index = presets.findIndex((preset) => preset.id === presetId);
+            if (index < 0) return;
+            presets[index] = {
+                ...presets[index],
+                name: String(value || '')
+            };
+            productPublishState.config.aiPresets = presets;
+        }
+
+        async function selectProductPublishAiPreset(presetIdEncoded, event) {
+            if (event) {
+                event.preventDefault();
+                event.stopPropagation();
+            }
+            const presetId = decodeURIComponent(String(presetIdEncoded || ''));
+            if (!presetId) return;
+            if (presetId === productPublishState.config.aiPresetId) return;
+            if (!(await ensureProductPublishAiPresetSafeToLeave())) return;
+            applyProductPublishAiPresetById(presetId);
+            markProductPublishAiPresetBaseline();
+        }
+
+        async function createProductPublishAiPreset() {
+            if (!(await ensureProductPublishAiPresetSafeToLeave())) return;
+            const presetState = normalizeProductPublishAiPresetsLocal(
+                productPublishState.config?.aiPresets,
+                productPublishState.config?.aiPresetId,
+                null
+            );
+            const newPreset = {
+                id: `ai-preset-${Date.now()}`,
+                name: '',
+                aiApiUrl: '',
+                aiApiKey: '',
+                aiModel: ''
+            };
+            productPublishState.config.aiPresets = [newPreset].concat(presetState.presets);
+            productPublishState.config.aiPresetId = newPreset.id;
+            productPublishState.config.aiApiUrl = '';
+            productPublishState.config.aiApiKey = '';
+            productPublishState.config.aiModel = '';
+            applyProductPublishAiPresetById(newPreset.id);
+            requestAnimationFrame(() => {
+                const input = document.querySelector('#productPublishAiPresetList .product-publish-prompt-item.active .product-publish-preset-list-input');
+                input?.focus();
+            });
+        }
+
+        async function saveProductPublishAiPreset() {
+            const activeId = String(productPublishState.config.aiPresetId || 'default-ai').trim() || 'default-ai';
+            const activePreset = (Array.isArray(productPublishState.config.aiPresets) ? productPublishState.config.aiPresets : []).find((preset) => preset.id === activeId);
+            const presetName = String(activePreset?.name || '').trim();
+            const aiApiUrl = String(document.getElementById('productPublishAiApiUrl')?.value || '').trim();
+            const aiModel = String(document.getElementById('productPublishAiModel')?.value || '').trim();
+            if (!presetName) {
+                await showNoticeDialog('保存预设', '请先填写 AI 预设名称。');
+                return;
+            }
+            if (!aiApiUrl) {
+                await showNoticeDialog('保存预设', '请先填写 API 地址。');
+                return;
+            }
+            if (!aiModel) {
+                await showNoticeDialog('保存预设', '请先填写或选择模型名称。');
+                return;
+            }
+            const presetState = normalizeProductPublishAiPresetsLocal(
+                productPublishState.config?.aiPresets,
+                activeId,
+                {
+                    aiApiUrl,
+                    aiApiKey: String(document.getElementById('productPublishAiApiKey')?.value || '').trim(),
+                    aiModel
+                }
+            );
+            const presets = presetState.presets.slice();
+            const index = presets.findIndex((preset) => preset.id === activeId);
+            if (index >= 0) {
+                presets[index] = {
+                    ...presets[index],
+                    name: presetName
+                };
+            }
+            productPublishState.config.aiPresets = presets;
+            productPublishState.config.aiPresetId = activeId;
+            productPublishState.config.aiApiUrl = presets[index]?.aiApiUrl || '';
+            productPublishState.config.aiApiKey = presets[index]?.aiApiKey || '';
+            productPublishState.config.aiModel = presets[index]?.aiModel || '';
+            await saveProductPublishSettingsNow(true);
+            renderProductPublishAiPresetList();
+            markProductPublishAiPresetBaseline();
+            closeProductPublishAiPresetModal();
+            appendTemplateLog('success', `已保存AI配置：${presetName}`);
+        }
+
+        async function deleteProductPublishAiPreset(presetIdEncoded, event) {
+            if (event) {
+                event.preventDefault();
+                event.stopPropagation();
+            }
+            const presetId = decodeURIComponent(String(presetIdEncoded || ''));
+            if (!presetId) return;
+            const preset = (Array.isArray(productPublishState.config.aiPresets) ? productPublishState.config.aiPresets : []).find((item) => item.id === presetId);
+            if (!preset) return;
+            const confirmed = await showConfirmDialog('删除预设', `确定删除AI配置“${preset.name}”？`, { confirmText: '删除', cancelText: '取消', danger: true });
+            if (!confirmed) return;
+            productPublishState.config.aiPresets = (Array.isArray(productPublishState.config.aiPresets) ? productPublishState.config.aiPresets : []).filter((item) => item.id !== presetId);
+            if (productPublishState.config.aiPresetId === presetId) {
+                productPublishState.config.aiPresetId = '';
+            }
+            const presetState = normalizeProductPublishAiPresetsLocal(
+                productPublishState.config.aiPresets,
+                productPublishState.config.aiPresetId,
+                null
+            );
+            productPublishState.config.aiPresets = presetState.presets;
+            productPublishState.config.aiPresetId = presetState.activeId;
+            productPublishState.config.aiApiUrl = presetState.activePreset?.aiApiUrl || '';
+            productPublishState.config.aiApiKey = presetState.activePreset?.aiApiKey || '';
+            productPublishState.config.aiModel = presetState.activePreset?.aiModel || '';
+            await saveProductPublishSettingsNow(true);
+            renderProductPublishAiPresetList();
+            applyProductPublishAiPresetById(productPublishState.config.aiPresetId || 'default-ai');
+            markProductPublishAiPresetBaseline();
+        }
+
+        function getDefaultProductPublishOssPresets() {
+            return [
+                {
+                    id: 'default-oss',
+                    name: '默认OSS配置',
+                    urlPrefix: '',
+                    ossBucket: '',
+                    ossRegion: '',
+                    ossAccessKeyId: '',
+                    ossAccessKeySecret: '',
+                    ossObjectPrefix: 'products'
+                }
+            ];
+        }
+
+        function getProductPublishOssPresetSnapshot(source = productPublishState.config) {
+            const defaults = source?.exportTemplateDefaults || {};
+            return {
+                urlPrefix: String(defaults.urlPrefix || '').trim(),
+                ossBucket: String(defaults.ossBucket || '').trim(),
+                ossRegion: String(defaults.ossRegion || '').trim(),
+                ossAccessKeyId: String(defaults.ossAccessKeyId || '').trim(),
+                ossAccessKeySecret: String(defaults.ossAccessKeySecret || '').trim(),
+                ossObjectPrefix: String(defaults.ossObjectPrefix || 'products').trim() || 'products'
+            };
+        }
+
+        function normalizeProductPublishOssPresetsLocal(presets, selectedId = '', currentValues = null) {
+            const defaults = getDefaultProductPublishOssPresets();
+            const normalized = [];
+            const seenIds = new Set();
+            const hasExplicitPresets = Array.isArray(presets);
+            (Array.isArray(presets) ? presets : []).forEach((preset, index) => {
+                const id = String(preset?.id || `oss-preset-${Date.now()}-${index + 1}`).trim();
+                const name = String(preset?.name || '').trim();
+                if (!id || seenIds.has(id)) return;
+                seenIds.add(id);
+                normalized.push({
+                    id,
+                    name,
+                    urlPrefix: String(preset?.urlPrefix || '').trim(),
+                    ossBucket: String(preset?.ossBucket || '').trim(),
+                    ossRegion: String(preset?.ossRegion || '').trim(),
+                    ossAccessKeyId: String(preset?.ossAccessKeyId || '').trim(),
+                    ossAccessKeySecret: String(preset?.ossAccessKeySecret || '').trim(),
+                    ossObjectPrefix: String(preset?.ossObjectPrefix || 'products').trim() || 'products'
+                });
+            });
+            if (!hasExplicitPresets) {
+                defaults.forEach((preset) => {
+                    if (!seenIds.has(preset.id)) {
+                        normalized.push({ ...preset });
+                        seenIds.add(preset.id);
+                    }
+                });
+            }
+            normalized.sort((a, b) => {
+                const aDefault = String(a?.id || '').startsWith('default-') ? 0 : 1;
+                const bDefault = String(b?.id || '').startsWith('default-') ? 0 : 1;
+                if (aDefault !== bDefault) return aDefault - bDefault;
+                return 0;
+            });
+            let activeId = String(selectedId || normalized[0]?.id || '').trim();
+            let activePreset = normalized.find((preset) => preset.id === activeId);
+            if (!activePreset) {
+                activeId = normalized[0]?.id || '';
+                activePreset = normalized.find((preset) => preset.id === activeId) || normalized[0] || null;
+            }
+            const activeIndex = normalized.findIndex((preset) => preset.id === activeId);
+            if (activeIndex >= 0 && currentValues) {
+                normalized[activeIndex] = {
+                    ...normalized[activeIndex],
+                    urlPrefix: String(currentValues?.urlPrefix || '').trim(),
+                    ossBucket: String(currentValues?.ossBucket || '').trim(),
+                    ossRegion: String(currentValues?.ossRegion || '').trim(),
+                    ossAccessKeyId: String(currentValues?.ossAccessKeyId || '').trim(),
+                    ossAccessKeySecret: String(currentValues?.ossAccessKeySecret || '').trim(),
+                    ossObjectPrefix: String(currentValues?.ossObjectPrefix || 'products').trim() || 'products'
+                };
+                activePreset = normalized[activeIndex];
+            }
+            return {
+                presets: normalized,
+                activeId,
+                activePreset
+            };
+        }
+
+        function getProductPublishOssPresetOptionsHtml(selectedValue = '') {
+            const presetState = normalizeProductPublishOssPresetsLocal(
+                productPublishState.config?.ossPresets,
+                selectedValue || productPublishState.config?.ossPresetId,
+                getProductPublishOssPresetSnapshot()
+            );
+            return presetState.presets.map((preset) => `<option value="${escapeHtml(preset.id)}" ${preset.id === presetState.activeId ? 'selected' : ''}>${escapeHtml(preset.name || '未命名OSS配置')}</option>`).join('');
+        }
+
+        function getProductPublishOssPresetModalSnapshot() {
+            const presetState = normalizeProductPublishOssPresetsLocal(
+                productPublishState.config?.ossPresets,
+                productPublishState.config?.ossPresetId,
+                {
+                    urlPrefix: String(document.getElementById('productPublishSettingsUrlPrefix')?.value || productPublishState.config?.exportTemplateDefaults?.urlPrefix || '').trim(),
+                    ossBucket: String(document.getElementById('productPublishSettingsOssBucket')?.value || productPublishState.config?.exportTemplateDefaults?.ossBucket || '').trim(),
+                    ossRegion: String(document.getElementById('productPublishSettingsOssRegion')?.value || productPublishState.config?.exportTemplateDefaults?.ossRegion || '').trim(),
+                    ossAccessKeyId: String(document.getElementById('productPublishSettingsOssAccessKeyId')?.value || productPublishState.config?.exportTemplateDefaults?.ossAccessKeyId || '').trim(),
+                    ossAccessKeySecret: String(document.getElementById('productPublishSettingsOssAccessKeySecret')?.value || productPublishState.config?.exportTemplateDefaults?.ossAccessKeySecret || '').trim(),
+                    ossObjectPrefix: String(document.getElementById('productPublishSettingsOssObjectPrefix')?.value || productPublishState.config?.exportTemplateDefaults?.ossObjectPrefix || 'products').trim() || 'products'
+                }
+            );
+            return JSON.stringify({
+                selectedId: presetState.activeId,
+                presets: presetState.presets.map((preset) => ({
+                    id: preset.id,
+                    name: String(preset.name || '').trim(),
+                    urlPrefix: String(preset.urlPrefix || '').trim(),
+                    ossBucket: String(preset.ossBucket || '').trim(),
+                    ossRegion: String(preset.ossRegion || '').trim(),
+                    ossAccessKeyId: String(preset.ossAccessKeyId || '').trim(),
+                    ossAccessKeySecret: String(preset.ossAccessKeySecret || '').trim(),
+                    ossObjectPrefix: String(preset.ossObjectPrefix || 'products').trim() || 'products'
+                }))
+            });
+        }
+
+        function restoreProductPublishOssPresetModalSnapshot(snapshotText) {
+            if (!snapshotText) return;
+            try {
+                const snapshot = JSON.parse(snapshotText);
+                productPublishState.config.ossPresets = Array.isArray(snapshot?.presets) ? snapshot.presets : getDefaultProductPublishOssPresets();
+                productPublishState.config.ossPresetId = String(snapshot?.selectedId || 'default-oss').trim() || 'default-oss';
+                applyProductPublishOssPresetById(productPublishState.config.ossPresetId || 'default-oss');
+            } catch {}
+        }
+
+        function markProductPublishOssPresetBaseline() {
+            productPublishState.ossPresetBaseline = getProductPublishOssPresetModalSnapshot();
+        }
+
+        function isProductPublishOssPresetDirty() {
+            return String(productPublishState.ossPresetBaseline || '') !== getProductPublishOssPresetModalSnapshot();
+        }
+
+        async function ensureProductPublishOssPresetSafeToLeave() {
+            if (!document.getElementById('productPublishOssPresetModal')?.classList.contains('active')) return true;
+            if (!isProductPublishOssPresetDirty()) return true;
+            const confirmed = await showConfirmDialog('未保存', '当前预设还没保存，确定继续吗？', {
+                confirmText: '继续',
+                cancelText: '取消'
+            });
+            if (!confirmed) return false;
+            restoreProductPublishOssPresetModalSnapshot(productPublishState.ossPresetBaseline);
+            return true;
+        }
+
+        function applyProductPublishOssPresetById(presetId) {
+            const presetState = normalizeProductPublishOssPresetsLocal(
+                productPublishState.config?.ossPresets,
+                presetId,
+                null
+            );
+            productPublishState.config.ossPresets = presetState.presets;
+            productPublishState.config.ossPresetId = presetState.activeId;
+            productPublishState.config.exportTemplateDefaults = {
+                ...(productPublishState.config.exportTemplateDefaults || {}),
+                urlPrefix: presetState.activePreset?.urlPrefix || '',
+                ossBucket: presetState.activePreset?.ossBucket || '',
+                ossRegion: presetState.activePreset?.ossRegion || '',
+                ossAccessKeyId: presetState.activePreset?.ossAccessKeyId || '',
+                ossAccessKeySecret: presetState.activePreset?.ossAccessKeySecret || '',
+                ossObjectPrefix: presetState.activePreset?.ossObjectPrefix || 'products'
+            };
+            syncProductPublishSettingsFields();
+            renderProductPublishOssPresetList();
+        }
+
+        async function handleProductPublishOssPresetQuickChange(event) {
+            const presetId = String(event?.target?.value || '').trim();
+            applyProductPublishOssPresetById(presetId);
+            await saveProductPublishSettingsNow(true);
+        }
+
+        function renderProductPublishOssPresetList() {
+            const host = document.getElementById('productPublishOssPresetList');
+            if (!host) return;
+            const presetState = normalizeProductPublishOssPresetsLocal(
+                productPublishState.config?.ossPresets,
+                productPublishState.config?.ossPresetId,
+                getProductPublishOssPresetSnapshot()
+            );
+            productPublishState.config.ossPresets = presetState.presets;
+            productPublishState.config.ossPresetId = presetState.activeId;
+            host.innerHTML = presetState.presets.map((preset) => {
+                const encodedId = encodeURIComponent(preset.id);
+                const meta = preset.ossBucket ? `${preset.ossBucket}${preset.ossRegion ? ` · ${preset.ossRegion}` : ''}` : (preset.urlPrefix || '未配置OSS');
+                return `
+                    <div class="product-publish-prompt-item ${preset.id === presetState.activeId ? 'active' : ''}" onclick="selectProductPublishOssPreset('${encodedId}')">
+                        <div class="product-publish-prompt-item-copy">
+                            <input class="product-publish-preset-list-input" type="text" value="${escapeHtml(preset.name)}" placeholder="OSS配置名称" onclick="event.stopPropagation()" onmousedown="event.stopPropagation()" oninput="updateProductPublishOssPresetName('${encodedId}', this.value, event)">
+                            <div class="product-publish-prompt-item-meta" title="${escapeHtml(meta)}">${escapeHtml(meta)}</div>
+                        </div>
+                        <div class="product-publish-prompt-item-actions">
+                            <button class="product-publish-prompt-icon-btn danger" type="button" title="删除" onclick="deleteProductPublishOssPreset('${encodedId}', event)"><svg viewBox="0 0 24 24" width="12" height="12" fill="none" stroke="currentColor" stroke-width="2.1" stroke-linecap="round"><path d="M7 7l10 10"/><path d="M17 7L7 17"/></svg></button>
+                        </div>
+                    </div>`;
+            }).join('');
+        }
+
+        function openProductPublishOssPresetModal() {
+            document.getElementById('productPublishOssPresetModal')?.classList.add('active');
+            renderProductPublishOssPresetList();
+            applyProductPublishOssPresetById(productPublishState.config.ossPresetId || 'default-oss');
+            markProductPublishOssPresetBaseline();
+        }
+
+        async function closeProductPublishOssPresetModal() {
+            if (!(await ensureProductPublishOssPresetSafeToLeave())) return;
+            document.getElementById('productPublishOssPresetModal')?.classList.remove('active');
+            syncProductPublishSettingsFields();
+        }
+
+        function updateProductPublishOssPresetName(presetIdEncoded, value, event) {
+            if (event) {
+                event.preventDefault();
+                event.stopPropagation();
+            }
+            const presetId = decodeURIComponent(String(presetIdEncoded || ''));
+            const presets = Array.isArray(productPublishState.config.ossPresets) ? productPublishState.config.ossPresets.slice() : [];
+            const index = presets.findIndex((preset) => preset.id === presetId);
+            if (index < 0) return;
+            presets[index] = {
+                ...presets[index],
+                name: String(value || '')
+            };
+            productPublishState.config.ossPresets = presets;
+        }
+
+        async function selectProductPublishOssPreset(presetIdEncoded, event) {
+            if (event) {
+                event.preventDefault();
+                event.stopPropagation();
+            }
+            const presetId = decodeURIComponent(String(presetIdEncoded || ''));
+            if (!presetId) return;
+            if (presetId === productPublishState.config.ossPresetId) return;
+            if (!(await ensureProductPublishOssPresetSafeToLeave())) return;
+            applyProductPublishOssPresetById(presetId);
+            markProductPublishOssPresetBaseline();
+        }
+
+        async function createProductPublishOssPreset() {
+            if (!(await ensureProductPublishOssPresetSafeToLeave())) return;
+            const presetState = normalizeProductPublishOssPresetsLocal(
+                productPublishState.config?.ossPresets,
+                productPublishState.config?.ossPresetId,
+                null
+            );
+            const newPreset = {
+                id: `oss-preset-${Date.now()}`,
+                name: '',
+                urlPrefix: '',
+                ossBucket: '',
+                ossRegion: '',
+                ossAccessKeyId: '',
+                ossAccessKeySecret: '',
+                ossObjectPrefix: 'products'
+            };
+            productPublishState.config.ossPresets = [newPreset].concat(presetState.presets);
+            productPublishState.config.ossPresetId = newPreset.id;
+            productPublishState.config.exportTemplateDefaults = {
+                ...(productPublishState.config.exportTemplateDefaults || {}),
+                urlPrefix: '',
+                ossBucket: '',
+                ossRegion: '',
+                ossAccessKeyId: '',
+                ossAccessKeySecret: '',
+                ossObjectPrefix: 'products'
+            };
+            applyProductPublishOssPresetById(newPreset.id);
+            requestAnimationFrame(() => {
+                const input = document.querySelector('#productPublishOssPresetList .product-publish-prompt-item.active .product-publish-preset-list-input');
+                input?.focus();
+            });
+        }
+
+        async function saveProductPublishOssPreset() {
+            const activeId = String(productPublishState.config.ossPresetId || 'default-oss').trim() || 'default-oss';
+            const activePreset = (Array.isArray(productPublishState.config.ossPresets) ? productPublishState.config.ossPresets : []).find((preset) => preset.id === activeId);
+            const presetName = String(activePreset?.name || '').trim();
+            const urlPrefix = String(document.getElementById('productPublishSettingsUrlPrefix')?.value || '').trim();
+            const ossBucket = String(document.getElementById('productPublishSettingsOssBucket')?.value || '').trim();
+            const ossRegion = String(document.getElementById('productPublishSettingsOssRegion')?.value || '').trim();
+            const ossAccessKeyId = String(document.getElementById('productPublishSettingsOssAccessKeyId')?.value || '').trim();
+            const ossAccessKeySecret = String(document.getElementById('productPublishSettingsOssAccessKeySecret')?.value || '').trim();
+            if (!presetName) {
+                await showNoticeDialog('保存预设', '请先填写 OSS 预设名称。');
+                return;
+            }
+            if (!urlPrefix && !(ossBucket && ossRegion && ossAccessKeyId && ossAccessKeySecret)) {
+                await showNoticeDialog('保存预设', '请至少填写固定 URL 前缀，或完整填写 OSS 配置。');
+                return;
+            }
+            const presetState = normalizeProductPublishOssPresetsLocal(
+                productPublishState.config?.ossPresets,
+                activeId,
+                {
+                    urlPrefix,
+                    ossBucket,
+                    ossRegion,
+                    ossAccessKeyId,
+                    ossAccessKeySecret,
+                    ossObjectPrefix: String(document.getElementById('productPublishSettingsOssObjectPrefix')?.value || '').trim() || 'products'
+                }
+            );
+            const presets = presetState.presets.slice();
+            const index = presets.findIndex((preset) => preset.id === activeId);
+            if (index >= 0) {
+                presets[index] = {
+                    ...presets[index],
+                    name: presetName
+                };
+            }
+            productPublishState.config.ossPresets = presets;
+            productPublishState.config.ossPresetId = activeId;
+            productPublishState.config.exportTemplateDefaults = {
+                ...(productPublishState.config.exportTemplateDefaults || {}),
+                urlPrefix: presets[index]?.urlPrefix || '',
+                ossBucket: presets[index]?.ossBucket || '',
+                ossRegion: presets[index]?.ossRegion || '',
+                ossAccessKeyId: presets[index]?.ossAccessKeyId || '',
+                ossAccessKeySecret: presets[index]?.ossAccessKeySecret || '',
+                ossObjectPrefix: presets[index]?.ossObjectPrefix || 'products'
+            };
+            await saveProductPublishSettingsNow(true);
+            renderProductPublishOssPresetList();
+            markProductPublishOssPresetBaseline();
+            closeProductPublishOssPresetModal();
+            appendTemplateLog('success', `已保存OSS配置：${presetName}`);
+        }
+
+        async function deleteProductPublishOssPreset(presetIdEncoded, event) {
+            if (event) {
+                event.preventDefault();
+                event.stopPropagation();
+            }
+            const presetId = decodeURIComponent(String(presetIdEncoded || ''));
+            if (!presetId) return;
+            const preset = (Array.isArray(productPublishState.config.ossPresets) ? productPublishState.config.ossPresets : []).find((item) => item.id === presetId);
+            if (!preset) return;
+            const confirmed = await showConfirmDialog('删除预设', `确定删除OSS配置“${preset.name}”？`, { confirmText: '删除', cancelText: '取消', danger: true });
+            if (!confirmed) return;
+            productPublishState.config.ossPresets = (Array.isArray(productPublishState.config.ossPresets) ? productPublishState.config.ossPresets : []).filter((item) => item.id !== presetId);
+            if (productPublishState.config.ossPresetId === presetId) {
+                productPublishState.config.ossPresetId = '';
+            }
+            const presetState = normalizeProductPublishOssPresetsLocal(
+                productPublishState.config.ossPresets,
+                productPublishState.config.ossPresetId,
+                null
+            );
+            productPublishState.config.ossPresets = presetState.presets;
+            productPublishState.config.ossPresetId = presetState.activeId;
+            productPublishState.config.exportTemplateDefaults = {
+                ...(productPublishState.config.exportTemplateDefaults || {}),
+                urlPrefix: presetState.activePreset?.urlPrefix || '',
+                ossBucket: presetState.activePreset?.ossBucket || '',
+                ossRegion: presetState.activePreset?.ossRegion || '',
+                ossAccessKeyId: presetState.activePreset?.ossAccessKeyId || '',
+                ossAccessKeySecret: presetState.activePreset?.ossAccessKeySecret || '',
+                ossObjectPrefix: presetState.activePreset?.ossObjectPrefix || 'products'
+            };
+            await saveProductPublishSettingsNow(true);
+            renderProductPublishOssPresetList();
+            applyProductPublishOssPresetById(productPublishState.config.ossPresetId || 'default-oss');
+            markProductPublishOssPresetBaseline();
+        }
+
+        function applyProductPublishSettingsPresetById(presetId) {
+            const presetState = normalizeProductPublishSettingsPresetsLocal(
+                productPublishState.config?.settingsPresets,
+                presetId,
+                getProductPublishSettingsPresetSnapshot()
+            );
+            productPublishState.config.settingsPresets = presetState.presets;
+            productPublishState.config.settingsPresetId = presetState.activeId;
+            productPublishState.config.aiApiUrl = presetState.activePreset?.aiApiUrl || '';
+            productPublishState.config.aiApiKey = presetState.activePreset?.aiApiKey || '';
+            productPublishState.config.aiModel = presetState.activePreset?.aiModel || '';
+            productPublishState.config.exportTemplateDefaults = {
+                ...(productPublishState.config.exportTemplateDefaults || {}),
+                urlPrefix: presetState.activePreset?.urlPrefix || '',
+                ossBucket: presetState.activePreset?.ossBucket || '',
+                ossRegion: presetState.activePreset?.ossRegion || '',
+                ossAccessKeyId: presetState.activePreset?.ossAccessKeyId || '',
+                ossAccessKeySecret: presetState.activePreset?.ossAccessKeySecret || '',
+                ossObjectPrefix: presetState.activePreset?.ossObjectPrefix || 'products'
+            };
+            const quickSelect = document.getElementById('productPublishSettingsPresetQuick');
+            const nameInput = document.getElementById('productPublishSettingsPresetName');
+            if (quickSelect) quickSelect.value = productPublishState.config.settingsPresetId || '';
+            if (nameInput) nameInput.value = String(presetState.activePreset?.name || '').trim();
+            renderProductPublishSettingsPresetList();
+        }
+
+        async function handleProductPublishSettingsPresetQuickChange(event) {
+            const presetId = String(event?.target?.value || '').trim();
+            applyProductPublishSettingsPresetById(presetId);
+            await saveProductPublishSettingsNow(true);
+        }
+
+        function renderProductPublishSettingsPresetList() {
+            const host = document.getElementById('productPublishSettingsPresetList');
+            if (!host) return;
+            const presetState = normalizeProductPublishSettingsPresetsLocal(
+                productPublishState.config?.settingsPresets,
+                productPublishState.config?.settingsPresetId,
+                getProductPublishSettingsPresetSnapshot()
+            );
+            productPublishState.config.settingsPresets = presetState.presets;
+            productPublishState.config.settingsPresetId = presetState.activeId;
+            host.innerHTML = presetState.presets.map((preset) => {
+                const encodedId = encodeURIComponent(preset.id);
+                const canDelete = preset.id !== 'default-publish';
+                return `
+                    <div class="product-publish-prompt-item ${preset.id === presetState.activeId ? 'active' : ''}" onclick="selectProductPublishSettingsPreset('${encodedId}')">
+                        <div class="product-publish-prompt-item-copy">
+                            <div class="product-publish-prompt-item-name">${escapeHtml(preset.name)}</div>
+                            <div class="product-publish-prompt-item-meta" title="${escapeHtml(preset.aiApiUrl || '未配置接口')}">${escapeHtml(preset.aiApiUrl || '未配置接口')}</div>
+                        </div>
+                        <div class="product-publish-prompt-item-actions">
+                            <button class="product-publish-prompt-icon-btn" type="button" title="编辑" onclick="selectProductPublishSettingsPreset('${encodedId}', event)">
+                                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M12 20h9"/><path d="M16.5 3.5a2.1 2.1 0 0 1 3 3L7 19l-4 1 1-4 12.5-12.5Z"/></svg>
+                            </button>
+                            ${canDelete ? `
+                                <button class="product-publish-prompt-icon-btn danger" type="button" title="删除" onclick="deleteProductPublishSettingsPreset('${encodedId}', event)">
+                                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M3 6h18"/><path d="M8 6V4h8v2"/><path d="M19 6l-1 14H6L5 6"/><path d="M10 11v6"/><path d="M14 11v6"/></svg>
+                                </button>` : ''}
+                        </div>
+                    </div>`;
+            }).join('');
+        }
+
+        function openProductPublishSettingsPresetModal(section = '') {
+            document.getElementById('productPublishSettingsPresetModal')?.classList.add('active');
+            renderProductPublishSettingsPresetList();
+            applyProductPublishSettingsPresetById(productPublishState.config.settingsPresetId || 'default-publish');
+            requestAnimationFrame(() => {
+                const targetId = section === 'oss' ? 'productPublishSettingsSectionOss' : (section === 'ai' ? 'productPublishSettingsSectionAi' : '');
+                if (!targetId) return;
+                const target = document.getElementById(targetId);
+                target?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+            });
+        }
+
+        function closeProductPublishSettingsPresetModal() {
+            document.getElementById('productPublishSettingsPresetModal')?.classList.remove('active');
+            syncProductPublishSettingsFields();
+        }
+
+        function selectProductPublishSettingsPreset(presetIdEncoded, event) {
+            if (event) {
+                event.preventDefault();
+                event.stopPropagation();
+            }
+            const presetId = decodeURIComponent(String(presetIdEncoded || ''));
+            if (!presetId) return;
+            applyProductPublishSettingsPresetById(presetId);
+        }
+
+        function createProductPublishSettingsPreset() {
+            const presetState = normalizeProductPublishSettingsPresetsLocal(
+                productPublishState.config?.settingsPresets,
+                productPublishState.config?.settingsPresetId,
+                getProductPublishSettingsPresetSnapshot()
+            );
+            const newPreset = {
+                ...getProductPublishSettingsPresetSnapshot(),
+                id: `publish-preset-${Date.now()}`,
+                name: '新发布预设'
+            };
+            productPublishState.config.settingsPresets = [newPreset].concat(presetState.presets);
+            productPublishState.config.settingsPresetId = newPreset.id;
+            renderProductPublishSettingsPresetList();
+            applyProductPublishSettingsPresetById(newPreset.id);
+        }
+
+        async function saveProductPublishSettingsPreset() {
+            const activeId = String(productPublishState.config.settingsPresetId || 'default-publish').trim() || 'default-publish';
+            const presetName = String(document.getElementById('productPublishSettingsPresetName')?.value || '').trim() || '未命名发布预设';
+            const presetState = normalizeProductPublishSettingsPresetsLocal(
+                productPublishState.config?.settingsPresets,
+                activeId,
+                {
+                    aiApiUrl: String(document.getElementById('productPublishAiApiUrl')?.value || '').trim(),
+                    aiApiKey: String(document.getElementById('productPublishAiApiKey')?.value || '').trim(),
+                    aiModel: String(document.getElementById('productPublishAiModel')?.value || '').trim(),
+                    urlPrefix: String(document.getElementById('productPublishSettingsUrlPrefix')?.value || '').trim(),
+                    ossBucket: String(document.getElementById('productPublishSettingsOssBucket')?.value || '').trim(),
+                    ossRegion: String(document.getElementById('productPublishSettingsOssRegion')?.value || '').trim(),
+                    ossAccessKeyId: String(document.getElementById('productPublishSettingsOssAccessKeyId')?.value || '').trim(),
+                    ossAccessKeySecret: String(document.getElementById('productPublishSettingsOssAccessKeySecret')?.value || '').trim(),
+                    ossObjectPrefix: String(document.getElementById('productPublishSettingsOssObjectPrefix')?.value || '').trim() || 'products'
+                }
+            );
+            const presets = presetState.presets.slice();
+            const index = presets.findIndex((preset) => preset.id === activeId);
+            if (index >= 0) {
+                presets[index] = {
+                    ...presets[index],
+                    name: presetName
+                };
+            }
+            productPublishState.config.settingsPresets = presets;
+            productPublishState.config.settingsPresetId = activeId;
+            productPublishState.config.aiApiUrl = presets[index]?.aiApiUrl || '';
+            productPublishState.config.aiApiKey = presets[index]?.aiApiKey || '';
+            productPublishState.config.aiModel = presets[index]?.aiModel || '';
+            productPublishState.config.exportTemplateDefaults = {
+                ...(productPublishState.config.exportTemplateDefaults || {}),
+                urlPrefix: presets[index]?.urlPrefix || '',
+                ossBucket: presets[index]?.ossBucket || '',
+                ossRegion: presets[index]?.ossRegion || '',
+                ossAccessKeyId: presets[index]?.ossAccessKeyId || '',
+                ossAccessKeySecret: presets[index]?.ossAccessKeySecret || '',
+                ossObjectPrefix: presets[index]?.ossObjectPrefix || 'products'
+            };
+            await saveProductPublishSettingsNow(true);
+            renderProductPublishSettingsPresetList();
+            closeProductPublishSettingsPresetModal();
+            appendTemplateLog('success', `已保存发布预设：${presetName}`);
+        }
+
+        async function deleteProductPublishSettingsPreset(presetIdEncoded, event) {
+            if (event) {
+                event.preventDefault();
+                event.stopPropagation();
+            }
+            const presetId = decodeURIComponent(String(presetIdEncoded || ''));
+            if (!presetId || presetId === 'default-publish') return;
+            const preset = (Array.isArray(productPublishState.config.settingsPresets) ? productPublishState.config.settingsPresets : []).find((item) => item.id === presetId);
+            if (!preset) return;
+            const confirmed = await showConfirmDialog('删除预设', `确定删除发布预设“${preset.name}”？`, { confirmText: '删除', cancelText: '取消', danger: true });
+            if (!confirmed) return;
+            productPublishState.config.settingsPresets = (Array.isArray(productPublishState.config.settingsPresets) ? productPublishState.config.settingsPresets : []).filter((item) => item.id !== presetId);
+            if (productPublishState.config.settingsPresetId === presetId) {
+                productPublishState.config.settingsPresetId = 'default-publish';
+            }
+            const presetState = normalizeProductPublishSettingsPresetsLocal(
+                productPublishState.config.settingsPresets,
+                productPublishState.config.settingsPresetId,
+                getProductPublishSettingsPresetSnapshot()
+            );
+            productPublishState.config.settingsPresets = presetState.presets;
+            productPublishState.config.settingsPresetId = presetState.activeId;
+            productPublishState.config.aiApiUrl = presetState.activePreset?.aiApiUrl || '';
+            productPublishState.config.aiApiKey = presetState.activePreset?.aiApiKey || '';
+            productPublishState.config.aiModel = presetState.activePreset?.aiModel || '';
+            productPublishState.config.exportTemplateDefaults = {
+                ...(productPublishState.config.exportTemplateDefaults || {}),
+                urlPrefix: presetState.activePreset?.urlPrefix || '',
+                ossBucket: presetState.activePreset?.ossBucket || '',
+                ossRegion: presetState.activePreset?.ossRegion || '',
+                ossAccessKeyId: presetState.activePreset?.ossAccessKeyId || '',
+                ossAccessKeySecret: presetState.activePreset?.ossAccessKeySecret || '',
+                ossObjectPrefix: presetState.activePreset?.ossObjectPrefix || 'products'
+            };
+            await saveProductPublishSettingsNow(true);
+            renderProductPublishSettingsPresetList();
+            applyProductPublishSettingsPresetById(productPublishState.config.settingsPresetId || 'default-publish');
+        }
+
         function syncProductPublishSettingsFields() {
             const cfg = productPublishState.config;
+            const aiPresetQuickInput = document.getElementById('productPublishAiPresetQuick');
+            const aiPresetNameInput = document.getElementById('productPublishAiPresetName');
+            const ossPresetQuickInput = document.getElementById('productPublishOssPresetQuick');
+            const ossPresetNameInput = document.getElementById('productPublishOssPresetName');
             const apiUrlInput = document.getElementById('productPublishAiApiUrl');
             const apiKeyInput = document.getElementById('productPublishAiApiKey');
             const modelInput = document.getElementById('productPublishAiModel');
+            const promptPresetQuickInput = document.getElementById('productPublishAiPromptPresetQuick');
+            const promptPresetHeaderInput = document.getElementById('productPublishHeaderPromptPreset');
+            const promptPresetInput = document.getElementById('productPublishAiPromptPreset');
+            const promptPresetNameInput = document.getElementById('productPublishAiPromptPresetName');
             const promptInput = document.getElementById('productPublishAiPromptDoc');
             const outputDirInput = document.getElementById('productPublishSettingsOutputDir');
             const ossBucketInput = document.getElementById('productPublishSettingsOssBucket');
@@ -9740,6 +11497,46 @@
             const ossAccessKeySecretInput = document.getElementById('productPublishSettingsOssAccessKeySecret');
             const ossObjectPrefixInput = document.getElementById('productPublishSettingsOssObjectPrefix');
             const urlPrefixInput = document.getElementById('productPublishSettingsUrlPrefix');
+            const aiPresetState = normalizeProductPublishAiPresetsLocal(
+                cfg.aiPresets,
+                cfg.aiPresetId,
+                getProductPublishAiPresetSnapshot(cfg)
+            );
+            cfg.aiPresets = aiPresetState.presets;
+            cfg.aiPresetId = aiPresetState.activeId;
+            cfg.aiApiUrl = aiPresetState.activePreset?.aiApiUrl || '';
+            cfg.aiApiKey = aiPresetState.activePreset?.aiApiKey || '';
+            cfg.aiModel = aiPresetState.activePreset?.aiModel || '';
+            const ossPresetState = normalizeProductPublishOssPresetsLocal(
+                cfg.ossPresets,
+                cfg.ossPresetId,
+                getProductPublishOssPresetSnapshot(cfg)
+            );
+            cfg.ossPresets = ossPresetState.presets;
+            cfg.ossPresetId = ossPresetState.activeId;
+            cfg.exportTemplateDefaults = {
+                ...(cfg.exportTemplateDefaults || {}),
+                urlPrefix: ossPresetState.activePreset?.urlPrefix || '',
+                ossBucket: ossPresetState.activePreset?.ossBucket || '',
+                ossRegion: ossPresetState.activePreset?.ossRegion || '',
+                ossAccessKeyId: ossPresetState.activePreset?.ossAccessKeyId || '',
+                ossAccessKeySecret: ossPresetState.activePreset?.ossAccessKeySecret || '',
+                ossObjectPrefix: ossPresetState.activePreset?.ossObjectPrefix || 'products'
+            };
+            if (aiPresetQuickInput) {
+                aiPresetQuickInput.innerHTML = getProductPublishAiPresetOptionsHtml(cfg.aiPresetId);
+                aiPresetQuickInput.value = cfg.aiPresetId || '';
+            }
+            if (aiPresetNameInput) {
+                aiPresetNameInput.value = String(aiPresetState.activePreset?.name || '').trim();
+            }
+            if (ossPresetQuickInput) {
+                ossPresetQuickInput.innerHTML = getProductPublishOssPresetOptionsHtml(cfg.ossPresetId);
+                ossPresetQuickInput.value = cfg.ossPresetId || '';
+            }
+            if (ossPresetNameInput) {
+                ossPresetNameInput.value = String(ossPresetState.activePreset?.name || '').trim();
+            }
             if (apiUrlInput) apiUrlInput.value = cfg.aiApiUrl || '';
             if (apiKeyInput) apiKeyInput.value = cfg.aiApiKey || '';
             if (outputDirInput) outputDirInput.value = cfg.exportTemplateDefaults?.outputDir || '';
@@ -9766,6 +11563,29 @@
                     : '<option value="">请先识别模型</option>';
                 modelInput.value = currentValue || modelInput.value || '';
             }
+            const promptPresetState = normalizeProductPublishPromptPresetsLocal(
+                cfg.titlePromptPresets,
+                cfg.titlePromptPresetId,
+                cfg.titlePromptDoc
+            );
+            cfg.titlePromptPresets = promptPresetState.presets;
+            cfg.titlePromptPresetId = promptPresetState.activeId;
+            cfg.titlePromptDoc = promptPresetState.activePreset?.doc || promptPresetState.doc;
+            if (promptPresetInput) {
+                promptPresetInput.innerHTML = getProductPublishPromptPresetOptionsHtml(cfg.titlePromptPresetId);
+                promptPresetInput.value = cfg.titlePromptPresetId || '';
+            }
+            if (promptPresetQuickInput) {
+                promptPresetQuickInput.innerHTML = getProductPublishPromptPresetOptionsHtml(cfg.titlePromptPresetId);
+                promptPresetQuickInput.value = cfg.titlePromptPresetId || '';
+            }
+            if (promptPresetHeaderInput) {
+                promptPresetHeaderInput.innerHTML = getProductPublishPromptPresetOptionsHtml(cfg.titlePromptPresetId);
+                promptPresetHeaderInput.value = cfg.titlePromptPresetId || '';
+            }
+            if (promptPresetNameInput) {
+                promptPresetNameInput.value = String(promptPresetState.activePreset?.name || '').trim();
+            }
             if (promptInput) promptInput.value = cfg.titlePromptDoc || '';
             if (ossBucketInput) ossBucketInput.value = cfg.exportTemplateDefaults?.ossBucket || '';
             if (ossRegionInput) ossRegionInput.value = cfg.exportTemplateDefaults?.ossRegion || '';
@@ -9776,11 +11596,17 @@
             if (apiKeyInput) {
                 apiKeyInput.type = productPublishState.apiKeyVisible ? 'text' : 'password';
             }
-            const toggleButton = document.querySelector('#settingsPublishCard button[onclick="toggleProductPublishApiKeyVisibility()"]');
+            const toggleButton = document.getElementById('productPublishApiKeyToggle');
             if (toggleButton) {
                 toggleButton.textContent = productPublishState.apiKeyVisible ? '隐藏' : '显示';
             }
+            syncProductPublishModelTestStatus();
+            initializeVirtualSelect('productPublishAiPresetQuick');
+            initializeVirtualSelect('productPublishOssPresetQuick');
             initializeVirtualSelect('productPublishAiModel');
+            initializeVirtualSelect('productPublishAiPromptPresetQuick');
+            initializeVirtualSelect('productPublishHeaderPromptPreset');
+            initializeVirtualSelect('productPublishAiPromptPreset');
         }
 
         function getProductPublishExportTemplateDefaults() {
@@ -10732,32 +12558,98 @@
             syncProductPublishTitleCounters();
         }
 
-        async function saveProductPublishSettingsNow() {
+        async function saveProductPublishSettingsNow(silent = false) {
             try {
+                const selectedAiPresetId = String(document.getElementById('productPublishAiPresetQuick')?.value || productPublishState.config.aiPresetId || '').trim();
+                const selectedAiPresetName = String(document.getElementById('productPublishAiPresetName')?.value || '').trim();
+                const selectedOssPresetId = String(document.getElementById('productPublishOssPresetQuick')?.value || productPublishState.config.ossPresetId || '').trim();
+                const selectedOssPresetName = String(document.getElementById('productPublishOssPresetName')?.value || '').trim();
                 const selectedModelValue = String(document.getElementById('productPublishAiModel')?.value || '').trim();
+                const selectedPromptPresetId = String(document.getElementById('productPublishAiPromptPreset')?.value || '').trim();
+                const selectedPromptPresetName = String(document.getElementById('productPublishAiPromptPresetName')?.value || '').trim();
+                const selectedPromptDoc = String(document.getElementById('productPublishAiPromptDoc')?.value || '').trim();
                 const currentDefaults = productPublishState.config.exportTemplateDefaults || {};
-                const config = {
-                    aiProvider: 'auto',
-                    aiApiUrl: String(document.getElementById('productPublishAiApiUrl')?.value || '').trim(),
-                    aiApiKey: String(document.getElementById('productPublishAiApiKey')?.value || '').trim(),
-                    aiModel: selectedModelValue,
-                    aiModelHistory: Array.isArray(productPublishState.config.aiModelHistory) ? productPublishState.config.aiModelHistory.slice() : [],
-                    titlePromptDoc: String(document.getElementById('productPublishAiPromptDoc')?.value || '').trim(),
-                    exportTemplateDefaults: {
-                        ...currentDefaults,
-                        outputDir: String(document.getElementById('productPublishSettingsOutputDir')?.value || '').trim(),
+                const aiPresetState = normalizeProductPublishAiPresetsLocal(
+                    productPublishState.config?.aiPresets,
+                    selectedAiPresetId || productPublishState.config?.aiPresetId,
+                    {
+                        aiApiUrl: String(document.getElementById('productPublishAiApiUrl')?.value || '').trim(),
+                        aiApiKey: String(document.getElementById('productPublishAiApiKey')?.value || '').trim(),
+                        aiModel: selectedModelValue
+                    }
+                );
+                const aiPresets = aiPresetState.presets.slice();
+                const selectedAiPresetIndex = aiPresets.findIndex((preset) => preset.id === aiPresetState.activeId);
+                if (selectedAiPresetIndex >= 0) {
+                    aiPresets[selectedAiPresetIndex] = {
+                        ...aiPresets[selectedAiPresetIndex],
+                        name: selectedAiPresetName || aiPresets[selectedAiPresetIndex].name
+                    };
+                }
+                const ossPresetState = normalizeProductPublishOssPresetsLocal(
+                    productPublishState.config?.ossPresets,
+                    selectedOssPresetId || productPublishState.config?.ossPresetId,
+                    {
                         urlPrefix: String(document.getElementById('productPublishSettingsUrlPrefix')?.value || '').trim(),
                         ossBucket: String(document.getElementById('productPublishSettingsOssBucket')?.value || '').trim(),
                         ossRegion: String(document.getElementById('productPublishSettingsOssRegion')?.value || '').trim(),
                         ossAccessKeyId: String(document.getElementById('productPublishSettingsOssAccessKeyId')?.value || '').trim(),
                         ossAccessKeySecret: String(document.getElementById('productPublishSettingsOssAccessKeySecret')?.value || '').trim(),
                         ossObjectPrefix: String(document.getElementById('productPublishSettingsOssObjectPrefix')?.value || '').trim() || 'products'
+                    }
+                );
+                const ossPresets = ossPresetState.presets.slice();
+                const selectedOssPresetIndex = ossPresets.findIndex((preset) => preset.id === ossPresetState.activeId);
+                if (selectedOssPresetIndex >= 0) {
+                    ossPresets[selectedOssPresetIndex] = {
+                        ...ossPresets[selectedOssPresetIndex],
+                        name: selectedOssPresetName || ossPresets[selectedOssPresetIndex].name
+                    };
+                }
+                const promptPresetState = normalizeProductPublishPromptPresetsLocal(
+                    productPublishState.config?.titlePromptPresets,
+                    selectedPromptPresetId || productPublishState.config?.titlePromptPresetId,
+                    selectedPromptDoc
+                );
+                const promptPresets = promptPresetState.presets.slice();
+                const selectedPresetIndex = promptPresets.findIndex((preset) => preset.id === promptPresetState.activeId);
+                if (selectedPresetIndex >= 0) {
+                    promptPresets[selectedPresetIndex] = {
+                        ...promptPresets[selectedPresetIndex],
+                        name: selectedPromptPresetName || promptPresets[selectedPresetIndex].name,
+                        doc: selectedPromptDoc || promptPresets[selectedPresetIndex].doc
+                    };
+                }
+                const config = {
+                    aiProvider: 'auto',
+                    aiApiUrl: aiPresets[selectedAiPresetIndex]?.aiApiUrl || '',
+                    aiApiKey: aiPresets[selectedAiPresetIndex]?.aiApiKey || '',
+                    aiModel: aiPresets[selectedAiPresetIndex]?.aiModel || selectedModelValue,
+                    aiModelHistory: Array.isArray(productPublishState.config.aiModelHistory) ? productPublishState.config.aiModelHistory.slice() : [],
+                    aiPresetId: aiPresetState.activeId,
+                    aiPresets,
+                    ossPresetId: ossPresetState.activeId,
+                    ossPresets,
+                    titlePromptPresetId: promptPresetState.activeId,
+                    titlePromptPresets: promptPresets,
+                    titlePromptDoc: selectedPromptDoc || promptPresetState.activePreset?.doc || getDefaultProductPublishPromptDoc(),
+                    exportTemplateDefaults: {
+                        ...currentDefaults,
+                        outputDir: String(document.getElementById('productPublishSettingsOutputDir')?.value || '').trim(),
+                        urlPrefix: ossPresets[selectedOssPresetIndex]?.urlPrefix || '',
+                        ossBucket: ossPresets[selectedOssPresetIndex]?.ossBucket || '',
+                        ossRegion: ossPresets[selectedOssPresetIndex]?.ossRegion || '',
+                        ossAccessKeyId: ossPresets[selectedOssPresetIndex]?.ossAccessKeyId || '',
+                        ossAccessKeySecret: ossPresets[selectedOssPresetIndex]?.ossAccessKeySecret || '',
+                        ossObjectPrefix: ossPresets[selectedOssPresetIndex]?.ossObjectPrefix || 'products'
                     },
                     exportTemplateProfiles: getProductPublishExportProfiles()
                 };
                 productPublishState.config = await ipcRenderer.invoke('product-publish:save-config', config);
                 syncProductPublishSettingsFields();
-                appendTemplateLog('success', '产品发布设置已保存');
+                if (!silent) {
+                    appendTemplateLog('success', '产品发布设置已保存');
+                }
             } catch (error) {
                 appendTemplateLog('error', error.message || '保存产品发布设置失败');
             }
@@ -10816,7 +12708,38 @@
             syncProductPublishSettingsFields();
         }
 
+        function syncProductPublishModelTestStatus() {
+            const statusHost = document.getElementById('productPublishModelTestStatus');
+            const errorButton = document.getElementById('productPublishModelTestErrorBtn');
+            if (statusHost) {
+                const status = String(productPublishState.modelTestStatus || '').trim();
+                statusHost.textContent = status;
+                statusHost.className = 'product-publish-inline-hint';
+                if (status === '测试中...') {
+                    statusHost.classList.add('testing');
+                } else if (status === '可用') {
+                    statusHost.classList.add('success');
+                } else if (status === '不可用') {
+                    statusHost.classList.add('error');
+                }
+            }
+            if (errorButton) {
+                errorButton.classList.toggle('template-hidden', !String(productPublishState.modelTestError || '').trim());
+            }
+        }
+
+        async function openProductPublishModelTestError() {
+            const message = String(productPublishState.modelTestError || '').trim();
+            if (!message) return;
+            await showCopyableErrorDialog('测试模型失败', message);
+        }
+
         async function detectProductPublishModels() {
+            const statusHost = document.getElementById('productPublishModelDetectStatus');
+            if (statusHost) {
+                statusHost.textContent = '识别中...';
+                statusHost.className = 'product-publish-inline-hint';
+            }
             try {
                 await saveProductPublishSettingsNow();
                 const result = await ipcRenderer.invoke('product-publish:detect-models');
@@ -10831,28 +12754,46 @@
                     productPublishState.config.aiProvider = result.provider;
                 }
                 syncProductPublishSettingsFields();
+                if (statusHost) {
+                    const count = productPublishState.detectedModels.length;
+                    statusHost.textContent = count > 0 ? `已识别 ${count} 个模型` : '未识别到模型';
+                    statusHost.className = `product-publish-inline-hint ${count > 0 ? 'success' : ''}`.trim();
+                }
                 appendTemplateLog('success', `已识别 ${productPublishState.detectedModels.length} 个模型`);
             } catch (error) {
+                if (statusHost) {
+                    statusHost.textContent = '识别失败';
+                    statusHost.className = 'product-publish-inline-hint error';
+                }
                 appendTemplateLog('error', error.message || '识别模型失败');
                 await showCopyableErrorDialog('识别模型失败', error.message || '识别模型失败');
             }
         }
 
         async function testProductPublishModel() {
+            productPublishState.modelTestError = '';
+            productPublishState.modelTestStatus = '测试中...';
+            syncProductPublishModelTestStatus();
             try {
                 await saveProductPublishSettingsNow();
                 const model = String(productPublishState.config.aiModel || '').trim();
                 if (!model) {
-                    await showNoticeDialog('测试模型', '请先填写或选择模型名称。');
+                    productPublishState.modelTestStatus = '不可用';
+                    productPublishState.modelTestError = '请先填写或选择模型名称。';
+                    syncProductPublishModelTestStatus();
                     return;
                 }
                 const result = await ipcRenderer.invoke('product-publish:test-model');
                 await rememberProductPublishModel(model);
                 appendTemplateLog('success', `模型可用：${model}`);
-                await showNoticeDialog('测试模型', result?.content ? `模型可用：${model}\n\n返回：${String(result.content).trim()}` : `模型可用：${model}`);
+                productPublishState.modelTestStatus = '可用';
+                productPublishState.modelTestError = '';
+                syncProductPublishModelTestStatus();
             } catch (error) {
                 appendTemplateLog('error', error.message || '测试模型失败');
-                await showCopyableErrorDialog('测试模型失败', error.message || '测试模型失败');
+                productPublishState.modelTestStatus = '不可用';
+                productPublishState.modelTestError = String(error.message || '测试模型失败').trim() || '测试模型失败';
+                syncProductPublishModelTestStatus();
             }
         }
 
@@ -16293,6 +18234,16 @@
                 if (event.target.id === 'sliceResultModal') closeSliceResultViewer();
             });
 
+            document.getElementById('productPublishPromptPresetModal').addEventListener('mousedown', (event) => {
+                if (event.target.id === 'productPublishPromptPresetModal') closeProductPublishPromptPresetModal();
+            });
+            document.getElementById('productPublishAiPresetModal').addEventListener('mousedown', (event) => {
+                if (event.target.id === 'productPublishAiPresetModal') closeProductPublishAiPresetModal();
+            });
+            document.getElementById('productPublishOssPresetModal').addEventListener('mousedown', (event) => {
+                if (event.target.id === 'productPublishOssPresetModal') closeProductPublishOssPresetModal();
+            });
+
             window.addEventListener('keydown', (event) => {
                 if (document.getElementById('sliceResultModal').classList.contains('active')) {
                     if (sliceState.resultView === 'single' && matchesShortcut(event, templateState.shortcuts?.sliceUndo)) {
@@ -19734,15 +21685,29 @@
             checkBtn.disabled = appUpdateState.checking || appUpdateState.downloading;
         }
 
-        function applyUpdateState(snapshot) {
+        let appUpdatePromptInFlight = false;
+        let appUpdateLastPromptedVersion = '';
+
+        function applyUpdateState(snapshot, options = {}) {
+            const suppressPrompt = !!options.suppressPrompt;
             Object.assign(appUpdateState, snapshot || {});
             renderUpdateSettings();
+            const latestVersion = String(appUpdateState.latestVersion || '').trim();
+            if (!latestVersion || !appUpdateState.available || appUpdateState.downloading || appUpdateState.downloaded) {
+                return;
+            }
+            if (suppressPrompt) {
+                return;
+            }
+            setTimeout(() => {
+                promptAppUpdateAvailable(appUpdateState).catch(() => {});
+            }, 0);
         }
 
         async function loadUpdateSettings() {
             try {
                 const snapshot = await ipcRenderer.invoke('app-update:load-config');
-                applyUpdateState(snapshot);
+                applyUpdateState(snapshot, { suppressPrompt: true });
             } catch (error) {
                 appUpdateState.status = error?.message || '读取更新配置失败';
                 renderUpdateSettings();
@@ -19754,7 +21719,7 @@
                 const updateSource = String(document.getElementById('settingsUpdateSource')?.value || '').trim();
                 const autoCheckOnStartup = !!document.getElementById('settingsUpdateAutoCheck')?.checked;
                 const snapshot = await ipcRenderer.invoke('app-update:save-config', { updateSource, autoCheckOnStartup });
-                applyUpdateState(snapshot);
+                applyUpdateState(snapshot, { suppressPrompt: true });
             } catch (error) {
                 appUpdateState.status = error?.message || '保存更新设置失败';
                 renderUpdateSettings();
@@ -19774,10 +21739,16 @@
             }
         }
 
-        async function promptAppUpdateAvailable(snapshot) {
+        async function promptAppUpdateAvailable(snapshot, options = {}) {
+            const force = !!options.force;
             const latestVersion = String(snapshot?.latestVersion || '').trim();
             if (!latestVersion) return;
             if (getIgnoredUpdateVersion() === latestVersion) return;
+            if (appUpdatePromptInFlight) return;
+            if (!force && appUpdateLastPromptedVersion === latestVersion) return;
+            appUpdatePromptInFlight = true;
+            appUpdateLastPromptedVersion = latestVersion;
+            try {
             const action = await showConfirmDialog(
                 '发现新版本',
                 `检测到新版本 ${latestVersion}，是否现在更新？`,
@@ -19799,29 +21770,22 @@
                 return;
             }
             await downloadAndInstallUpdateFlow();
+            } finally {
+                appUpdatePromptInFlight = false;
+            }
         }
 
         async function downloadAndInstallUpdateFlow() {
             try {
-                appUpdateState.status = '正在下载更新...';
+                appUpdateState.status = '正在下载并准备安装更新...';
                 appUpdateState.downloading = true;
                 renderUpdateSettings();
                 const snapshot = await ipcRenderer.invoke('app-update:download');
-                applyUpdateState(snapshot);
+                applyUpdateState(snapshot, { suppressPrompt: true });
                 if (snapshot?.downloaded) {
-                    const installNow = await showConfirmDialog(
-                        '更新已下载完成',
-                        `新版本 ${snapshot.latestVersion || ''} 已下载完成，是否立即安装？`,
-                        {
-                            confirmText: '安装更新',
-                            confirmTone: 'btn-success',
-                            cancelText: '稍后',
-                            cancelTone: 'btn-primary'
-                        }
-                    );
-                    if (installNow) {
-                        await installAppUpdateNow();
-                    }
+                    appUpdateState.status = `新版本 ${snapshot.latestVersion || ''} 已下载完成，正在安装并重启...`;
+                    renderUpdateSettings();
+                    await installAppUpdateNow();
                 }
             } catch (error) {
                 appUpdateState.downloading = false;
@@ -19836,9 +21800,9 @@
                 appUpdateState.checking = true;
                 renderUpdateSettings();
                 const snapshot = await ipcRenderer.invoke('app-update:check');
-                applyUpdateState(snapshot);
+                applyUpdateState(snapshot, { suppressPrompt: true });
                 if (snapshot?.available) {
-                    await promptAppUpdateAvailable(snapshot);
+                    await promptAppUpdateAvailable(snapshot, { force: true });
                 }
             } catch (error) {
                 appUpdateState.checking = false;
@@ -19899,7 +21863,10 @@
         };
 
         function loadProductRules() {
-            const rules = JSON.parse(localStorage.getItem('productRules') || JSON.stringify(defaultRules));
+            const storedRules = JSON.parse(localStorage.getItem('productRules') || '{}');
+            const rules = { ...defaultRules, ...storedRules };
+            localStorage.setItem('productRules', JSON.stringify(rules));
+            ipcRenderer.send('update-product-rules', rules);
             renderProductRules(rules);
         }
 
@@ -19919,7 +21886,7 @@
                 item.innerHTML = `
                     <input type="text" class="rule-prefix" value="${prefix}" placeholder="前缀（如 SBD）">
                     <input type="text" class="rule-name" value="${name}" placeholder="产品名称（如 鼠标垫）">
-                    <button class="btn btn-delete" onclick="deleteProductRule('${prefix}')">×</button>
+                    <button class="btn btn-delete" onclick="deleteProductRule(this)">×</button>
                 `;
 
                 // 监听输入变化
@@ -19927,12 +21894,8 @@
                 const nameInput = item.querySelector('.rule-name');
 
                 const updateRule = () => {
-                    const rules = JSON.parse(localStorage.getItem('productRules') || '{}');
-                    if (prefixInput.value !== prefix) {
-                        delete rules[prefix];
-                    }
-                    rules[prefixInput.value] = nameInput.value;
-                    saveProductRules(rules);
+                    const nextRules = collectProductRulesFromInputs();
+                    saveProductRules(nextRules);
                 };
 
                 prefixInput.addEventListener('blur', updateRule);
@@ -19963,7 +21926,7 @@
         }
 
         function addProductRule() {
-            const rules = JSON.parse(localStorage.getItem('productRules') || '{}');
+            const rules = collectProductRulesFromInputs();
             let newPrefix = 'NEW';
             let counter = 1;
             while (rules[newPrefix]) {
@@ -19975,9 +21938,10 @@
             renderProductRules(rules);
         }
 
-        function deleteProductRule(prefix) {
-            const rules = JSON.parse(localStorage.getItem('productRules') || '{}');
-            delete rules[prefix];
+        function deleteProductRule(button) {
+            const item = button?.closest?.('.rule-item');
+            item?.remove();
+            const rules = collectProductRulesFromInputs();
             saveProductRules(rules);
             renderProductRules(rules);
         }
