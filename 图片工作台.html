@@ -4277,6 +4277,11 @@
             max-height: min(80vh, 720px);
         }
 
+        .product-publish-import-progress-shell {
+            width: min(680px, 100%);
+            max-height: min(76vh, 680px);
+        }
+
         .product-publish-prompt-shell {
             width: min(920px, 100%);
             max-height: min(82vh, 760px);
@@ -5513,7 +5518,7 @@
 
         .slice-task-actions {
             display: grid;
-            grid-template-columns: repeat(2, minmax(0, 1fr));
+            grid-template-columns: repeat(3, minmax(0, 1fr));
             gap: 8px;
             margin-top: auto;
             align-content: start;
@@ -5682,19 +5687,32 @@
             width: 100%;
             min-width: 0;
             height: 28px;
-            padding: 0;
+            padding: 0 8px;
             border-radius: 8px;
-            font-size: 0;
+            font-size: 12px;
+            font-weight: 600;
+            line-height: 1;
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
         }
 
         .slice-task-small-icon {
-            width: 14px;
-            height: 14px;
+            width: 12px;
+            height: 12px;
             stroke: currentColor;
             fill: none;
             stroke-width: 1.9;
             stroke-linecap: round;
             stroke-linejoin: round;
+            display: none;
+        }
+
+        .slice-task-small-action-label {
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            width: 100%;
         }
 
         .slice-task-view-switch {
@@ -7809,6 +7827,33 @@
         </div>
     </div>
 
+    <div id="productPublishImportProgressModal" class="modal-overlay">
+        <div class="product-publish-config-modal-shell product-publish-import-progress-shell">
+            <div class="modal-header">
+                <div>
+                    <div class="modal-title">导入进度</div>
+                    <div class="modal-subtitle">正在将模板任务导入到产品发布。</div>
+                </div>
+            </div>
+            <div class="product-publish-config-modal-body">
+                <div class="product-publish-progress-summary">
+                    <div class="product-publish-progress-bar">
+                        <div id="productPublishImportProgressBarFill" class="product-publish-progress-bar-fill"></div>
+                    </div>
+                    <div class="product-publish-progress-meta">
+                        <span id="productPublishImportProgressStatus">准备开始导入...</span>
+                        <span id="productPublishImportProgressCount">0 / 0</span>
+                    </div>
+                </div>
+                <div id="productPublishImportProgressLog" class="product-publish-progress-log"></div>
+            </div>
+            <div class="product-publish-config-modal-footer">
+                <button class="btn btn-secondary" type="button" onclick="switchToProductPublishFromImportProgress()">进入产品发布</button>
+                <button id="productPublishImportProgressConfirmBtn" class="btn btn-primary" type="button" onclick="closeProductPublishImportProgressModal()">确定</button>
+            </div>
+        </div>
+    </div>
+
     <div id="productPublishPromptPresetModal" class="modal-overlay">
         <div class="product-publish-config-modal-shell product-publish-prompt-shell">
             <div class="modal-header">
@@ -8741,6 +8786,13 @@
                 defaultFileName: '',
                 recordCount: 0,
                 recordIds: []
+            },
+            importProgress: {
+                stage: 'idle',
+                current: 0,
+                total: 0,
+                message: '',
+                lines: []
             }
         };
 
@@ -9766,6 +9818,17 @@
                     resolveConfirmDialog(false);
                 }
             });
+            document.getElementById('productPublishImportProgressModal')?.addEventListener('mousedown', (event) => {
+                if (event.target.id === 'productPublishImportProgressModal') {
+                    closeProductPublishImportProgressModal(event);
+                }
+            });
+            document.getElementById('productPublishImportProgressConfirmBtn')?.addEventListener('mousedown', (event) => {
+                closeProductPublishImportProgressModal(event);
+            });
+            document.getElementById('productPublishImportProgressConfirmBtn')?.addEventListener('click', (event) => {
+                closeProductPublishImportProgressModal(event);
+            });
 
             document.getElementById('templateCoordEditorImage').addEventListener('load', () => {
                 const image = document.getElementById('templateCoordEditorImage');
@@ -10175,7 +10238,6 @@
 
         function toggleProductPublishRecordChecked(recordIdEncoded, event) {
             if (event) {
-                event.preventDefault();
                 event.stopPropagation();
             }
             const recordId = decodeURIComponent(String(recordIdEncoded || ''));
@@ -10311,8 +10373,8 @@
                 return `
                 <div class="product-publish-record-card ${record.id === productPublishState.selectedRecordId ? 'active' : ''}" onclick="selectProductPublishRecord('${encodedRecordId}')">
                     <div class="product-publish-record-top">
-                        <label class="task-select-check product-publish-record-check" title="勾选记录" onclick="toggleProductPublishRecordChecked('${encodedRecordId}', event)">
-                            <input type="checkbox" ${checked} onclick="event.preventDefault(); event.stopPropagation();">
+                        <label class="task-select-check product-publish-record-check" title="勾选记录" onclick="event.stopPropagation()">
+                            <input type="checkbox" ${checked} onchange="toggleProductPublishRecordChecked('${encodedRecordId}', event)" onclick="event.stopPropagation()">
                         </label>
                         <div class="product-publish-record-thumb">
                             ${record.images[0]?.path ? `<img src="${toFileUrl(record.images[0].path)}" alt="${escapeHtml(record.groupName)}">` : ''}
@@ -12628,6 +12690,38 @@
             document.getElementById('productPublishExportProgressModal')?.classList.remove('active');
         }
 
+        function closeProductPublishImportProgressModal(event = null) {
+            if (event) {
+                event.preventDefault();
+                event.stopPropagation();
+            }
+            const modal = document.getElementById('productPublishImportProgressModal');
+            if (modal) {
+                modal.classList.remove('active');
+                modal.style.display = 'none';
+                modal.style.pointerEvents = 'none';
+                modal.style.opacity = '0';
+                modal.setAttribute('hidden', 'hidden');
+            }
+            productPublishState.importProgress = {
+                stage: 'idle',
+                current: 0,
+                total: 0,
+                message: '',
+                lines: []
+            };
+            renderProductPublishImportProgressModal();
+        }
+
+        function switchToProductPublishFromImportProgress(event = null) {
+            if (event) {
+                event.preventDefault();
+                event.stopPropagation();
+            }
+            closeProductPublishImportProgressModal();
+            switchTab('product-publish');
+        }
+
         function renderProductPublishExportProgressModal() {
             const fill = document.getElementById('productPublishExportProgressBarFill');
             const status = document.getElementById('productPublishExportProgressStatus');
@@ -12651,6 +12745,43 @@
             const completed = progress.stage === 'done';
             if (saveAsBtn) saveAsBtn.disabled = !completed;
             if (confirmBtn) confirmBtn.disabled = !completed;
+        }
+
+        function renderProductPublishImportProgressModal() {
+            const fill = document.getElementById('productPublishImportProgressBarFill');
+            const status = document.getElementById('productPublishImportProgressStatus');
+            const count = document.getElementById('productPublishImportProgressCount');
+            const log = document.getElementById('productPublishImportProgressLog');
+            const confirmBtn = document.getElementById('productPublishImportProgressConfirmBtn');
+            const progress = productPublishState.importProgress || {};
+            const total = Math.max(0, Number(progress.total) || 0);
+            const current = Math.max(0, Math.min(total || 0, Number(progress.current) || 0));
+            const percent = total > 0 ? Math.max(0, Math.min(100, Math.round((current / total) * 100))) : 0;
+            if (fill) fill.style.width = `${percent}%`;
+            if (status) status.textContent = String(progress.message || '准备开始导入...');
+            if (count) count.textContent = `${current} / ${total || 0}`;
+            if (log) {
+                const lines = Array.isArray(progress.lines) ? progress.lines.slice(-10) : [];
+                log.innerHTML = lines.length
+                    ? lines.map((line, index) => `<div class="product-publish-progress-line ${progress.stage === 'done' && index === lines.length - 1 ? 'done' : ''}">${escapeHtml(line)}</div>`).join('')
+                    : '<div class="product-publish-detail-empty" style="min-height:120px;">等待开始导入...</div>';
+            }
+            if (confirmBtn) {
+                confirmBtn.disabled = false;
+            }
+        }
+
+        function updateProductPublishImportProgress(patch = {}) {
+            productPublishState.importProgress = {
+                stage: 'idle',
+                current: 0,
+                total: 0,
+                message: '',
+                lines: [],
+                ...(productPublishState.importProgress || {}),
+                ...(patch || {})
+            };
+            renderProductPublishImportProgressModal();
         }
 
         async function finalizeProductPublishExport(mode = 'default') {
@@ -17232,19 +17363,36 @@
         async function importSelectedTemplateTasksToProductPublish() {
             const groupedResults = getTemplateGroupedResults();
             if (!templateState.selectedResultKeys.length) {
-                appendTemplateLog('warn', '请先勾选要导入到产品发布的模板任务');
+                await showNoticeDialog('导入发布', '请先勾选要导入到产品发布的模板任务。');
                 return;
             }
             const selected = new Set(templateState.selectedResultKeys);
             const selectedItems = groupedResults.filter((item) => selected.has(item.key));
             if (!selectedItems.length) {
-                appendTemplateLog('warn', '当前勾选项里没有可导入的模板任务');
+                await showNoticeDialog('导入发布', '当前勾选项里没有可导入的模板任务。');
                 return;
+            }
+
+            updateProductPublishImportProgress({
+                stage: 'running',
+                current: 0,
+                total: selectedItems.length,
+                message: '正在导入模板任务...',
+                lines: ['开始导入模板任务到产品发布...']
+            });
+            const importModal = document.getElementById('productPublishImportProgressModal');
+            if (importModal) {
+                importModal.removeAttribute('hidden');
+                importModal.style.display = '';
+                importModal.style.pointerEvents = '';
+                importModal.style.opacity = '';
+                importModal.classList.add('active');
             }
 
             let importedCount = 0;
             let skippedCount = 0;
             let selectedRecordId = '';
+            let processedCount = 0;
             for (const item of selectedItems) {
                 const display = getTemplateResultDisplayState(item);
                 const importable = display.statusClass === 'done'
@@ -17252,9 +17400,25 @@
                     && item.children.some((child) => String(child.path || '').trim());
                 if (!importable) {
                     skippedCount += 1;
+                    processedCount += 1;
+                    updateProductPublishImportProgress({
+                        current: processedCount,
+                        message: `跳过：${item.groupName || '未命名模板'}`,
+                        lines: [
+                            ...(productPublishState.importProgress.lines || []),
+                            `跳过 ${item.groupName || '未命名模板'}：当前任务还不能导入`
+                        ]
+                    });
                     continue;
                 }
                 try {
+                    updateProductPublishImportProgress({
+                        message: `正在导入：${item.groupName || '未命名模板'}`,
+                        lines: [
+                            ...(productPublishState.importProgress.lines || []),
+                            `开始导入 ${item.groupName || '未命名模板'}`
+                        ]
+                    });
                     const data = await ipcRenderer.invoke('product-publish:import-template-task', {
                         sourceTaskKey: item.key,
                         groupName: item.groupName,
@@ -17279,13 +17443,41 @@
                         selectedRecordId = recordId;
                     }
                     importedCount += 1;
+                    processedCount += 1;
+                    updateProductPublishImportProgress({
+                        current: processedCount,
+                        message: `已导入：${item.groupName || '未命名模板'}`,
+                        lines: [
+                            ...(productPublishState.importProgress.lines || []),
+                            `已导入 ${item.groupName || '未命名模板'}`
+                        ]
+                    });
                 } catch (error) {
                     skippedCount += 1;
+                    processedCount += 1;
+                    updateProductPublishImportProgress({
+                        current: processedCount,
+                        message: `导入失败：${item.groupName || '未命名模板'}`,
+                        lines: [
+                            ...(productPublishState.importProgress.lines || []),
+                            `导入失败 ${item.groupName || '未命名模板'}：${error.message || '未知错误'}`
+                        ]
+                    });
                     appendTemplateLog('error', `${item.groupName || '模板任务'} 导入产品发布失败：${error.message || '未知错误'}`);
                 }
             }
 
             if (!importedCount) {
+                updateProductPublishImportProgress({
+                    stage: 'done',
+                    current: processedCount,
+                    total: selectedItems.length,
+                    message: '导入完成：没有成功导入的任务',
+                    lines: [
+                        ...(productPublishState.importProgress.lines || []),
+                        `导入完成：成功 0 项，跳过 ${skippedCount} 项`
+                    ]
+                });
                 appendTemplateLog('warn', '勾选项中没有成功导入的模板任务');
                 return;
             }
@@ -17298,6 +17490,16 @@
             renderProductPublishRecords();
             renderProductPublishDetail();
             switchTab('product-publish');
+            updateProductPublishImportProgress({
+                stage: 'done',
+                current: processedCount,
+                total: selectedItems.length,
+                message: `导入完成：成功 ${importedCount} 项，跳过 ${skippedCount} 项`,
+                lines: [
+                    ...(productPublishState.importProgress.lines || []),
+                    `导入完成：成功 ${importedCount} 项，跳过 ${skippedCount} 项`
+                ]
+            });
             appendTemplateLog('success', `已导入 ${importedCount} 项到产品发布，跳过 ${skippedCount} 项`);
         }
 
@@ -17357,9 +17559,13 @@
         }
 
         function renderTemplateResultActionButtons(item, variant = 'default') {
-            const editButton = `<button class="btn btn-secondary" type="button" onclick="editTemplateResultTask('${encodeURIComponent(item.key || '')}')">编辑</button>`;
-            const viewButton = `<button class="btn btn-secondary" type="button" onclick="openTemplateResultFile(decodeURIComponent('${encodeURIComponent(item.primaryPath || item.path || '')}'))">查看</button>`;
-            const openButton = `<button class="btn btn-secondary" type="button" onclick="openTemplateResultDir(decodeURIComponent('${encodeURIComponent(item.outputDir || '')}'))">打开</button>`;
+            const editLabel = '编辑';
+            const viewLabel = '查看';
+            const openLabel = '打开';
+            const editTone = variant === 'small' ? 'primary' : 'secondary';
+            const editButton = `<button class="btn btn-${editTone}" type="button" onclick="editTemplateResultTask('${encodeURIComponent(item.key || '')}')">${editLabel}</button>`;
+            const viewButton = `<button class="btn btn-secondary" type="button" onclick="openTemplateResultFile(decodeURIComponent('${encodeURIComponent(item.primaryPath || item.path || '')}'))">${viewLabel}</button>`;
+            const openButton = `<button class="btn btn-secondary" type="button" onclick="openTemplateResultDir(decodeURIComponent('${encodeURIComponent(item.outputDir || '')}'))">${openLabel}</button>`;
             return `${editButton}${viewButton}${openButton}`;
         }
 
@@ -17393,14 +17599,15 @@
         }
 
         function renderTemplateResultSmallCard(item) {
-            const display = getTemplateResultDisplayState(item);
             return `
                 <div class="slice-task-small-card" title="${escapeHtml(item.title)}">
                     ${renderTemplateResultSelectionControl(item)}
                     <div class="slice-task-thumb">
                         ${item.thumbPath ? `<img src="${toFileUrl(item.thumbPath)}" alt="${escapeHtml(item.title)}">` : ''}
                     </div>
-                    ${display.statusClass === 'processing' ? `<div class="slice-task-small-progress">${renderTemplateResultProgress(item, 'small')}</div>` : ''}
+                    <div class="slice-task-small-progress">
+                        ${renderTemplateResultProgress(item, 'small')}
+                    </div>
                     <div class="slice-task-small-actions">
                         ${renderTemplateResultActionButtons(item, 'small')}
                     </div>
@@ -19316,9 +19523,14 @@
         }
 
         function renderSliceSmallActionButton(icon, title, onclick, tone = 'secondary') {
+            const shortLabel = title === '查看结果'
+                ? '查看'
+                : title === '打开目录'
+                    ? '打开'
+                    : title;
             return `
                 <button class="btn btn-${tone}" type="button" title="${title}" aria-label="${title}" onclick="${onclick}">
-                    ${icon}
+                    <span class="slice-task-small-action-label">${shortLabel}</span>
                 </button>
             `;
         }
