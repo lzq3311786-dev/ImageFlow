@@ -3459,6 +3459,392 @@
             height: 100%;
         }
 
+        #print-ai.tab-content.active {
+            display: block;
+            height: 100%;
+        }
+
+        #print-ai {
+            height: 100%;
+            min-height: 0;
+            overflow: hidden;
+        }
+
+        .print-ai-page {
+            display: grid;
+            grid-template-rows: auto minmax(0, 1fr);
+            grid-template-columns: minmax(0, 1fr);
+            gap: 16px;
+            height: 100%;
+            min-height: 0;
+            background:
+                radial-gradient(circle at 18% 10%, rgba(34, 197, 94, 0.10), transparent 30%),
+                radial-gradient(circle at 82% 4%, rgba(14, 165, 233, 0.12), transparent 34%);
+        }
+
+        .print-ai-hero {
+            border: 1px solid rgba(34, 197, 94, 0.18);
+            border-radius: 24px;
+            padding: 18px;
+            background:
+                linear-gradient(135deg, rgba(240, 253, 244, 0.96), rgba(239, 246, 255, 0.95)),
+                #FFFFFF;
+            display: grid;
+            grid-template-columns: minmax(0, 1fr) auto;
+            gap: 16px;
+            align-items: center;
+            box-shadow: 0 18px 46px rgba(15, 23, 42, 0.06);
+        }
+
+        .print-ai-hero-copy {
+            display: grid;
+            gap: 6px;
+            min-width: 0;
+        }
+
+        .print-ai-title {
+            font-size: 22px;
+            font-weight: 900;
+            color: #0F172A;
+            letter-spacing: -0.03em;
+        }
+
+        .print-ai-subtitle {
+            font-size: 13px;
+            color: #64748B;
+            line-height: 1.6;
+        }
+
+        .print-ai-hero-actions {
+            display: flex;
+            align-items: center;
+            justify-content: flex-end;
+            gap: 8px;
+            flex-wrap: wrap;
+        }
+
+        .print-ai-workbench {
+            min-height: 0;
+            display: grid;
+            grid-template-columns: minmax(300px, 360px) minmax(0, 1fr);
+            gap: 16px;
+        }
+
+        .print-ai-panel {
+            min-height: 0;
+            display: flex;
+            flex-direction: column;
+            overflow: hidden;
+            border: 1px solid rgba(148, 163, 184, 0.22);
+            box-shadow: 0 18px 46px rgba(15, 23, 42, 0.06);
+        }
+
+        .print-ai-panel-queue .card-body {
+            display: flex;
+            flex-direction: column;
+        }
+
+        .print-ai-toolbar {
+            padding: 12px;
+            border: 1px solid #EEF2F7;
+            border-radius: 18px;
+            background: #FFFFFF;
+            display: grid;
+            gap: 10px;
+        }
+
+        .print-ai-stat-row {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            gap: 8px;
+            padding: 8px 10px;
+            border-radius: 14px;
+            background: #F8FAFC;
+        }
+
+        .print-ai-main-grid {
+            min-height: 0;
+            display: grid;
+            grid-template-rows: auto minmax(0, 1fr);
+            gap: 14px;
+        }
+
+        .print-ai-config-card {
+            border: 1px solid #E8EEF5;
+            border-radius: 20px;
+            background: rgba(255, 255, 255, 0.94);
+            padding: 14px;
+            display: grid;
+            gap: 12px;
+        }
+
+        .print-ai-config-head {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            gap: 12px;
+        }
+
+        .print-ai-section-title {
+            font-size: 14px;
+            font-weight: 900;
+            color: #111827;
+        }
+
+        .print-ai-panel .card-body {
+            min-height: 0;
+            overflow: auto;
+            scrollbar-width: none;
+            padding: 16px;
+        }
+
+        .print-ai-panel .card-body::-webkit-scrollbar {
+            display: none;
+        }
+
+        .print-ai-actions,
+        .print-ai-row {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            flex-wrap: wrap;
+        }
+
+        .print-ai-form-grid {
+            display: grid;
+            grid-template-columns: repeat(2, minmax(0, 1fr));
+            gap: 12px;
+            padding: 14px;
+            border: 1px solid #EEF2F7;
+            border-radius: 18px;
+            background: linear-gradient(145deg, #FFFFFF 0%, #F8FAFC 100%);
+        }
+
+        .print-ai-form-grid .form-row {
+            grid-template-columns: 74px minmax(0, 1fr);
+            gap: 8px;
+            margin: 0;
+        }
+
+        .print-ai-form-grid .form-row:nth-child(1),
+        .print-ai-form-grid .form-row:nth-child(2),
+        .print-ai-form-grid .form-row:nth-child(3),
+        .print-ai-form-grid .form-row:nth-child(4) {
+            grid-column: 1 / -1;
+        }
+
+        .print-ai-form-grid .form-input,
+        .print-ai-form-grid .virtual-select,
+        .print-ai-form-grid .template-select {
+            min-width: 0;
+            width: 100%;
+        }
+
+        .print-ai-config-row {
+            flex: 1;
+            min-width: 0;
+            display: grid;
+            grid-template-columns: minmax(160px, .8fr) minmax(160px, 1fr);
+            gap: 8px;
+        }
+
+        .print-ai-runbar {
+            margin: 12px 0 16px;
+            padding: 10px 12px;
+            border: 1px solid #E5E7EB;
+            border-radius: 16px;
+            background: #FFFFFF;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            gap: 12px;
+            flex-wrap: wrap;
+        }
+
+        .print-ai-task-list {
+            display: grid;
+            gap: 9px;
+            margin-top: 12px;
+        }
+
+        .print-ai-task-card {
+            border: 1px solid #E8EEF5;
+            border-radius: 16px;
+            padding: 9px;
+            display: grid;
+            grid-template-columns: auto 58px minmax(0, 1fr);
+            gap: 10px;
+            align-items: center;
+            background: linear-gradient(135deg, #FFFFFF 0%, #F9FBFD 100%);
+            cursor: pointer;
+            transition: border-color .18s ease, box-shadow .18s ease, transform .18s ease, background .18s ease;
+        }
+
+        .print-ai-task-card:hover {
+            border-color: #CBD5E1;
+            box-shadow: 0 10px 22px rgba(15, 23, 42, 0.07);
+            transform: translateY(-1px);
+        }
+
+        .print-ai-task-card.active {
+            border-color: rgba(22, 163, 74, 0.50);
+            background: linear-gradient(135deg, rgba(240, 253, 244, 0.95) 0%, rgba(239, 246, 255, 0.90) 100%);
+            box-shadow: 0 14px 30px rgba(22, 163, 74, 0.10);
+        }
+
+        .print-ai-task-thumb {
+            width: 58px;
+            height: 58px;
+            border-radius: 14px;
+            overflow: hidden;
+            background: #F1F5F9;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .print-ai-task-thumb img {
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+        }
+
+        .print-ai-task-main {
+            min-width: 0;
+            display: grid;
+            gap: 4px;
+        }
+
+        .print-ai-task-name {
+            font-size: 13px;
+            font-weight: 800;
+            color: #111827;
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+        }
+
+        .print-ai-task-meta {
+            font-size: 12px;
+            color: #64748B;
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+        }
+
+        .print-ai-status-pill {
+            width: max-content;
+            max-width: 100%;
+            padding: 3px 8px;
+            border-radius: 999px;
+            font-size: 11px;
+            font-weight: 800;
+            color: #475569;
+            background: #F1F5F9;
+        }
+
+        .print-ai-status-pill.running,
+        .print-ai-status-pill.extracted {
+            color: #1D4ED8;
+            background: #DBEAFE;
+        }
+
+        .print-ai-status-pill.done {
+            color: #15803D;
+            background: #DCFCE7;
+        }
+
+        .print-ai-status-pill.failed {
+            color: #B91C1C;
+            background: #FEE2E2;
+        }
+
+        .print-ai-preview-layout {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
+            gap: 14px;
+            align-items: start;
+        }
+
+        .print-ai-preview-card {
+            border: 1px solid #E8EEF5;
+            border-radius: 18px;
+            background: #fff;
+            padding: 12px;
+            display: grid;
+            gap: 10px;
+            min-width: 0;
+            box-shadow: 0 10px 26px rgba(15, 23, 42, 0.05);
+        }
+
+        .print-ai-preview-card img {
+            width: 100%;
+            height: 240px;
+            object-fit: contain;
+            background:
+                linear-gradient(45deg, #F8FAFC 25%, transparent 25%),
+                linear-gradient(-45deg, #F8FAFC 25%, transparent 25%),
+                linear-gradient(45deg, transparent 75%, #F8FAFC 75%),
+                linear-gradient(-45deg, transparent 75%, #F8FAFC 75%);
+            background-size: 18px 18px;
+            background-position: 0 0, 0 9px, 9px -9px, -9px 0;
+            border-radius: 14px;
+        }
+
+        .print-ai-preview-title {
+            font-size: 13px;
+            font-weight: 800;
+            color: #111827;
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+        }
+
+        .print-ai-empty {
+            min-height: 180px;
+            border: 1px dashed #C8D5E4;
+            border-radius: 18px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            text-align: center;
+            color: #64748B;
+            padding: 18px;
+            background: linear-gradient(145deg, rgba(248, 250, 252, 0.96), rgba(240, 253, 244, 0.55));
+        }
+
+        .print-ai-dropzone {
+            min-height: 138px !important;
+            border-radius: 18px;
+            background:
+                linear-gradient(145deg, rgba(240, 253, 244, 0.96), rgba(239, 246, 255, 0.92));
+            border-color: rgba(34, 197, 94, 0.20);
+        }
+
+        .print-ai-dropzone .slice-drop-title {
+            font-size: 15px;
+        }
+
+        .print-ai-settings-shell {
+            max-width: 860px;
+        }
+
+        @media (max-width: 1120px) {
+            .print-ai-page {
+                overflow: auto;
+            }
+
+            .print-ai-hero,
+            .print-ai-workbench {
+                grid-template-columns: 1fr;
+            }
+
+            .print-ai-preview-layout {
+                grid-template-columns: 1fr;
+            }
+        }
+
         #product-publish {
             height: 100%;
             min-height: 0;
@@ -6494,6 +6880,19 @@
 
             <div class="nav">
                 <div class="nav-section">
+                    <div class="nav-item" onclick="switchTab('print-ai')">
+                        <span class="nav-item-icon">
+                            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round">
+                                <path d="M5 18.5c3.2-5.2 6-7.8 14-12"></path>
+                                <path d="M7 15.5c2.5 1.8 5.4 2.5 8.8 2.1"></path>
+                                <path d="M5.5 18.5c2.9.9 6.2.7 10-.6"></path>
+                                <path d="M15.5 5.5 19 5l-.5 3.5"></path>
+                                <path d="M4 5.5h4"></path>
+                                <path d="M4 9h2.5"></path>
+                            </svg>
+                        </span>
+                        <span>印花裂变</span>
+                    </div>
                     <div class="nav-item active" onclick="switchTab('slice')">
                         <span class="nav-item-icon">
                             <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round">
@@ -6852,6 +7251,133 @@
                     </div>
                 </div>
 
+                <!-- 印花裂变页面 -->
+                <div id="print-ai" class="tab-content">
+                    <div class="print-ai-page">
+                        <div class="print-ai-hero">
+                            <div class="print-ai-hero-copy">
+                                <div class="print-ai-title">印花提取与九宫格裂变</div>
+                                <div class="print-ai-subtitle">先从产品图提取干净印花，再生成同系列九宫格图，完成后直接进入智能切片继续拆图。</div>
+                            </div>
+                            <div class="print-ai-hero-actions">
+                                <button class="btn btn-secondary" type="button" onclick="triggerPrintAiUpload()">导入图片</button>
+                                <button class="btn btn-secondary" type="button" onclick="openPrintAiSettingsModal()">印花设置</button>
+                                <button class="btn btn-secondary" type="button" onclick="copySelectedPrintAiResultsToOutput()">导出结果</button>
+                                <button class="btn btn-secondary" type="button" onclick="importSelectedPrintAiResultsToSlice()">导入切片</button>
+                                <button class="btn btn-primary" type="button" onclick="startSelectedPrintAiTasks()">开始运行</button>
+                            </div>
+                        </div>
+
+                        <div class="print-ai-workbench">
+                        <div class="card print-ai-panel print-ai-panel-queue">
+                            <div class="card-header">
+                                <div class="template-section-row" style="justify-content:space-between;width:100%;">
+                                    <div>
+                                        <span class="card-title">印花任务</span>
+                                    </div>
+                                    <div class="print-ai-actions">
+                                        <button class="btn btn-secondary" type="button" onclick="triggerPrintAiUpload()">导入图片</button>
+                                        <button class="btn btn-secondary" type="button" onclick="toggleAllPrintAiTasks()">全选</button>
+                                        <button class="btn btn-secondary" type="button" onclick="deleteSelectedPrintAiTasks()">删除</button>
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="card-body">
+                                <input id="printAiFileInput" class="file-input-hidden" type="file" accept="image/*" multiple onchange="handlePrintAiFileSelect(event)">
+                                <div class="slice-dropzone print-ai-dropzone" onclick="triggerPrintAiUpload()">
+                                    <div class="slice-drop-icon">
+                                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+                                            <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path>
+                                            <polyline points="17 8 12 3 7 8"></polyline>
+                                            <line x1="12" y1="3" x2="12" y2="15"></line>
+                                        </svg>
+                                    </div>
+                                    <div class="slice-drop-title">导入需要提取印花的产品图</div>
+                                    <div class="slice-drop-text">每张图片会成为一个父级任务，完成后把九宫格裂变图导入智能切片。</div>
+                                </div>
+                                <div class="print-ai-stat-row" style="margin-top:12px;">
+                                    <div class="task-bulk-hint" id="printAiSelectionHint">已勾选 0 项</div>
+                                    <div class="task-bulk-hint" id="printAiTaskStats">共 0 项</div>
+                                </div>
+                                <div id="printAiTaskList" class="print-ai-task-list">
+                                    <div class="print-ai-empty">还没有印花任务。</div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="card print-ai-panel">
+                            <div class="card-header">
+                                <div class="template-section-row" style="justify-content:space-between;width:100%;">
+                                    <div>
+                                        <span class="card-title">工作区</span>
+                                    </div>
+                                    <span id="printAiStatus" class="task-bulk-hint">等待任务。</span>
+                                </div>
+                            </div>
+                            <div class="card-body">
+                                <div class="print-ai-main-grid">
+                                <div class="print-ai-config-card">
+                                    <div class="print-ai-config-head">
+                                        <div class="print-ai-section-title">模型与运行参数</div>
+                                        <div class="print-ai-actions">
+                                            <button class="btn btn-secondary" type="button" onclick="detectPrintAiModels()">识别模型</button>
+                                            <button class="btn btn-secondary" type="button" onclick="testPrintAiModel('extract')">测试提取</button>
+                                            <button class="btn btn-secondary" type="button" onclick="testPrintAiModel('variation')">测试裂变</button>
+                                        </div>
+                                    </div>
+                                <div class="print-ai-form-grid">
+                                    <div class="form-row">
+                                        <span class="form-label">API地址</span>
+                                        <input id="printAiBaseUrl" class="form-input" type="text" placeholder="https://.../v1">
+                                    </div>
+                                    <div class="form-row">
+                                        <span class="form-label">API Key</span>
+                                        <input id="printAiApiKey" class="form-input" type="password" placeholder="用于图片编辑模型">
+                                    </div>
+                                    <div class="form-row">
+                                        <span class="form-label">提取模型</span>
+                                        <div class="print-ai-config-row">
+                                            <select id="printAiExtractModelSelect" class="template-select" data-searchable="true" onchange="handlePrintAiModelSelect('extract')"></select>
+                                            <input id="printAiExtractModel" class="form-input" type="text" placeholder="图片编辑模型">
+                                        </div>
+                                    </div>
+                                    <div class="form-row">
+                                        <span class="form-label">裂变模型</span>
+                                        <div class="print-ai-config-row">
+                                            <select id="printAiVariationModelSelect" class="template-select" data-searchable="true" onchange="handlePrintAiModelSelect('variation')"></select>
+                                            <input id="printAiVariationModel" class="form-input" type="text" placeholder="图片编辑模型">
+                                        </div>
+                                    </div>
+                                    <div class="form-row">
+                                        <span class="form-label">比例</span>
+                                        <select id="printAiAspectRatio" class="template-select">
+                                            <option value="3:2">3:2</option>
+                                            <option value="21:9">21:9</option>
+                                        </select>
+                                    </div>
+                                    <div class="form-row">
+                                        <span class="form-label">生成张数</span>
+                                        <input id="printAiVariationCount" class="form-input" type="number" min="1" max="8" value="1">
+                                    </div>
+                                    <div class="form-row">
+                                        <span class="form-label">并发数</span>
+                                        <input id="printAiConcurrency" class="form-input" type="number" min="1" max="6" value="1">
+                                    </div>
+                                </div>
+                                </div>
+                                <div>
+                                    <div class="print-ai-section-title" style="margin-bottom:10px;">结果预览</div>
+                                <div id="printAiPreview" class="print-ai-preview-layout">
+                                    <div class="print-ai-empty" style="grid-column:1 / -1;">选择一个任务查看原图、提取图和裂变图。</div>
+                                </div>
+                                </div>
+                                </div>
+                            </div>
+                        </div>
+                        </div>
+                    </div>
+                </div>
+
                 <!-- 产品发布页面 -->
                 <div id="product-publish" class="tab-content">
                     <div class="product-publish-page">
@@ -7170,6 +7696,40 @@
                             </div>
                         </div>
                     </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div id="printAiSettingsModal" class="modal-overlay">
+        <div class="product-publish-config-modal-shell print-ai-settings-shell">
+            <div class="modal-header">
+                <div>
+                    <div class="modal-title">印花裂变设置</div>
+                    <div class="modal-subtitle">管理提取、裂变提示词和运行参数。</div>
+                </div>
+                <div class="modal-actions">
+                    <button class="btn btn-secondary" type="button" onclick="closePrintAiSettingsModal()">取消</button>
+                    <button class="btn btn-primary" type="button" onclick="savePrintAiSettingsModal()">保存设置</button>
+                </div>
+            </div>
+            <div class="product-publish-config-modal-body">
+                <div class="print-ai-form-grid">
+                    <div class="form-row">
+                        <span class="form-label">输出目录</span>
+                        <div class="print-ai-row" style="flex-wrap:nowrap;min-width:0;">
+                            <input id="printAiOutputDir" class="form-input" type="text" readonly>
+                            <button class="btn btn-secondary" type="button" onclick="selectPrintAiOutputDir()">选择</button>
+                        </div>
+                    </div>
+                    <label style="display:grid;gap:6px;">
+                        <span class="form-label">提取提示词</span>
+                        <textarea id="printAiExtractionPrompt" class="form-input" style="min-height:150px;resize:vertical;"></textarea>
+                    </label>
+                    <label style="display:grid;gap:6px;">
+                        <span class="form-label">裂变提示词</span>
+                        <textarea id="printAiVariationPrompt" class="form-input" style="min-height:150px;resize:vertical;"></textarea>
+                    </label>
                 </div>
             </div>
         </div>
@@ -8171,6 +8731,7 @@
                 'classify': '一键归类',
                 'slice': '智能切片',
                 'template': '智能模板',
+                'print-ai': '印花裂变',
                 'product-publish': '产品发布',
                 'settings': '设置'
             };
@@ -9988,6 +10549,437 @@
             loadUpdateSettings();
             loadProductPublishModule();
         }
+
+        const printAiState = {
+            config: null,
+            tasks: [],
+            selectedTaskIds: [],
+            activeTaskId: '',
+            models: []
+        };
+
+        function getPrintAiStatusText(status) {
+            return {
+                pending: '待运行',
+                running: '运行中',
+                extracted: '已提取',
+                done: '已完成',
+                failed: '失败'
+            }[status] || '待运行';
+        }
+
+        function getPrintAiSelectedTasks() {
+            const selected = new Set(printAiState.selectedTaskIds);
+            return printAiState.tasks.filter((task) => selected.has(task.id));
+        }
+
+        function getActivePrintAiTask() {
+            return printAiState.tasks.find((task) => task.id === printAiState.activeTaskId) || printAiState.tasks[0] || null;
+        }
+
+        function collectPrintAiConfigFromForm() {
+            const currentPrompt = printAiState.config?.variationPrompts?.[0] || {};
+            return {
+                ...(printAiState.config || {}),
+                baseUrl: document.getElementById('printAiBaseUrl')?.value || '',
+                apiKey: document.getElementById('printAiApiKey')?.value || '',
+                extractModel: document.getElementById('printAiExtractModel')?.value || '',
+                variationModel: document.getElementById('printAiVariationModel')?.value || '',
+                aspectRatio: document.getElementById('printAiAspectRatio')?.value || '3:2',
+                variationCount: Number(document.getElementById('printAiVariationCount')?.value || 1),
+                concurrency: Number(document.getElementById('printAiConcurrency')?.value || 1),
+                outputDir: document.getElementById('printAiOutputDir')?.value || '',
+                extractionPrompt: document.getElementById('printAiExtractionPrompt')?.value || '',
+                variationPrompts: [
+                    {
+                        id: currentPrompt.id || 'print-ai-variation-default',
+                        name: currentPrompt.name || '通用裂变',
+                        prompt: document.getElementById('printAiVariationPrompt')?.value || ''
+                    }
+                ]
+            };
+        }
+
+        function applyPrintAiConfigToForm(config) {
+            printAiState.config = config || {};
+            const firstPrompt = Array.isArray(config?.variationPrompts) ? config.variationPrompts[0] : null;
+            const pairs = [
+                ['printAiBaseUrl', config?.baseUrl || ''],
+                ['printAiApiKey', config?.apiKey || ''],
+                ['printAiExtractModel', config?.extractModel || ''],
+                ['printAiVariationModel', config?.variationModel || ''],
+                ['printAiAspectRatio', config?.aspectRatio || '3:2'],
+                ['printAiVariationCount', config?.variationCount || 1],
+                ['printAiConcurrency', config?.concurrency || 1],
+                ['printAiOutputDir', config?.outputDir || ''],
+                ['printAiExtractionPrompt', config?.extractionPrompt || ''],
+                ['printAiVariationPrompt', firstPrompt?.prompt || '']
+            ];
+            pairs.forEach(([id, value]) => {
+                const el = document.getElementById(id);
+                if (el) el.value = value;
+            });
+            initializeVirtualSelect('printAiAspectRatio');
+            refreshVirtualSelect('printAiAspectRatio');
+            renderPrintAiModelSelects();
+        }
+
+        function renderPrintAiModelSelects() {
+            const models = Array.from(new Set([
+                ...printAiState.models,
+                document.getElementById('printAiExtractModel')?.value || '',
+                document.getElementById('printAiVariationModel')?.value || ''
+            ].map((item) => String(item || '').trim()).filter(Boolean)));
+            [
+                ['printAiExtractModelSelect', document.getElementById('printAiExtractModel')?.value || ''],
+                ['printAiVariationModelSelect', document.getElementById('printAiVariationModel')?.value || '']
+            ].forEach(([selectId, current]) => {
+                const select = document.getElementById(selectId);
+                if (!select) return;
+                const options = models.length ? models : (current ? [current] : []);
+                select.innerHTML = options.map((model) => `<option value="${escapeHtml(model)}" ${model === current ? 'selected' : ''}>${escapeHtml(model)}</option>`).join('');
+                initializeVirtualSelect(selectId);
+                refreshVirtualSelect(selectId);
+            });
+        }
+
+        function handlePrintAiModelSelect(kind) {
+            const selectId = kind === 'extract' ? 'printAiExtractModelSelect' : 'printAiVariationModelSelect';
+            const inputId = kind === 'extract' ? 'printAiExtractModel' : 'printAiVariationModel';
+            const select = document.getElementById(selectId);
+            const input = document.getElementById(inputId);
+            if (select && input) {
+                input.value = select.value;
+            }
+        }
+
+        function renderPrintAiTasks() {
+            const list = document.getElementById('printAiTaskList');
+            const hint = document.getElementById('printAiSelectionHint');
+            const stats = document.getElementById('printAiTaskStats');
+            if (!list) return;
+            if (hint) hint.textContent = `已勾选 ${printAiState.selectedTaskIds.length} 项`;
+            if (stats) {
+                const done = printAiState.tasks.filter((task) => task.status === 'done').length;
+                const failed = printAiState.tasks.filter((task) => task.status === 'failed').length;
+                stats.textContent = `共 ${printAiState.tasks.length} 项 / 完成 ${done} / 失败 ${failed}`;
+            }
+            if (!printAiState.tasks.length) {
+                list.innerHTML = '<div class="print-ai-empty">还没有印花任务。</div>';
+                renderPrintAiPreview();
+                return;
+            }
+            list.innerHTML = printAiState.tasks.map((task) => {
+                const checked = printAiState.selectedTaskIds.includes(task.id) ? 'checked' : '';
+                const active = task.id === printAiState.activeTaskId ? 'active' : '';
+                const encodedId = encodeURIComponent(task.id);
+                const doneVariants = Array.isArray(task.variants) ? task.variants.filter((item) => item.status === 'done').length : 0;
+                const totalVariants = Array.isArray(task.variants) ? task.variants.length : 0;
+                const thumbPath = task.extractedPath || task.sourcePath;
+                return `
+                    <div class="print-ai-task-card ${active}" onclick="selectPrintAiTask('${encodedId}')">
+                        <label class="task-select-check" onclick="event.stopPropagation()">
+                            <input type="checkbox" ${checked} onchange="togglePrintAiTaskSelection('${encodedId}', event)" onclick="event.stopPropagation()">
+                        </label>
+                        <div class="print-ai-task-thumb">${thumbPath ? `<img src="${toFileUrl(thumbPath)}" alt="${escapeHtml(task.sourceName)}">` : ''}</div>
+                        <div class="print-ai-task-main">
+                            <div class="print-ai-task-name" title="${escapeHtml(task.sourceName)}">${escapeHtml(task.sourceName)}</div>
+                            <div class="print-ai-task-meta">${totalVariants ? `裂变 ${doneVariants}/${totalVariants}` : '等待提取印花'}</div>
+                            <span class="print-ai-status-pill ${escapeHtml(task.status)}">${escapeHtml(getPrintAiStatusText(task.status))}</span>
+                        </div>
+                    </div>
+                `;
+            }).join('');
+            renderPrintAiPreview();
+        }
+
+        function renderPrintAiPreview() {
+            const host = document.getElementById('printAiPreview');
+            if (!host) return;
+            const task = getActivePrintAiTask();
+            if (!task) {
+                host.innerHTML = '<div class="print-ai-empty" style="grid-column:1 / -1;">选择一个任务查看原图、提取图和裂变图。</div>';
+                return;
+            }
+            const cards = [];
+            if (task.sourcePath) {
+                cards.push(`
+                    <div class="print-ai-preview-card">
+                        <div class="print-ai-preview-title">原图</div>
+                        <img src="${toFileUrl(task.sourcePath)}" alt="${escapeHtml(task.sourceName)}">
+                    </div>
+                `);
+            }
+            if (task.extractedPath) {
+                cards.push(`
+                    <div class="print-ai-preview-card">
+                        <div class="print-ai-preview-title">提取印花</div>
+                        <img src="${toFileUrl(task.extractedPath)}" alt="提取印花">
+                    </div>
+                `);
+            }
+            (Array.isArray(task.variants) ? task.variants : []).forEach((variant, index) => {
+                if (!variant.imagePath) return;
+                cards.push(`
+                    <div class="print-ai-preview-card">
+                        <div class="print-ai-preview-title" title="${escapeHtml(variant.promptName || `裂变 ${index + 1}`)}">${escapeHtml(variant.promptName || `裂变 ${index + 1}`)}</div>
+                        <img src="${toFileUrl(variant.imagePath)}" alt="${escapeHtml(variant.promptName || '裂变图')}">
+                    </div>
+                `);
+            });
+            if (task.error) {
+                cards.push(`<div class="print-ai-empty" style="grid-column:1 / -1;color:#B91C1C;">${escapeHtml(task.error)}</div>`);
+            }
+            host.innerHTML = cards.join('') || '<div class="print-ai-empty" style="grid-column:1 / -1;">当前任务还没有结果。</div>';
+        }
+
+        function selectPrintAiTask(encodedId) {
+            printAiState.activeTaskId = decodeURIComponent(encodedId || '');
+            renderPrintAiTasks();
+        }
+
+        function togglePrintAiTaskSelection(encodedId, event) {
+            const id = decodeURIComponent(encodedId || '');
+            const checked = Boolean(event?.target?.checked);
+            const set = new Set(printAiState.selectedTaskIds);
+            if (checked) set.add(id);
+            else set.delete(id);
+            printAiState.selectedTaskIds = Array.from(set);
+            renderPrintAiTasks();
+        }
+
+        function toggleAllPrintAiTasks() {
+            if (printAiState.selectedTaskIds.length === printAiState.tasks.length) {
+                printAiState.selectedTaskIds = [];
+            } else {
+                printAiState.selectedTaskIds = printAiState.tasks.map((task) => task.id);
+            }
+            renderPrintAiTasks();
+        }
+
+        function triggerPrintAiUpload() {
+            document.getElementById('printAiFileInput')?.click();
+        }
+
+        async function handlePrintAiFileSelect(event) {
+            const filePaths = Array.from(event?.target?.files || [])
+                .map((file) => getLocalPathFromFile(file))
+                .filter(Boolean);
+            event.target.value = '';
+            if (!filePaths.length) return;
+            try {
+                document.getElementById('printAiStatus').textContent = '正在导入图片...';
+                const data = await ipcRenderer.invoke('print-ai:import-images', { filePaths });
+                printAiState.tasks = Array.isArray(data?.tasks) ? data.tasks : [];
+                printAiState.selectedTaskIds = (data?.imported || []).map((task) => task.id);
+                printAiState.activeTaskId = printAiState.selectedTaskIds[0] || printAiState.activeTaskId;
+                document.getElementById('printAiStatus').textContent = `已导入 ${data?.imported?.length || 0} 张图片。`;
+                renderPrintAiTasks();
+            } catch (error) {
+                document.getElementById('printAiStatus').textContent = error.message || '导入失败';
+            }
+        }
+
+        async function savePrintAiConfigFromForm() {
+            try {
+                const saved = await ipcRenderer.invoke('print-ai:save-config', collectPrintAiConfigFromForm());
+                applyPrintAiConfigToForm(saved);
+                document.getElementById('printAiStatus').textContent = '配置已保存。';
+            } catch (error) {
+                document.getElementById('printAiStatus').textContent = error.message || '保存配置失败';
+            }
+        }
+
+        async function selectPrintAiOutputDir() {
+            try {
+                const saved = await ipcRenderer.invoke('print-ai:select-output-dir');
+                applyPrintAiConfigToForm(saved);
+                document.getElementById('printAiStatus').textContent = '输出目录已更新。';
+            } catch (error) {
+                document.getElementById('printAiStatus').textContent = error.message || '选择输出目录失败';
+            }
+        }
+
+        function openPrintAiSettingsModal() {
+            applyPrintAiConfigToForm({
+                ...(printAiState.config || {}),
+                ...collectPrintAiConfigFromForm()
+            });
+            document.getElementById('printAiSettingsModal')?.classList.add('active');
+        }
+
+        function closePrintAiSettingsModal() {
+            document.getElementById('printAiSettingsModal')?.classList.remove('active');
+        }
+
+        async function savePrintAiSettingsModal() {
+            await savePrintAiConfigFromForm();
+            closePrintAiSettingsModal();
+        }
+
+        async function detectPrintAiModels() {
+            const status = document.getElementById('printAiStatus');
+            try {
+                if (status) status.textContent = '正在识别模型...';
+                const result = await ipcRenderer.invoke('print-ai:detect-models', collectPrintAiConfigFromForm());
+                printAiState.models = Array.isArray(result?.models) ? result.models : [];
+                renderPrintAiModelSelects();
+                if (result?.preferredModel) {
+                    const extractInput = document.getElementById('printAiExtractModel');
+                    const variationInput = document.getElementById('printAiVariationModel');
+                    if (extractInput && !extractInput.value) extractInput.value = result.preferredModel;
+                    if (variationInput && !variationInput.value) variationInput.value = result.preferredModel;
+                    renderPrintAiModelSelects();
+                }
+                if (status) status.textContent = printAiState.models.length ? `识别到 ${printAiState.models.length} 个模型。` : '没有识别到模型。';
+            } catch (error) {
+                printAiState.models = [];
+                renderPrintAiModelSelects();
+                if (status) status.textContent = error.message || '识别模型失败';
+            }
+        }
+
+        async function testPrintAiModel(kind) {
+            const status = document.getElementById('printAiStatus');
+            const model = kind === 'variation'
+                ? document.getElementById('printAiVariationModel')?.value
+                : document.getElementById('printAiExtractModel')?.value;
+            try {
+                if (status) status.textContent = kind === 'variation' ? '正在测试裂变模型...' : '正在测试提取模型...';
+                await ipcRenderer.invoke('print-ai:test-model', {
+                    ...collectPrintAiConfigFromForm(),
+                    model
+                });
+                if (status) status.textContent = `${kind === 'variation' ? '裂变' : '提取'}模型在当前分组中可用。`;
+            } catch (error) {
+                if (status) status.textContent = error.message || '测试模型失败';
+            }
+        }
+
+        async function startSelectedPrintAiTasks() {
+            if (!printAiState.selectedTaskIds.length) {
+                await showNoticeDialog('印花裂变', '请先勾选要运行的印花任务。');
+                return;
+            }
+            try {
+                document.getElementById('printAiStatus').textContent = '任务已启动，正在后台运行...';
+                const data = await ipcRenderer.invoke('print-ai:start-run', {
+                    taskIds: printAiState.selectedTaskIds,
+                    config: collectPrintAiConfigFromForm()
+                });
+                printAiState.tasks = Array.isArray(data?.tasks) ? data.tasks : [];
+                renderPrintAiTasks();
+            } catch (error) {
+                document.getElementById('printAiStatus').textContent = error.message || '启动失败';
+            }
+        }
+
+        async function deleteSelectedPrintAiTasks() {
+            if (!printAiState.selectedTaskIds.length) {
+                await showNoticeDialog('删除任务', '请先勾选要删除的印花任务。');
+                return;
+            }
+            const data = await ipcRenderer.invoke('print-ai:delete-tasks', { taskIds: printAiState.selectedTaskIds });
+            printAiState.tasks = Array.isArray(data?.tasks) ? data.tasks : [];
+            printAiState.selectedTaskIds = [];
+            printAiState.activeTaskId = printAiState.tasks[0]?.id || '';
+            renderPrintAiTasks();
+        }
+
+        async function copySelectedPrintAiResultsToOutput() {
+            const selected = getPrintAiSelectedTasks();
+            if (!selected.length) {
+                await showNoticeDialog('导出结果', '请先勾选要导出的印花任务。');
+                return;
+            }
+            await savePrintAiConfigFromForm();
+            const data = await ipcRenderer.invoke('print-ai:copy-results-to-output', { taskIds: selected.map((task) => task.id) });
+            document.getElementById('printAiStatus').textContent = `已导出 ${data?.copied?.length || 0} 个结果。`;
+        }
+
+        function importSelectedPrintAiResultsToSlice() {
+            const selected = getPrintAiSelectedTasks();
+            const files = selected.flatMap((task) => (Array.isArray(task.variants) ? task.variants : [])
+                .filter((variant) => variant.status === 'done' && variant.imagePath)
+                .map((variant) => variant.imagePath));
+            if (!files.length) {
+                appendTemplateLog('warn', '当前勾选任务没有可导入切片的九宫格裂变图');
+                return;
+            }
+            if (typeof addSliceTasksFromPaths !== 'function') {
+                appendTemplateLog('error', '智能切片入口尚未初始化，无法导入');
+                return;
+            }
+            const result = addSliceTasksFromPaths(files, { openFirst: true, source: 'print-ai' });
+            switchTab('slice');
+            appendTemplateLog('success', `已导入 ${result.importedCount || 0} 张裂变图到智能切片`);
+        }
+
+        function importSelectedPrintAiResultsToTemplate() {
+            const selected = getPrintAiSelectedTasks();
+            const files = selected.flatMap((task) => [
+                ...(Array.isArray(task.variants) ? task.variants.map((variant) => variant.imagePath) : []),
+                task.extractedPath
+            ]).filter(Boolean);
+            let importedCount = 0;
+            let firstAddedId = '';
+            files.forEach((filePath) => {
+                if (!filePath) return;
+                const existing = templateState.designs.find((design) => String(design.path || '') === filePath);
+                if (existing) return;
+                const designId = `template-design-${templateState.designSeq++}`;
+                templateState.designs.push({
+                    id: designId,
+                    name: pathUtil.basename(filePath),
+                    path: filePath,
+                    previewSrc: toFileUrl(filePath)
+                });
+                importedCount += 1;
+                if (!firstAddedId) firstAddedId = designId;
+            });
+            if (!importedCount) {
+                appendTemplateLog('info', '没有新的印花裂变结果可导入');
+                return;
+            }
+            if (!templateState.editor.selectedDesignId) {
+                templateState.editor.selectedDesignId = firstAddedId;
+            }
+            renderTemplateDesigns();
+            renderTemplateSceneManager();
+            switchTab('template');
+            appendTemplateLog('success', `已导入 ${importedCount} 张印花裂变结果到智能模板`);
+        }
+
+        async function initializePrintAiModule() {
+            try {
+                const [config, data] = await Promise.all([
+                    ipcRenderer.invoke('print-ai:load-config'),
+                    ipcRenderer.invoke('print-ai:load-data')
+                ]);
+                applyPrintAiConfigToForm(config);
+                printAiState.tasks = Array.isArray(data?.tasks) ? data.tasks : [];
+                printAiState.activeTaskId = printAiState.tasks[0]?.id || '';
+                renderPrintAiTasks();
+            } catch (error) {
+                const status = document.getElementById('printAiStatus');
+                if (status) status.textContent = error.message || '读取印花裂变数据失败';
+            }
+        }
+
+        ipcRenderer.on('print-ai:tasks', (_, data) => {
+            printAiState.tasks = Array.isArray(data?.tasks) ? data.tasks : [];
+            printAiState.selectedTaskIds = printAiState.selectedTaskIds.filter((id) => printAiState.tasks.some((task) => task.id === id));
+            if (!printAiState.activeTaskId || !printAiState.tasks.some((task) => task.id === printAiState.activeTaskId)) {
+                printAiState.activeTaskId = printAiState.tasks[0]?.id || '';
+            }
+            renderPrintAiTasks();
+            const running = printAiState.tasks.filter((task) =>
+                task.status === 'running' ||
+                (Array.isArray(task.variants) && task.variants.some((variant) => variant.status === 'running'))
+            ).length;
+            const status = document.getElementById('printAiStatus');
+            if (status) status.textContent = running ? `正在运行 ${running} 个任务...` : '任务状态已更新。';
+        });
 
         function normalizeProductPublishRecord(record, index = 0) {
             const images = Array.isArray(record?.images)
@@ -19026,6 +20018,9 @@
             document.getElementById('productPublishOssPresetModal').addEventListener('mousedown', (event) => {
                 if (event.target.id === 'productPublishOssPresetModal') closeProductPublishOssPresetModal();
             });
+            document.getElementById('printAiSettingsModal')?.addEventListener('mousedown', (event) => {
+                if (event.target.id === 'printAiSettingsModal') closePrintAiSettingsModal();
+            });
             document.getElementById('productPublishTypeMappingsModal').addEventListener('mousedown', (event) => {
                 if (event.target.id === 'productPublishTypeMappingsModal') closeProductPublishTypeMappingsModal();
             });
@@ -19208,6 +20203,65 @@
             if (firstNewTaskId) {
                 openSliceEditor(firstNewTaskId);
             }
+        }
+
+        function addSliceTasksFromPaths(filePaths, options = {}) {
+            const paths = Array.from(filePaths || [])
+                .map((filePath) => String(filePath || '').trim())
+                .filter((filePath) => filePath && SLICE_SUPPORTED_EXTS.has(pathUtil.extname(filePath).toLowerCase()));
+            let firstNewTaskId = null;
+            let importedCount = 0;
+            paths.forEach((filePath) => {
+                const fileName = pathUtil.basename(filePath) || `image-${sliceState.taskSeq}.png`;
+                const existing = sliceState.tasks.find((task) => String(task.filePath || '') === filePath);
+                if (existing) {
+                    firstNewTaskId = firstNewTaskId || existing.id;
+                    return;
+                }
+                const task = {
+                    id: `slice-task-${sliceState.taskSeq++}`,
+                    filePath,
+                    fileName,
+                    previewSrc: toFileUrl(filePath),
+                    previewIsObjectUrl: false,
+                    status: 'pending',
+                    reviewStatus: 'pending',
+                    mode: 'auto',
+                    gridSetting: 'auto',
+                    gridSize: 3,
+                    viewZoom: 1,
+                    viewOffsetX: 0,
+                    viewOffsetY: 0,
+                    rotation: 0,
+                    sliceInsetPx: 2,
+                    showInsetPreview: true,
+                    showLabels: true,
+                    resultFiles: [],
+                    resultDir: '',
+                    lastSavedAt: '',
+                    sliceDetection: null,
+                    detectionSignature: '',
+                    manualAdjusted: false,
+                    imageElement: null,
+                    sourceCanvasCache: null,
+                    sourceCanvasRotation: null,
+                    sliceCutsX: null,
+                    sliceCutsY: null,
+                    excludedTiles: [],
+                    historyPast: [],
+                    historyFuture: [],
+                    sourceModule: options.source || ''
+                };
+                sliceState.tasks.push(task);
+                importedCount += 1;
+                firstNewTaskId = firstNewTaskId || task.id;
+            });
+            renderSliceStats();
+            renderSliceTasks();
+            if (options.openFirst && firstNewTaskId) {
+                openSliceEditor(firstNewTaskId);
+            }
+            return { importedCount, firstTaskId: firstNewTaskId };
         }
 
         function clearSliceTasks() {
@@ -22739,6 +23793,7 @@
 
         initializeSliceModule();
         initializeTemplateModule();
+        initializePrintAiModule();
 
         // 初始化规则
         loadProductRules();

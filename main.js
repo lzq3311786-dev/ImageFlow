@@ -38,11 +38,15 @@ const SLICE_CONFIG_FILE = path.join(app.getPath('userData'), 'slice-config.json'
 const TEMPLATE_CONFIG_FILE = path.join(app.getPath('userData'), 'template-config.json');
 const PRODUCT_PUBLISH_CONFIG_FILE = path.join(app.getPath('userData'), 'product-publish-config.json');
 const PRODUCT_PUBLISH_DATA_FILE = path.join(app.getPath('userData'), 'product-publish-data.json');
+const PRINT_AI_CONFIG_FILE = path.join(app.getPath('userData'), 'print-ai-config.json');
+const PRINT_AI_DATA_FILE = path.join(app.getPath('userData'), 'print-ai-data.json');
+const PRINT_AI_STORAGE_DIR = path.join(app.getPath('userData'), 'print-ai');
 const UPDATE_CONFIG_FILE = path.join(app.getPath('userData'), 'update-config.json');
 const PACKAGE_JSON_FILE = path.join(__dirname, 'package.json');
 const LEGACY_WATERMARK_PRESETS_FILE = path.join(app.getPath('userData'), 'watermark-presets.json');
 const TEMPLATE_PARAMETER_PRESETS_FILE = path.join(app.getPath('userData'), 'template-parameter-presets.json');
 const PRODUCT_PUBLISH_IMAGE_EXTS = new Set(['.jpg', '.jpeg', '.png', '.webp', '.bmp']);
+const PRINT_AI_IMAGE_EXTS = new Set(['.jpg', '.jpeg', '.png', '.webp', '.bmp', '.avif']);
 const PRODUCT_PUBLISH_TEMU_TEMPLATE_NAME = '妙手Temu导入模板-非服饰类模板.xlsx';
 
 function createDefaultProductPublishTypeMappings() {
@@ -143,6 +147,19 @@ function loadSliceConfig() {
 
 function saveSliceConfig(cfg) {
     fs.writeFileSync(SLICE_CONFIG_FILE, JSON.stringify(cfg, null, 2), 'utf-8');
+}
+
+function readJsonFile(filePath, fallback) {
+    try {
+        return JSON.parse(fs.readFileSync(filePath, 'utf-8'));
+    } catch {
+        return fallback;
+    }
+}
+
+function writeJsonFile(filePath, data) {
+    ensureDir(path.dirname(filePath));
+    fs.writeFileSync(filePath, JSON.stringify(data, null, 2), 'utf-8');
 }
 
 function ensureDir(dirPath) {
@@ -979,6 +996,466 @@ function saveProductPublishConfig(cfg) {
     }
     fs.writeFileSync(PRODUCT_PUBLISH_CONFIG_FILE, JSON.stringify(nextCfg, null, 2), 'utf-8');
     return nextCfg;
+}
+
+function createDefaultPrintAiConfig() {
+    let productCfg = {};
+    try {
+        productCfg = loadProductPublishConfig();
+    } catch {}
+    return {
+        baseUrl: String(productCfg.aiApiUrl || '').trim(),
+        apiKey: String(productCfg.aiApiKey || '').trim(),
+        extractModel: String(productCfg.aiModel || '').trim(),
+        variationModel: String(productCfg.aiModel || '').trim(),
+        timeoutMs: 300000,
+        concurrency: 1,
+        variationCount: 1,
+        aspectRatio: '3:2',
+        outputDir: path.join(app.getPath('pictures'), 'ImageFlow印花裂变'),
+        extractionPrompt: '完整提取商品表面的印花图案，去除背景、透视、阴影和材质干扰，输出独立正视角图案图片。保持主体完整、画面干净、无产品场景。',
+        variationPrompts: [
+            {
+                id: 'print-ai-variation-default',
+                name: '通用裂变',
+                prompt: '基于提取出的印花图案生成新的同风格图案，保持电商印花可用、构图完整、背景干净，不要生成产品场景。'
+            }
+        ]
+    };
+}
+
+function normalizePrintAiConfig(cfg) {
+    const defaults = createDefaultPrintAiConfig();
+    const variationPrompts = Array.isArray(cfg?.variationPrompts)
+        ? cfg.variationPrompts.map((item, index) => ({
+            id: String(item?.id || `print-ai-variation-${Date.now()}-${index + 1}`).trim(),
+            name: String(item?.name || `裂变方式 ${index + 1}`).trim(),
+            prompt: String(item?.prompt || '').trim()
+        })).filter((item) => item.id && item.name && item.prompt)
+        : defaults.variationPrompts;
+    return {
+        ...defaults,
+        ...(cfg || {}),
+        baseUrl: String(cfg?.baseUrl ?? defaults.baseUrl).trim(),
+        apiKey: String(cfg?.apiKey ?? defaults.apiKey).trim(),
+        extractModel: String(cfg?.extractModel ?? defaults.extractModel).trim(),
+        variationModel: String(cfg?.variationModel ?? defaults.variationModel).trim(),
+        timeoutMs: Math.max(1000, Math.min(900000, Number(cfg?.timeoutMs || defaults.timeoutMs))),
+        concurrency: Math.max(1, Math.min(6, Math.round(Number(cfg?.concurrency || defaults.concurrency)))),
+        variationCount: Math.max(1, Math.min(8, Math.round(Number(cfg?.variationCount || defaults.variationCount)))),
+        aspectRatio: ['3:2', '21:9'].includes(cfg?.aspectRatio) ? cfg.aspectRatio : defaults.aspectRatio,
+        outputDir: normalizeDirectoryPath(cfg?.outputDir, defaults.outputDir),
+        extractionPrompt: String(cfg?.extractionPrompt || defaults.extractionPrompt).trim(),
+        variationPrompts: variationPrompts.length ? variationPrompts : defaults.variationPrompts
+    };
+}
+
+function loadPrintAiConfig() {
+    return normalizePrintAiConfig(readJsonFile(PRINT_AI_CONFIG_FILE, null));
+}
+
+function savePrintAiConfig(cfg) {
+    const nextCfg = normalizePrintAiConfig(cfg || {});
+    writeJsonFile(PRINT_AI_CONFIG_FILE, nextCfg);
+    return nextCfg;
+}
+
+function createDefaultPrintAiData() {
+    return { tasks: [] };
+}
+
+function normalizePrintAiTask(task, index = 0) {
+    const sourcePath = String(task?.sourcePath || '').trim();
+    const sourceName = String(task?.sourceName || path.basename(sourcePath || `印花任务${index + 1}`)).trim();
+    const variants = Array.isArray(task?.variants)
+        ? task.variants.map((item, itemIndex) => ({
+            id: String(item?.id || `variant-${itemIndex + 1}`).trim(),
+            promptId: String(item?.promptId || '').trim(),
+            promptName: String(item?.promptName || '').trim(),
+            status: ['pending', 'running', 'done', 'failed'].includes(item?.status) ? item.status : 'pending',
+            imagePath: String(item?.imagePath || '').trim(),
+            error: String(item?.error || '').trim()
+        }))
+        : [];
+    let status = ['pending', 'running', 'extracted', 'done', 'failed'].includes(task?.status) ? task.status : 'pending';
+    const hasVariants = variants.length > 0;
+    const variantsTerminal = hasVariants && variants.every((item) => item.status === 'done' || item.status === 'failed');
+    if ((status === 'running' || status === 'extracted') && variantsTerminal) {
+        status = variants.some((item) => item.status === 'done') ? 'done' : 'failed';
+    }
+    return {
+        id: String(task?.id || `print-ai-task-${Date.now()}-${index + 1}`).trim(),
+        sourceName,
+        sourcePath,
+        status,
+        extractedPath: String(task?.extractedPath || '').trim(),
+        description: task?.description || null,
+        variants,
+        error: String(task?.error || '').trim(),
+        createdAt: String(task?.createdAt || new Date().toISOString()),
+        updatedAt: String(task?.updatedAt || task?.createdAt || new Date().toISOString())
+    };
+}
+
+function loadPrintAiData() {
+    const data = readJsonFile(PRINT_AI_DATA_FILE, createDefaultPrintAiData());
+    return {
+        tasks: Array.isArray(data?.tasks)
+            ? data.tasks.map((task, index) => normalizePrintAiTask(task, index))
+            : []
+    };
+}
+
+function savePrintAiData(data) {
+    const nextData = {
+        tasks: Array.isArray(data?.tasks)
+            ? data.tasks.map((task, index) => normalizePrintAiTask(task, index))
+            : []
+    };
+    writeJsonFile(PRINT_AI_DATA_FILE, nextData);
+    return nextData;
+}
+
+function broadcastPrintAiTasks(sender, data = loadPrintAiData()) {
+    const target = sender || mainWindow?.webContents;
+    if (target) {
+        safeSend(target, 'print-ai:tasks', data);
+    }
+}
+
+function resolvePrintAiApiRoot(rawUrl) {
+    return String(rawUrl || '').trim().replace(/\/+$/, '').replace(/\/(?:images\/edits|images\/generations|chat\/completions|models)\/?$/i, '');
+}
+
+function resolvePrintAiApiUrl(baseUrl, suffix) {
+    const root = resolvePrintAiApiRoot(baseUrl);
+    if (!root) return '';
+    return `${root}/${String(suffix || '').replace(/^\/+/, '')}`;
+}
+
+async function detectPrintAiModels(config) {
+    const modelsUrl = resolvePrintAiApiUrl(config.baseUrl, '/models');
+    if (!modelsUrl) {
+        throw new Error('请先填写 API 地址');
+    }
+    const headers = {};
+    if (config.apiKey) {
+        headers.Authorization = `Bearer ${config.apiKey}`;
+    }
+    const response = await fetch(modelsUrl, {
+        method: 'GET',
+        headers,
+        signal: AbortSignal.timeout(config.timeoutMs)
+    });
+    const rawText = await response.text().catch(() => '');
+    if (!response.ok) {
+        throw new Error(`模型识别失败：${response.status}${rawText ? ` ${rawText.slice(0, 500)}` : ''}`);
+    }
+    let payload = {};
+    try {
+        payload = rawText ? JSON.parse(rawText) : {};
+    } catch {
+        throw new Error(`模型识别失败：接口返回的不是合法 JSON${rawText ? ` ${rawText.slice(0, 300)}` : ''}`);
+    }
+    const source = Array.isArray(payload)
+        ? payload
+        : (Array.isArray(payload?.data) ? payload.data : (Array.isArray(payload?.models) ? payload.models : []));
+    const models = source
+        .map((item) => {
+            if (typeof item === 'string') return item;
+            return String(item?.id || item?.name || item?.model || '').trim();
+        })
+        .filter(Boolean);
+    const uniqueModels = Array.from(new Set(models));
+    if (!uniqueModels.length) {
+        throw new Error('模型识别失败：接口没有返回可用模型');
+    }
+    return {
+        models: uniqueModels,
+        preferredModel: uniqueModels.includes('gpt-image-2') ? 'gpt-image-2' : uniqueModels[0],
+        provider: 'openai'
+    };
+}
+
+async function testPrintAiModelAvailability(config, model) {
+    const result = await detectPrintAiModels(config);
+    if (!result.models.includes(model)) {
+        throw new Error(`当前 API Key 分组未返回该模型：${model}`);
+    }
+    return {
+        ok: true,
+        model,
+        message: `模型可用：${model}`,
+        total: result.models.length
+    };
+}
+
+function getPrintAiImageSize(aspectRatio) {
+    return aspectRatio === '21:9' ? '2688x1152' : '1536x1024';
+}
+
+function getPrintAiMimeType(filePath) {
+    const ext = path.extname(filePath || '').toLowerCase();
+    if (ext === '.jpg' || ext === '.jpeg') return 'image/jpeg';
+    if (ext === '.webp') return 'image/webp';
+    if (ext === '.gif') return 'image/gif';
+    if (ext === '.avif') return 'image/avif';
+    return 'image/png';
+}
+
+function printAiExtensionForMime(mimeType) {
+    const normalized = String(mimeType || '').toLowerCase();
+    if (normalized.includes('jpeg') || normalized.includes('jpg')) return '.jpg';
+    if (normalized.includes('webp')) return '.webp';
+    if (normalized.includes('gif')) return '.gif';
+    if (normalized.includes('avif')) return '.avif';
+    return '.png';
+}
+
+async function requestPrintAiImageEdit(input) {
+    const apiUrl = resolvePrintAiApiUrl(input.baseUrl, '/images/edits');
+    if (!apiUrl || !input.model) {
+        throw new Error('请先填写 API 地址和模型名称');
+    }
+    const bytes = fs.readFileSync(input.imagePath);
+    const mimeType = getPrintAiMimeType(input.imagePath);
+    const form = new FormData();
+    form.set('model', input.model);
+    form.set('prompt', input.prompt);
+    form.set('response_format', 'b64_json');
+    if (input.size) {
+        form.set('size', input.size);
+    }
+    form.set('image', new Blob([bytes], { type: mimeType }), path.basename(input.imagePath));
+    const headers = {};
+    if (input.apiKey) {
+        headers.Authorization = `Bearer ${input.apiKey}`;
+    }
+    const response = await fetch(apiUrl, {
+        method: 'POST',
+        headers,
+        body: form,
+        signal: AbortSignal.timeout(input.timeoutMs)
+    });
+    const rawText = await response.text().catch(() => '');
+    if (!response.ok) {
+        throw new Error(`图片生成失败：${response.status}${rawText ? ` ${rawText.slice(0, 600)}` : ''}`);
+    }
+    let payload = {};
+    try {
+        payload = rawText ? JSON.parse(rawText) : {};
+    } catch {
+        throw new Error(`图片生成失败：接口返回的不是合法 JSON${rawText ? ` ${rawText.slice(0, 300)}` : ''}`);
+    }
+    const first = Array.isArray(payload?.data) ? payload.data[0] : null;
+    if (first?.b64_json) {
+        return { bytes: Buffer.from(first.b64_json, 'base64'), mimeType: 'image/png' };
+    }
+    if (first?.url) {
+        const imageResponse = await fetch(first.url, input.apiKey ? { headers: { Authorization: `Bearer ${input.apiKey}` } } : {});
+        if (!imageResponse.ok) {
+            throw new Error(`下载生成图失败：${imageResponse.status}`);
+        }
+        return {
+            bytes: Buffer.from(await imageResponse.arrayBuffer()),
+            mimeType: imageResponse.headers.get('content-type') || 'image/png'
+        };
+    }
+    throw new Error('模型没有返回图片数据');
+}
+
+function savePrintAiGeneratedImage(bytes, mimeType, section, nameHint = '') {
+    const outputDir = ensureDir(path.join(PRINT_AI_STORAGE_DIR, section));
+    const safeName = sanitizePathSegment(path.basename(nameHint || section, path.extname(nameHint || ''))) || section;
+    const filePath = ensureUniqueFilePath(path.join(outputDir, `${safeName}-${Date.now()}${printAiExtensionForMime(mimeType)}`));
+    fs.writeFileSync(filePath, bytes);
+    return filePath;
+}
+
+async function runLimitedPrintAiJobs(jobs, concurrency) {
+    const safeConcurrency = Math.max(1, Math.min(Math.round(Number(concurrency) || 1), jobs.length || 1));
+    let nextIndex = 0;
+    const workers = Array.from({ length: safeConcurrency }, async () => {
+        while (nextIndex < jobs.length) {
+            const currentIndex = nextIndex;
+            nextIndex += 1;
+            await jobs[currentIndex]();
+        }
+    });
+    await Promise.all(workers);
+}
+
+function importPrintAiImages(filePaths) {
+    const data = loadPrintAiData();
+    const uploadDir = ensureDir(path.join(PRINT_AI_STORAGE_DIR, 'uploads'));
+    const now = new Date().toISOString();
+    const imported = [];
+    (Array.isArray(filePaths) ? filePaths : []).forEach((filePath) => {
+        const sourcePath = String(filePath || '').trim();
+        if (!sourcePath || !fs.existsSync(sourcePath)) return;
+        const ext = path.extname(sourcePath).toLowerCase();
+        if (!PRINT_AI_IMAGE_EXTS.has(ext)) return;
+        const copiedPath = ensureUniqueFilePath(path.join(uploadDir, path.basename(sourcePath)));
+        fs.copyFileSync(sourcePath, copiedPath);
+        const task = normalizePrintAiTask({
+            id: `print-ai-task-${Date.now()}-${crypto.randomBytes(3).toString('hex')}`,
+            sourceName: path.basename(sourcePath),
+            sourcePath: copiedPath,
+            status: 'pending',
+            variants: [],
+            createdAt: now,
+            updatedAt: now
+        });
+        data.tasks.unshift(task);
+        imported.push(task);
+    });
+    savePrintAiData(data);
+    return { imported, ...data };
+}
+
+async function runPrintAiTask(task, cfg, sender) {
+    const size = getPrintAiImageSize(cfg.aspectRatio);
+    const extractionPrompt = [
+        cfg.extractionPrompt,
+        '',
+        `Output aspect ratio: ${cfg.aspectRatio}. The extracted standalone print image must use this exact canvas ratio.`
+    ].join('\n');
+    const extracted = await requestPrintAiImageEdit({
+        baseUrl: cfg.baseUrl,
+        apiKey: cfg.apiKey,
+        model: cfg.extractModel,
+        timeoutMs: cfg.timeoutMs,
+        imagePath: task.sourcePath,
+        prompt: extractionPrompt,
+        size
+    });
+    task.extractedPath = savePrintAiGeneratedImage(extracted.bytes, extracted.mimeType, 'extracted', task.sourceName);
+    task.status = 'extracted';
+    task.error = '';
+    task.updatedAt = new Date().toISOString();
+    const dataAfterExtract = loadPrintAiData();
+    dataAfterExtract.tasks = dataAfterExtract.tasks.map((item) => item.id === task.id ? task : item);
+    savePrintAiData(dataAfterExtract);
+    broadcastPrintAiTasks(sender, dataAfterExtract);
+
+    const prompts = cfg.variationPrompts.slice(0, 12);
+    const variants = [];
+    const variantJobs = [];
+    for (const prompt of prompts) {
+        for (let index = 0; index < cfg.variationCount; index += 1) {
+            const variant = {
+                id: `${task.id}-${prompt.id}-${index + 1}`,
+                promptId: prompt.id,
+                promptName: prompt.name,
+                status: 'running',
+                imagePath: '',
+                error: ''
+            };
+            variants.push(variant);
+            variantJobs.push(async () => {
+                variant.status = 'running';
+                variant.error = '';
+                task.variants = variants.slice();
+                task.updatedAt = new Date().toISOString();
+                const runningData = loadPrintAiData();
+                runningData.tasks = runningData.tasks.map((item) => item.id === task.id ? task : item);
+                savePrintAiData(runningData);
+                broadcastPrintAiTasks(sender, runningData);
+
+                try {
+                    const variationPrompt = [
+                        prompt.prompt,
+                        '',
+                        `Aspect ratio: ${cfg.aspectRatio}. Use the extracted print image as reference and preserve the canvas ratio.`
+                    ].join('\n');
+                    const generated = await requestPrintAiImageEdit({
+                        baseUrl: cfg.baseUrl,
+                        apiKey: cfg.apiKey,
+                        model: cfg.variationModel,
+                        timeoutMs: cfg.timeoutMs,
+                        imagePath: task.extractedPath,
+                        prompt: variationPrompt,
+                        size
+                    });
+                    variant.status = 'done';
+                    variant.imagePath = savePrintAiGeneratedImage(generated.bytes, generated.mimeType, 'variants', `${task.sourceName}-${prompt.name}`);
+                } catch (error) {
+                    variant.status = 'failed';
+                    variant.error = error.message || '裂变失败';
+                }
+                task.variants = variants.slice();
+                task.updatedAt = new Date().toISOString();
+                const doneData = loadPrintAiData();
+                doneData.tasks = doneData.tasks.map((item) => item.id === task.id ? task : item);
+                savePrintAiData(doneData);
+                broadcastPrintAiTasks(sender, doneData);
+            });
+        }
+    }
+    task.variants = variants.slice();
+    task.updatedAt = new Date().toISOString();
+    const queuedData = loadPrintAiData();
+    queuedData.tasks = queuedData.tasks.map((item) => item.id === task.id ? task : item);
+    savePrintAiData(queuedData);
+    broadcastPrintAiTasks(sender, queuedData);
+
+    await runLimitedPrintAiJobs(variantJobs, cfg.concurrency);
+    task.variants = variants;
+    task.status = variants.some((item) => item.status === 'done') ? 'done' : 'failed';
+    task.error = task.status === 'failed' ? (variants.find((item) => item.error)?.error || '裂变失败') : '';
+    task.updatedAt = new Date().toISOString();
+    const finalData = loadPrintAiData();
+    finalData.tasks = finalData.tasks.map((item) => item.id === task.id ? task : item);
+    savePrintAiData(finalData);
+    broadcastPrintAiTasks(sender, finalData);
+}
+
+async function startPrintAiRun(payload, sender) {
+    const cfg = savePrintAiConfig({
+        ...loadPrintAiConfig(),
+        ...(payload?.config || {})
+    });
+    if (!cfg.baseUrl || !cfg.extractModel || !cfg.variationModel) {
+        throw new Error('请先填写 API 地址、提取模型和裂变模型');
+    }
+    const selectedIds = new Set(Array.isArray(payload?.taskIds) ? payload.taskIds.map((id) => String(id || '').trim()).filter(Boolean) : []);
+    if (!selectedIds.size) {
+        throw new Error('请先选择要运行的印花任务');
+    }
+    const data = loadPrintAiData();
+    const tasks = data.tasks.filter((task) => selectedIds.has(task.id));
+    if (!tasks.length) {
+        throw new Error('没有找到可运行的印花任务');
+    }
+    data.tasks = data.tasks.map((task) => selectedIds.has(task.id)
+        ? { ...task, status: 'running', error: '', variants: [], updatedAt: new Date().toISOString() }
+        : task);
+    savePrintAiData(data);
+    broadcastPrintAiTasks(sender, data);
+
+    void (async () => {
+        await runLimitedPrintAiJobs(tasks.map((original) => async () => {
+            const latest = loadPrintAiData().tasks.find((item) => item.id === original.id) || original;
+            try {
+                await runPrintAiTask({ ...latest, status: 'running', error: '', variants: [] }, cfg, sender);
+            } catch (error) {
+                const failedData = loadPrintAiData();
+                failedData.tasks = failedData.tasks.map((item) => item.id === original.id
+                    ? {
+                        ...item,
+                        status: 'failed',
+                        error: error.message || '印花裂变失败',
+                        updatedAt: new Date().toISOString()
+                    }
+                    : item);
+                savePrintAiData(failedData);
+                broadcastPrintAiTasks(sender, failedData);
+            }
+        }), cfg.concurrency);
+        broadcastPrintAiTasks(sender);
+    })();
+
+    return loadPrintAiData();
 }
 
 function normalizeProductPublishImage(item, index = 0) {
@@ -3519,6 +3996,102 @@ app.whenReady().then(() => {
         fs.mkdirSync(path.dirname(filePath), { recursive: true });
         fs.writeFileSync(filePath, Buffer.from(base64Data, 'base64'));
         return { filePath };
+    });
+
+    ipcMain.handle('print-ai:load-config', () => {
+        return loadPrintAiConfig();
+    });
+
+    ipcMain.handle('print-ai:save-config', (event, cfg) => {
+        return savePrintAiConfig(cfg || {});
+    });
+
+    ipcMain.handle('print-ai:detect-models', async (event, cfg) => {
+        const config = normalizePrintAiConfig({
+            ...loadPrintAiConfig(),
+            ...(cfg || {})
+        });
+        return detectPrintAiModels(config);
+    });
+
+    ipcMain.handle('print-ai:test-model', async (event, cfg) => {
+        const config = normalizePrintAiConfig({
+            ...loadPrintAiConfig(),
+            ...(cfg || {})
+        });
+        const model = String(cfg?.model || config.extractModel || config.variationModel || '').trim();
+        if (!model) {
+            throw new Error('请先填写或选择要测试的模型');
+        }
+        return testPrintAiModelAvailability(config, model);
+    });
+
+    ipcMain.handle('print-ai:load-data', () => {
+        return loadPrintAiData();
+    });
+
+    ipcMain.handle('print-ai:import-images', (event, payload) => {
+        const result = importPrintAiImages(payload?.filePaths || []);
+        broadcastPrintAiTasks(event.sender, result);
+        return result;
+    });
+
+    ipcMain.handle('print-ai:start-run', (event, payload) => {
+        return startPrintAiRun(payload || {}, event.sender);
+    });
+
+    ipcMain.handle('print-ai:delete-tasks', (event, payload) => {
+        const ids = new Set(Array.isArray(payload?.taskIds) ? payload.taskIds.map((id) => String(id || '').trim()).filter(Boolean) : []);
+        const data = loadPrintAiData();
+        data.tasks = ids.size ? data.tasks.filter((task) => !ids.has(task.id)) : data.tasks;
+        const saved = savePrintAiData(data);
+        broadcastPrintAiTasks(event.sender, saved);
+        return saved;
+    });
+
+    ipcMain.handle('print-ai:open-output-dir', async () => {
+        const cfg = loadPrintAiConfig();
+        ensureDir(cfg.outputDir);
+        await shell.openPath(cfg.outputDir);
+        return { outputDir: cfg.outputDir };
+    });
+
+    ipcMain.handle('print-ai:select-output-dir', async () => {
+        const cfg = loadPrintAiConfig();
+        const result = await dialog.showOpenDialog(mainWindow, {
+            title: '选择印花裂变输出目录',
+            defaultPath: cfg.outputDir,
+            properties: ['openDirectory', 'createDirectory']
+        });
+        if (result.canceled || !result.filePaths.length) {
+            return cfg;
+        }
+        return savePrintAiConfig({
+            ...cfg,
+            outputDir: result.filePaths[0]
+        });
+    });
+
+    ipcMain.handle('print-ai:copy-results-to-output', (event, payload) => {
+        const ids = new Set(Array.isArray(payload?.taskIds) ? payload.taskIds.map((id) => String(id || '').trim()).filter(Boolean) : []);
+        const cfg = loadPrintAiConfig();
+        ensureDir(cfg.outputDir);
+        const data = loadPrintAiData();
+        const copied = [];
+        data.tasks
+            .filter((task) => ids.has(task.id))
+            .forEach((task) => {
+                const files = [
+                    task.extractedPath,
+                    ...((Array.isArray(task.variants) ? task.variants : []).map((variant) => variant.imagePath))
+                ].filter((itemPath) => itemPath && fs.existsSync(itemPath));
+                files.forEach((itemPath) => {
+                    const targetPath = ensureUniqueFilePath(path.join(cfg.outputDir, path.basename(itemPath)));
+                    fs.copyFileSync(itemPath, targetPath);
+                    copied.push(targetPath);
+                });
+            });
+        return { copied, outputDir: cfg.outputDir };
     });
 
     ipcMain.handle('template:load-config', () => {
