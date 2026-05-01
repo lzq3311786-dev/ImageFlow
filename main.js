@@ -41,12 +41,16 @@ const PRODUCT_PUBLISH_DATA_FILE = path.join(app.getPath('userData'), 'product-pu
 const PRINT_AI_CONFIG_FILE = path.join(app.getPath('userData'), 'print-ai-config.json');
 const PRINT_AI_DATA_FILE = path.join(app.getPath('userData'), 'print-ai-data.json');
 const PRINT_AI_STORAGE_DIR = path.join(app.getPath('userData'), 'print-ai');
+const WORKFLOW_CONFIG_FILE = path.join(app.getPath('userData'), 'workflow-config.json');
+const WORKFLOW_DATA_FILE = path.join(app.getPath('userData'), 'workflow-data.json');
+const WORKFLOW_STORAGE_DIR = path.join(app.getPath('userData'), 'workflow');
 const UPDATE_CONFIG_FILE = path.join(app.getPath('userData'), 'update-config.json');
 const PACKAGE_JSON_FILE = path.join(__dirname, 'package.json');
 const LEGACY_WATERMARK_PRESETS_FILE = path.join(app.getPath('userData'), 'watermark-presets.json');
 const TEMPLATE_PARAMETER_PRESETS_FILE = path.join(app.getPath('userData'), 'template-parameter-presets.json');
 const PRODUCT_PUBLISH_IMAGE_EXTS = new Set(['.jpg', '.jpeg', '.png', '.webp', '.bmp']);
 const PRINT_AI_IMAGE_EXTS = new Set(['.jpg', '.jpeg', '.png', '.webp', '.bmp', '.avif']);
+const WORKFLOW_IMAGE_EXTS = new Set(['.jpg', '.jpeg', '.png', '.webp', '.bmp', '.avif']);
 const PRODUCT_PUBLISH_TEMU_TEMPLATE_NAME = '妙手Temu导入模板-非服饰类模板.xlsx';
 
 function createDefaultProductPublishTypeMappings() {
@@ -1212,6 +1216,34 @@ function printAiExtensionForMime(mimeType) {
     return '.png';
 }
 
+function sleep(ms) {
+    return new Promise((resolve) => setTimeout(resolve, ms));
+}
+
+function isRetryablePrintAiStatus(status) {
+    return [408, 409, 425, 429, 500, 502, 503, 504, 520, 522, 524].includes(Number(status));
+}
+
+function isRetryablePrintAiError(error) {
+    if (isRetryablePrintAiStatus(error?.status)) return true;
+    const name = String(error?.name || '');
+    const message = String(error?.message || '');
+    return ['AbortError', 'TimeoutError'].includes(name) || /fetch failed|network|timeout|timed out/i.test(message);
+}
+
+function compactPrintAiErrorMessage(error, fallback = '图片生成失败', actionText = '请稍后重试或切换模型') {
+    const raw = String(error?.message || fallback || '').replace(/\s+/g, ' ').trim();
+    const status = Number(error?.status) || Number((raw.match(/：(\d{3})/) || raw.match(/\b([45]\d{2})\b/) || [])[1]) || 0;
+    const suffix = actionText ? `，${actionText}` : '';
+    if (status === 524) return `图片生成接口超时 524${suffix}`;
+    if (status === 429) return `图片生成接口限流 429${suffix}`;
+    if (status >= 500) return `图片生成接口异常 ${status}${suffix}`;
+    if (raw && /<!doctype|<html/i.test(raw)) {
+        return `图片生成接口返回了 HTML 错误页${status ? ` ${status}` : ''}${suffix}`;
+    }
+    return raw.slice(0, 180) || fallback;
+}
+
 async function requestPrintAiImageEdit(input) {
     const apiUrl = resolvePrintAiApiUrl(input.baseUrl, '/images/edits');
     if (!apiUrl || !input.model) {
@@ -1219,49 +1251,70 @@ async function requestPrintAiImageEdit(input) {
     }
     const bytes = fs.readFileSync(input.imagePath);
     const mimeType = getPrintAiMimeType(input.imagePath);
-    const form = new FormData();
-    form.set('model', input.model);
-    form.set('prompt', input.prompt);
-    form.set('response_format', 'b64_json');
-    if (input.size) {
-        form.set('size', input.size);
-    }
-    form.set('image', new Blob([bytes], { type: mimeType }), path.basename(input.imagePath));
     const headers = {};
     if (input.apiKey) {
         headers.Authorization = `Bearer ${input.apiKey}`;
     }
-    const response = await fetch(apiUrl, {
-        method: 'POST',
-        headers,
-        body: form,
-        signal: AbortSignal.timeout(input.timeoutMs)
-    });
-    const rawText = await response.text().catch(() => '');
-    if (!response.ok) {
-        throw new Error(`图片生成失败：${response.status}${rawText ? ` ${rawText.slice(0, 600)}` : ''}`);
-    }
-    let payload = {};
-    try {
-        payload = rawText ? JSON.parse(rawText) : {};
-    } catch {
-        throw new Error(`图片生成失败：接口返回的不是合法 JSON${rawText ? ` ${rawText.slice(0, 300)}` : ''}`);
-    }
-    const first = Array.isArray(payload?.data) ? payload.data[0] : null;
-    if (first?.b64_json) {
-        return { bytes: Buffer.from(first.b64_json, 'base64'), mimeType: 'image/png' };
-    }
-    if (first?.url) {
-        const imageResponse = await fetch(first.url, input.apiKey ? { headers: { Authorization: `Bearer ${input.apiKey}` } } : {});
-        if (!imageResponse.ok) {
-            throw new Error(`下载生成图失败：${imageResponse.status}`);
+    const attempts = Math.max(1, Math.min(4, Math.round(Number(input.retryAttempts) || 3)));
+    let lastError = null;
+    for (let attempt = 1; attempt <= attempts; attempt += 1) {
+        try {
+            const form = new FormData();
+            form.set('model', input.model);
+            form.set('prompt', input.prompt);
+            form.set('response_format', 'b64_json');
+            if (input.size) {
+                form.set('size', input.size);
+            }
+            form.set('image', new Blob([bytes], { type: mimeType }), path.basename(input.imagePath));
+            const response = await fetch(apiUrl, {
+                method: 'POST',
+                headers,
+                body: form,
+                signal: AbortSignal.timeout(input.timeoutMs)
+            });
+            const rawText = await response.text().catch(() => '');
+            if (!response.ok) {
+                const shortBody = rawText && /<!doctype|<html/i.test(rawText)
+                    ? '接口返回 HTML 错误页'
+                    : rawText.slice(0, 260);
+                const error = new Error(`图片生成失败：${response.status}${shortBody ? ` ${shortBody}` : ''}`);
+                error.status = response.status;
+                error.rawBody = rawText;
+                throw error;
+            }
+            let payload = {};
+            try {
+                payload = rawText ? JSON.parse(rawText) : {};
+            } catch {
+                throw new Error(`图片生成失败：接口返回的不是合法 JSON${rawText ? ` ${rawText.slice(0, 300)}` : ''}`);
+            }
+            const first = Array.isArray(payload?.data) ? payload.data[0] : null;
+            if (first?.b64_json) {
+                return { bytes: Buffer.from(first.b64_json, 'base64'), mimeType: 'image/png' };
+            }
+            if (first?.url) {
+                const imageResponse = await fetch(first.url, input.apiKey ? { headers: { Authorization: `Bearer ${input.apiKey}` } } : {});
+                if (!imageResponse.ok) {
+                    const error = new Error(`下载生成图失败：${imageResponse.status}`);
+                    error.status = imageResponse.status;
+                    throw error;
+                }
+                return {
+                    bytes: Buffer.from(await imageResponse.arrayBuffer()),
+                    mimeType: imageResponse.headers.get('content-type') || 'image/png'
+                };
+            }
+            throw new Error('模型没有返回图片数据');
+        } catch (error) {
+            lastError = error;
+            if (attempt >= attempts || !isRetryablePrintAiError(error)) {
+                throw error;
+            }
+            await sleep(Math.min(12000, 1200 * (2 ** (attempt - 1))) + Math.round(Math.random() * 500));
         }
-        return {
-            bytes: Buffer.from(await imageResponse.arrayBuffer()),
-            mimeType: imageResponse.headers.get('content-type') || 'image/png'
-        };
     }
-    throw new Error('模型没有返回图片数据');
+    throw lastError || new Error('图片生成失败');
 }
 
 function savePrintAiGeneratedImage(bytes, mimeType, section, nameHint = '') {
@@ -1456,6 +1509,1419 @@ async function startPrintAiRun(payload, sender) {
     })();
 
     return loadPrintAiData();
+}
+
+const WORKFLOW_NODE_DEFS = [
+    { type: 'input', label: '导入图片/文件夹', order: 0, branchable: false },
+    { type: 'extract', label: '提取图案', order: 10, branchable: false },
+    { type: 'variation', label: '印花裂变', order: 20, branchable: true },
+    { type: 'slice', label: '智能切片', order: 30, branchable: false },
+    { type: 'template', label: '智能模板', order: 40, branchable: true },
+    { type: 'watermark', label: '智能水印', order: 50, branchable: false },
+    { type: 'publish', label: '产品发布', order: 60, branchable: false },
+    { type: 'export', label: '导出保存', order: 70, branchable: false }
+];
+
+function getWorkflowNodeDef(type) {
+    return WORKFLOW_NODE_DEFS.find((item) => item.type === type) || null;
+}
+
+function createDefaultWorkflowGraph() {
+    const nodes = [
+        { id: 'node-input', type: 'input', title: '导入图片/文件夹', x: -200, y: 140, config: {} },
+        { id: 'node-extract', type: 'extract', title: '提取图案', x: 80, y: 140, config: {} },
+        { id: 'node-template', type: 'template', title: '智能模板', x: 360, y: 140, config: {} },
+        { id: 'node-watermark', type: 'watermark', title: '智能水印', x: 640, y: 140, config: {} },
+        { id: 'node-publish', type: 'publish', title: '产品发布', x: 920, y: 140, config: {} },
+        { id: 'node-export', type: 'export', title: '导出保存', x: 1200, y: 140, config: {} }
+    ];
+    return {
+        nodes,
+        links: [
+            { from: 'node-input', to: 'node-extract' },
+            { from: 'node-extract', to: 'node-template' },
+            { from: 'node-template', to: 'node-watermark' },
+            { from: 'node-watermark', to: 'node-publish' },
+            { from: 'node-publish', to: 'node-export' }
+        ]
+    };
+}
+
+function normalizeWorkflowNode(node, index = 0) {
+    const type = String(node?.type || '').trim();
+    const def = getWorkflowNodeDef(type) || WORKFLOW_NODE_DEFS[0];
+    const id = String(node?.id || `workflow-node-${Date.now()}-${index + 1}`).trim();
+    return {
+        id,
+        type: def.type,
+        title: String(node?.title || def.label).trim() || def.label,
+        x: Number.isFinite(Number(node?.x)) ? Number(node.x) : 80 + index * 240,
+        y: Number.isFinite(Number(node?.y)) ? Number(node.y) : 120,
+        config: node?.config && typeof node.config === 'object' ? node.config : {}
+    };
+}
+
+function normalizeWorkflowGraph(graph) {
+    const fallback = createDefaultWorkflowGraph();
+    const hasExplicitNodes = Array.isArray(graph?.nodes);
+    const nodes = Array.isArray(graph?.nodes)
+        ? graph.nodes.map((node, index) => normalizeWorkflowNode(node, index))
+        : fallback.nodes.map((node, index) => normalizeWorkflowNode(node, index));
+    const nodeIds = new Set(nodes.map((node) => node.id));
+    const rawLinks = Array.isArray(graph?.links) ? graph.links : (hasExplicitNodes ? [] : fallback.links);
+    const links = rawLinks
+        .map((link) => ({
+            from: String(link?.from || '').trim(),
+            to: String(link?.to || '').trim(),
+            fromSlot: Math.max(0, Number(link?.fromSlot || 0)),
+            toSlot: Math.max(0, Number(link?.toSlot || 0))
+        })).filter((link) => nodeIds.has(link.from) && nodeIds.has(link.to) && link.from !== link.to);
+    return { nodes, links };
+}
+
+function createDefaultWorkflowConfig() {
+    const defaultGraph = createDefaultWorkflowGraph();
+    return {
+        activePresetId: 'workflow-default',
+        presets: [
+            {
+                id: 'workflow-default',
+                name: '提取后套模板发布',
+                graph: defaultGraph,
+                createdAt: new Date().toISOString(),
+                updatedAt: new Date().toISOString()
+            }
+        ]
+    };
+}
+
+function normalizeWorkflowConfig(config) {
+    const fallback = createDefaultWorkflowConfig();
+    const presets = Array.isArray(config?.presets) && config.presets.length
+        ? config.presets.map((preset, index) => ({
+            id: String(preset?.id || `workflow-preset-${Date.now()}-${index + 1}`).trim(),
+            name: String(preset?.name || `工作流 ${index + 1}`).trim(),
+            graph: normalizeWorkflowGraph(preset?.graph),
+            createdAt: String(preset?.createdAt || new Date().toISOString()),
+            updatedAt: String(preset?.updatedAt || preset?.createdAt || new Date().toISOString())
+        })).filter((preset) => preset.id && preset.name)
+        : fallback.presets;
+    const activePresetId = String(config?.activePresetId || '').trim();
+    return {
+        activePresetId: presets.some((preset) => preset.id === activePresetId) ? activePresetId : presets[0].id,
+        presets
+    };
+}
+
+function loadWorkflowConfig() {
+    return normalizeWorkflowConfig(readJsonFile(WORKFLOW_CONFIG_FILE, null));
+}
+
+function saveWorkflowConfig(config) {
+    const nextConfig = normalizeWorkflowConfig(config || {});
+    writeJsonFile(WORKFLOW_CONFIG_FILE, nextConfig);
+    return nextConfig;
+}
+
+function createDefaultWorkflowData() {
+    return { runs: [] };
+}
+
+function normalizeWorkflowRun(run, index = 0) {
+    const id = String(run?.id || `workflow-run-${Date.now()}-${index + 1}`).trim();
+    return {
+        id,
+        name: String(run?.name || `任务 ${index + 1}`).trim(),
+        workflowPresetId: String(run?.workflowPresetId || '').trim(),
+        sourceInputNodeId: String(run?.sourceInputNodeId || run?.inputNodeId || '').trim(),
+        sourcePath: String(run?.sourcePath || '').trim(),
+        sourceType: ['file', 'folder'].includes(run?.sourceType) ? run.sourceType : 'file',
+        status: ['pending', 'running', 'paused', 'done', 'failed'].includes(run?.status) ? run.status : 'pending',
+        currentNodeId: String(run?.currentNodeId || '').trim(),
+        currentNodeType: String(run?.currentNodeType || '').trim(),
+        progress: Math.max(0, Math.min(100, Number(run?.progress || 0))),
+        artifacts: run?.artifacts && typeof run.artifacts === 'object' ? run.artifacts : {},
+        nodeStates: run?.nodeStates && typeof run.nodeStates === 'object' ? run.nodeStates : {},
+        error: String(run?.error || '').trim(),
+        createdAt: String(run?.createdAt || new Date().toISOString()),
+        updatedAt: String(run?.updatedAt || run?.createdAt || new Date().toISOString())
+    };
+}
+
+function loadWorkflowData() {
+    const data = readJsonFile(WORKFLOW_DATA_FILE, createDefaultWorkflowData());
+    return {
+        runs: Array.isArray(data?.runs)
+            ? data.runs.map((run, index) => normalizeWorkflowRun(run, index))
+            : []
+    };
+}
+
+function saveWorkflowData(data) {
+    const nextData = {
+        runs: Array.isArray(data?.runs)
+            ? data.runs.map((run, index) => normalizeWorkflowRun(run, index))
+            : []
+    };
+    writeJsonFile(WORKFLOW_DATA_FILE, nextData);
+    return nextData;
+}
+
+function broadcastWorkflowData(sender, data = loadWorkflowData()) {
+    const target = sender || mainWindow?.webContents;
+    if (target) {
+        safeSend(target, 'workflow:data', data);
+    }
+}
+
+function getWorkflowOutgoingLinks(graph, nodeId) {
+    const normalizedNodeId = String(nodeId || '').trim();
+    return (Array.isArray(graph?.links) ? graph.links : []).filter((link) => (
+        String(link?.from || '').trim() === normalizedNodeId
+    ));
+}
+
+function collectWorkflowReachableNodeIds(graph, startIds) {
+    const nodesById = new Map((Array.isArray(graph?.nodes) ? graph.nodes : []).map((node) => [node.id, node]));
+    const reachable = new Set();
+    const stack = (Array.isArray(startIds) ? startIds : [startIds])
+        .map((id) => String(id || '').trim())
+        .filter((id) => id && nodesById.has(id));
+    while (stack.length) {
+        const nodeId = stack.shift();
+        if (!nodeId || reachable.has(nodeId)) continue;
+        reachable.add(nodeId);
+        getWorkflowOutgoingLinks(graph, nodeId).forEach((link) => {
+            const targetId = String(link?.to || '').trim();
+            if (targetId && nodesById.has(targetId) && !reachable.has(targetId)) {
+                stack.push(targetId);
+            }
+        });
+    }
+    return reachable;
+}
+
+function getWorkflowExecutionGraph(graph, startNodeId = '') {
+    const normalized = normalizeWorkflowGraph(graph);
+    const normalizedStartNodeId = String(startNodeId || '').trim();
+    const nodesById = new Map(normalized.nodes.map((node) => [node.id, node]));
+    let startIds = [];
+    if (normalizedStartNodeId) {
+        if (!nodesById.has(normalizedStartNodeId)) {
+            throw new Error('找不到要运行的节点');
+        }
+        const startNode = nodesById.get(normalizedStartNodeId);
+        if (startNode?.type === 'input' && !getWorkflowOutgoingLinks(normalized, normalizedStartNodeId).length) {
+            throw new Error('导入图片节点未连接到后续节点，无法单独运行');
+        }
+        if (startNode?.type !== 'input' && !getWorkflowIncomingNodeIds(normalized, normalizedStartNodeId).length) {
+            throw new Error('节点未接入输入链路，无法运行');
+        }
+        startIds = [normalizedStartNodeId];
+    } else {
+        const inputNodes = normalized.nodes.filter((node) => node.type === 'input');
+        const connectedInputNodes = inputNodes.filter((node) => getWorkflowOutgoingLinks(normalized, node.id).length > 0);
+        startIds = connectedInputNodes.map((node) => node.id);
+    }
+    const reachable = collectWorkflowReachableNodeIds(normalized, startIds);
+    const indexedNodes = normalized.nodes.map((node, index) => ({ node, index }));
+    const nodes = indexedNodes
+        .filter(({ node }) => reachable.has(node.id))
+        .sort((a, b) => {
+            const orderA = getWorkflowNodeDef(a.node.type)?.order || 0;
+            const orderB = getWorkflowNodeDef(b.node.type)?.order || 0;
+            return orderA - orderB || a.index - b.index;
+        })
+        .map(({ node }) => node);
+    const links = normalized.links.filter((link) => reachable.has(link.from) && reachable.has(link.to));
+    return { ...normalized, nodes, links };
+}
+
+function getWorkflowGraphTopo(graph) {
+    const executionGraph = getWorkflowExecutionGraph(graph);
+    if (!executionGraph.nodes.length) {
+        throw new Error('没有可执行节点，请先连接导入节点和后续节点');
+    }
+    return executionGraph;
+}
+
+function getWorkflowNodesFrom(graph, startNodeId = '') {
+    const executionGraph = getWorkflowExecutionGraph(graph, startNodeId);
+    if (!executionGraph.nodes.length) {
+        throw new Error('没有可执行节点');
+    }
+    const executionNodeIds = new Set(executionGraph.nodes.map((node) => node.id));
+    const normalized = normalizeWorkflowGraph(graph);
+    return {
+        ...executionGraph,
+        links: normalized.links.filter((link) => executionNodeIds.has(link.to))
+    };
+}
+
+function getWorkflowIncomingNodeIds(graph, nodeId) {
+    const normalizedNodeId = String(nodeId || '').trim();
+    const ids = [];
+    (Array.isArray(graph?.links) ? graph.links : []).forEach((link) => {
+        if (String(link?.to || '').trim() !== normalizedNodeId) return;
+        const fromId = String(link?.from || '').trim();
+        if (fromId && !ids.includes(fromId)) ids.push(fromId);
+    });
+    return ids;
+}
+
+function mergeWorkflowArtifacts(...items) {
+    const merged = {};
+    items.forEach((item) => {
+        if (!item || typeof item !== 'object') return;
+        Object.entries(item).forEach(([key, value]) => {
+            if (key === 'nodeArtifacts') return;
+            if (value === undefined || value === null || value === '') return;
+            if (Array.isArray(value)) {
+                const current = Array.isArray(merged[key]) ? merged[key] : [];
+                const next = current.concat(value);
+                merged[key] = next.every((entry) => typeof entry === 'string')
+                    ? Array.from(new Set(next.map((entry) => String(entry || '').trim()).filter(Boolean)))
+                    : next;
+                return;
+            }
+            if (value && typeof value === 'object') {
+                const current = merged[key] && typeof merged[key] === 'object' && !Array.isArray(merged[key])
+                    ? merged[key]
+                    : {};
+                merged[key] = { ...current, ...value };
+                return;
+            }
+            merged[key] = value;
+        });
+    });
+    return merged;
+}
+
+function getWorkflowNodeInputArtifacts(run, graph, node, nodeArtifacts) {
+    if (node.type === 'input') return {};
+    const incomingIds = getWorkflowIncomingNodeIds(graph, node.id);
+    return mergeWorkflowArtifacts(...incomingIds.map((id) => nodeArtifacts?.[id]).filter(Boolean));
+}
+
+function mergeWorkflowDisplayArtifacts(currentArtifacts, nodeOutput, nodeId, nodeArtifacts) {
+    const merged = mergeWorkflowArtifacts(currentArtifacts || {}, nodeOutput || {});
+    if (Array.isArray(nodeOutput?.templateOutputItems)) {
+        const seen = new Set();
+        merged.templateOutputItems = nodeOutput.templateOutputItems.filter((item) => {
+            const key = String(item?.path || '').trim();
+            if (!key || seen.has(key)) return false;
+            seen.add(key);
+            return true;
+        });
+    }
+    return {
+        ...merged,
+        nodeArtifacts: {
+            ...((currentArtifacts || {}).nodeArtifacts || {}),
+            ...(nodeArtifacts || {}),
+            ...(nodeId ? { [nodeId]: nodeOutput || {} } : {})
+        }
+    };
+}
+
+function validateWorkflowGraph(graph) {
+    const normalized = normalizeWorkflowGraph(graph);
+    const errors = [];
+    const warnings = [];
+    const issues = [];
+    const addIssue = (level, message, nodeIds = []) => {
+        const normalizedMessage = String(message || '').trim();
+        if (!normalizedMessage) return;
+        const issue = {
+            level: level === 'error' ? 'error' : 'warning',
+            message: normalizedMessage,
+            nodeIds: Array.from(new Set((Array.isArray(nodeIds) ? nodeIds : [nodeIds])
+                .map((id) => String(id || '').trim())
+                .filter(Boolean)))
+        };
+        issues.push(issue);
+        if (issue.level === 'error') {
+            errors.push(normalizedMessage);
+        } else {
+            warnings.push(normalizedMessage);
+        }
+    };
+    if (!normalized.nodes.length) {
+        addIssue('error', '工作流至少需要一个节点');
+    }
+    const nodesById = new Map(normalized.nodes.map((node) => [node.id, node]));
+    const outCount = new Map();
+    const outgoingLinksByFrom = new Map();
+    normalized.links.forEach((link) => {
+        const from = nodesById.get(link.from);
+        const to = nodesById.get(link.to);
+        if (!from || !to) return;
+        const fromDef = getWorkflowNodeDef(from.type);
+        const toDef = getWorkflowNodeDef(to.type);
+        if ((fromDef?.order || 0) > (toDef?.order || 0)) {
+            addIssue('error', `节点顺序错误：${from.title} 不能连接到 ${to.title}`, [from.id, to.id]);
+        }
+        outCount.set(from.id, (outCount.get(from.id) || 0) + 1);
+        if (!outgoingLinksByFrom.has(from.id)) outgoingLinksByFrom.set(from.id, []);
+        outgoingLinksByFrom.get(from.id).push(link);
+    });
+    normalized.nodes.forEach((node) => {
+        const def = getWorkflowNodeDef(node.type);
+        if (!def) {
+            addIssue('error', `未知节点：${node.title}`, node.id);
+            return;
+        }
+        if (node.type === 'input') {
+            const hasOutput = normalized.links.some((link) => link.from === node.id);
+            if (!hasOutput) addIssue('warning', '导入图片/文件夹节点尚未连接到后续节点', node.id);
+        }
+        const outgoingLinks = outgoingLinksByFrom.get(node.id) || [];
+        const nonTemplateTargetCount = outgoingLinks.filter((link) => nodesById.get(link.to)?.type !== 'template').length;
+        if ((outCount.get(node.id) || 0) > 1 && !def.branchable && nonTemplateTargetCount > 1) {
+            addIssue('error', `${def.label} 不允许分支输出`, node.id);
+        }
+        if (node.type === 'extract') {
+            const cfg = loadPrintAiConfig();
+            const model = String(node.config?.model || cfg.extractModel || '').trim();
+            if (!model) addIssue('warning', '提取图案节点未选择模型，将无法运行', node.id);
+        }
+        if (node.type === 'variation') {
+            const cfg = loadPrintAiConfig();
+            const model = String(node.config?.model || cfg.variationModel || '').trim();
+            const prompt = String(node.config?.prompt || '').trim();
+            if (!model) addIssue('warning', '印花裂变节点未选择模型，将使用失败状态提示', node.id);
+            if (!prompt) addIssue('warning', '印花裂变节点未填写提示词，将使用印花裂变默认提示词', node.id);
+        }
+        if (node.type === 'template' && (!Array.isArray(node.config?.selectedTemplates) || !node.config.selectedTemplates.length)) {
+            addIssue('warning', '智能模板节点未指定模板，运行到该节点会失败', node.id);
+        }
+        if (node.type === 'export' && !String(node.config?.outputDir || '').trim()) {
+            addIssue('error', '导出保存节点缺少导出目录', node.id);
+        }
+    });
+    return {
+        ok: errors.length === 0,
+        errors,
+        warnings,
+        issues,
+        graph: normalized
+    };
+}
+
+function listWorkflowFolderImages(folderPath) {
+    const files = [];
+    if (!folderPath || !fs.existsSync(folderPath)) return files;
+    const stack = [folderPath];
+    while (stack.length) {
+        const current = stack.pop();
+        fs.readdirSync(current, { withFileTypes: true }).forEach((entry) => {
+            const fullPath = path.join(current, entry.name);
+            if (entry.isDirectory()) {
+                stack.push(fullPath);
+            } else if (entry.isFile() && WORKFLOW_IMAGE_EXTS.has(path.extname(entry.name).toLowerCase())) {
+                files.push(fullPath);
+            }
+        });
+    }
+    return files.sort((a, b) => a.localeCompare(b, 'zh-Hans-CN'));
+}
+
+function importWorkflowInputs(filePaths, workflowPresetId = '', sourceInputNodeId = '') {
+    const data = loadWorkflowData();
+    const uploadRoot = ensureDir(path.join(WORKFLOW_STORAGE_DIR, 'inputs'));
+    const imported = [];
+    const now = new Date().toISOString();
+    (Array.isArray(filePaths) ? filePaths : []).forEach((rawPath) => {
+        const sourcePath = String(rawPath || '').trim();
+        if (!sourcePath || !fs.existsSync(sourcePath)) return;
+        const stat = fs.statSync(sourcePath);
+        const sourceType = stat.isDirectory() ? 'folder' : 'file';
+        if (sourceType === 'file' && !WORKFLOW_IMAGE_EXTS.has(path.extname(sourcePath).toLowerCase())) return;
+        if (sourceType === 'folder' && !listWorkflowFolderImages(sourcePath).length) return;
+        const safeBase = sanitizePathSegment(path.basename(sourcePath, path.extname(sourcePath)), 'workflow-input');
+        const taskRoot = ensureDir(path.join(uploadRoot, `${safeBase}-${Date.now()}-${crypto.randomBytes(2).toString('hex')}`));
+        let copiedPath = '';
+        if (sourceType === 'folder') {
+            copiedPath = taskRoot;
+            listWorkflowFolderImages(sourcePath).forEach((imagePath) => {
+                const targetPath = ensureUniqueFilePath(path.join(taskRoot, path.basename(imagePath)));
+                fs.copyFileSync(imagePath, targetPath);
+            });
+        } else {
+            copiedPath = path.join(taskRoot, path.basename(sourcePath));
+            fs.copyFileSync(sourcePath, copiedPath);
+        }
+        const run = normalizeWorkflowRun({
+            id: `workflow-run-${Date.now()}-${crypto.randomBytes(3).toString('hex')}`,
+            name: path.basename(sourcePath),
+            workflowPresetId,
+            sourceInputNodeId: String(sourceInputNodeId || '').trim(),
+            sourcePath: copiedPath,
+            sourceType,
+            status: 'pending',
+            progress: 0,
+            artifacts: {
+                inputPath: copiedPath,
+                inputImages: sourceType === 'folder' ? listWorkflowFolderImages(copiedPath) : [copiedPath]
+            },
+            nodeStates: {},
+            createdAt: now,
+            updatedAt: now
+        });
+        data.runs.unshift(run);
+        imported.push(run);
+    });
+    const saved = saveWorkflowData(data);
+    return { imported, ...saved };
+}
+
+function updateWorkflowRunState(runId, patch, sender) {
+    const data = loadWorkflowData();
+    data.runs = data.runs.map((run) => run.id === runId
+        ? normalizeWorkflowRun({ ...run, ...patch, updatedAt: new Date().toISOString() })
+        : run);
+    const saved = saveWorkflowData(data);
+    broadcastWorkflowData(sender, saved);
+    return saved.runs.find((run) => run.id === runId) || null;
+}
+
+async function runWorkflowExtractImage(run, node, sender, imagePath, index = 0) {
+    const cfg = loadPrintAiConfig();
+    if (!imagePath || !fs.existsSync(imagePath)) {
+        throw new Error('提取图案缺少输入图片');
+    }
+    const model = String(node.config?.model || cfg.extractModel || '').trim();
+    if (!cfg.baseUrl || !model) {
+        throw new Error('提取图案缺少 API 地址或模型');
+    }
+    const prompt = String(node.config?.prompt || cfg.extractionPrompt || '').trim() || createDefaultPrintAiConfig().extractionPrompt;
+    const aspectRatio = String(node.config?.aspectRatio || cfg.aspectRatio || '3:2');
+    const generated = await requestPrintAiImageEdit({
+        baseUrl: cfg.baseUrl,
+        apiKey: cfg.apiKey,
+        model,
+        timeoutMs: cfg.timeoutMs,
+        imagePath,
+        prompt: [
+            prompt,
+            '',
+            `Output aspect ratio: ${aspectRatio}. The extracted standalone print image must use this exact canvas ratio.`
+        ].join('\n'),
+        size: getPrintAiImageSize(aspectRatio)
+    });
+    return savePrintAiGeneratedImage(generated.bytes, generated.mimeType, 'extracted', index > 0 ? `${run.name}-${index + 1}` : run.name);
+}
+
+async function runWorkflowExtractNode(run, node, sender, artifacts = {}) {
+    const imagePaths = (Array.isArray(artifacts.inputImages) ? artifacts.inputImages : [])
+        .map((filePath) => String(filePath || '').trim())
+        .filter((filePath) => filePath && fs.existsSync(filePath) && fs.statSync(filePath).isFile());
+    if (!imagePaths.length) {
+        throw new Error('提取图案缺少输入图片');
+    }
+    const extractedPaths = [];
+    for (let index = 0; index < imagePaths.length; index += 1) {
+        sendTemplateLog(sender, 'info', `工作流提取图案：${index + 1}/${imagePaths.length}`);
+        try {
+            extractedPaths.push(await runWorkflowExtractImage(run, node, sender, imagePaths[index], index));
+        } catch (error) {
+            const message = compactPrintAiErrorMessage(error, '提取图案失败', '提取图案失败，请稍后重试或切换模型');
+            const wrapped = new Error(message);
+            wrapped.status = error?.status;
+            throw wrapped;
+        }
+    }
+    return extractedPaths;
+}
+
+async function runWorkflowVariationNode(run, node, artifacts = {}) {
+    const cfg = loadPrintAiConfig();
+    const imagePath = String(
+        (Array.isArray(artifacts.extractedPaths) ? artifacts.extractedPaths[0] : '')
+        || artifacts.extractedPath
+        || (Array.isArray(artifacts.inputImages) ? artifacts.inputImages[0] : '')
+        || ''
+    ).trim();
+    if (!imagePath || !fs.existsSync(imagePath)) {
+        throw new Error('印花裂变缺少提取图案输入');
+    }
+    const model = String(node.config?.model || cfg.variationModel || '').trim();
+    if (!cfg.baseUrl || !model) {
+        throw new Error('印花裂变缺少 API 地址或模型');
+    }
+    const defaultPrompt = cfg.variationPrompts?.[0]?.prompt || createDefaultPrintAiConfig().variationPrompts[0].prompt;
+    const prompt = String(node.config?.prompt || defaultPrompt || '').trim();
+    const aspectRatio = String(node.config?.aspectRatio || cfg.aspectRatio || '3:2');
+    const generated = await requestPrintAiImageEdit({
+        baseUrl: cfg.baseUrl,
+        apiKey: cfg.apiKey,
+        model,
+        timeoutMs: cfg.timeoutMs,
+        imagePath,
+        prompt: [
+            prompt,
+            '',
+            `Aspect ratio: ${aspectRatio}. Use the extracted print image as reference and preserve the canvas ratio.`
+        ].join('\n'),
+        size: getPrintAiImageSize(aspectRatio)
+    });
+    return savePrintAiGeneratedImage(generated.bytes, generated.mimeType, 'variants', `${run.name}-${node.title}`);
+}
+
+async function runWorkflowVariationNodes(run, node, artifacts = {}) {
+    const count = Math.max(1, Math.min(4, Math.round(Number(node.config?.count || 1) || 1)));
+    const paths = [];
+    const sourcePaths = (Array.isArray(artifacts.extractedPaths) && artifacts.extractedPaths.length
+        ? artifacts.extractedPaths
+        : (artifacts.extractedPath ? [artifacts.extractedPath] : (Array.isArray(artifacts.inputImages) ? artifacts.inputImages : [])))
+        .map((filePath) => String(filePath || '').trim())
+        .filter((filePath) => filePath && fs.existsSync(filePath) && fs.statSync(filePath).isFile());
+    for (let sourceIndex = 0; sourceIndex < sourcePaths.length; sourceIndex += 1) {
+        for (let index = 0; index < count; index += 1) {
+            const variantPath = await runWorkflowVariationNode(
+                {
+                    ...run,
+                    name: sourcePaths.length > 1 || count > 1 ? `${run.name}-${sourceIndex + 1}-${index + 1}` : run.name
+                },
+                node,
+                { ...artifacts, extractedPath: sourcePaths[sourceIndex], extractedPaths: [sourcePaths[sourceIndex]] }
+            );
+            paths.push(variantPath);
+        }
+    }
+    return paths;
+}
+
+function clampWorkflowNumber(value, min, max) {
+    return Math.max(min, Math.min(max, Number(value)));
+}
+
+function buildWorkflowEvenRanges(start, end, grid) {
+    const length = Math.max(1, end - start + 1);
+    return Array.from({ length: grid }, (_, index) => {
+        const rangeStart = start + Math.round((length * index) / grid);
+        const rangeEnd = index === grid - 1
+            ? end
+            : start + Math.round((length * (index + 1)) / grid) - 1;
+        return {
+            start: clampWorkflowNumber(rangeStart, start, end),
+            end: clampWorkflowNumber(rangeEnd, start, end)
+        };
+    });
+}
+
+function smoothWorkflowSignal(values, radius = 2) {
+    const source = Array.isArray(values) ? values : [];
+    if (!source.length) return [];
+    return source.map((_, index) => {
+        let total = 0;
+        let count = 0;
+        for (let cursor = Math.max(0, index - radius); cursor <= Math.min(source.length - 1, index + radius); cursor += 1) {
+            total += Number(source[cursor] || 0);
+            count += 1;
+        }
+        return count ? total / count : 0;
+    });
+}
+
+function buildWorkflowSliceRangesFromBands(start, end, bands, grid) {
+    if (!Array.isArray(bands) || bands.length !== grid - 1) return [];
+    const ranges = [];
+    let cursor = start;
+    bands.forEach((band) => {
+        ranges.push({ start: cursor, end: Math.max(cursor, band.start - 1) });
+        cursor = Math.min(end, band.end + 1);
+    });
+    ranges.push({ start: cursor, end });
+    return ranges.length === grid && ranges.every((range) => range.end - range.start >= 2) ? ranges : [];
+}
+
+function insetWorkflowSliceRanges(ranges, inset = 0) {
+    return (Array.isArray(ranges) ? ranges : []).map((range) => {
+        const maxInset = Math.max(0, Math.floor((range.end - range.start) / 4));
+        const appliedInset = Math.min(Math.max(0, Number(inset) || 0), maxInset);
+        return { start: range.start + appliedInset, end: range.end - appliedInset };
+    });
+}
+
+function analyzeWorkflowSliceSignals(raw, width, height) {
+    const grayscale = new Float32Array(width * height);
+    const columnMean = new Array(width).fill(0);
+    const rowMean = new Array(height).fill(0);
+    const columnBrightRatio = new Array(width).fill(0);
+    const rowBrightRatio = new Array(height).fill(0);
+    for (let y = 0; y < height; y += 1) {
+        for (let x = 0; x < width; x += 1) {
+            const offset = (y * width + x) * 4;
+            const alpha = raw[offset + 3] / 255;
+            const gray = ((raw[offset] * 0.299) + (raw[offset + 1] * 0.587) + (raw[offset + 2] * 0.114)) * alpha;
+            grayscale[y * width + x] = gray;
+            columnMean[x] += gray;
+            rowMean[y] += gray;
+            if (alpha > 0.72 && gray >= 218) {
+                columnBrightRatio[x] += 1;
+                rowBrightRatio[y] += 1;
+            }
+        }
+    }
+    for (let x = 0; x < width; x += 1) {
+        columnMean[x] /= Math.max(1, height);
+        columnBrightRatio[x] /= Math.max(1, height);
+    }
+    for (let y = 0; y < height; y += 1) {
+        rowMean[y] /= Math.max(1, width);
+        rowBrightRatio[y] /= Math.max(1, width);
+    }
+    const columnVariance = new Array(width).fill(0);
+    const rowVariance = new Array(height).fill(0);
+    const columnEdge = new Array(width).fill(0);
+    const rowEdge = new Array(height).fill(0);
+    for (let y = 0; y < height; y += 1) {
+        for (let x = 0; x < width; x += 1) {
+            const gray = grayscale[y * width + x];
+            columnVariance[x] += Math.abs(gray - columnMean[x]);
+            rowVariance[y] += Math.abs(gray - rowMean[y]);
+            if (x > 0) columnEdge[x] += Math.abs(gray - grayscale[y * width + x - 1]);
+            if (y > 0) rowEdge[y] += Math.abs(gray - grayscale[(y - 1) * width + x]);
+        }
+    }
+    for (let x = 0; x < width; x += 1) {
+        columnVariance[x] /= Math.max(1, height);
+        columnEdge[x] /= Math.max(1, height);
+    }
+    for (let y = 0; y < height; y += 1) {
+        rowVariance[y] /= Math.max(1, width);
+        rowEdge[y] /= Math.max(1, width);
+    }
+    return {
+        width,
+        height,
+        columnSeparator: smoothWorkflowSignal(columnBrightRatio.map((bright, index) => {
+            const varianceScore = 1 - clampWorkflowNumber(columnVariance[index] / 72, 0, 1);
+            const edgeScore = 1 - clampWorkflowNumber(columnEdge[index] / 44, 0, 1);
+            return bright * 0.58 + varianceScore * 0.24 + edgeScore * 0.18;
+        }), 2),
+        rowSeparator: smoothWorkflowSignal(rowBrightRatio.map((bright, index) => {
+            const varianceScore = 1 - clampWorkflowNumber(rowVariance[index] / 72, 0, 1);
+            const edgeScore = 1 - clampWorkflowNumber(rowEdge[index] / 44, 0, 1);
+            return bright * 0.58 + varianceScore * 0.24 + edgeScore * 0.18;
+        }), 2)
+    };
+}
+
+function findWorkflowSliceBands(signal, grid) {
+    const length = signal.length;
+    const bands = [];
+    const cellSize = length / Math.max(1, grid);
+    const searchRadius = Math.max(4, Math.round(cellSize * 0.2));
+    for (let index = 1; index < grid; index += 1) {
+        const expected = cellSize * index;
+        const start = Math.max(2, Math.round(expected - searchRadius));
+        const end = Math.min(length - 3, Math.round(expected + searchRadius));
+        let best = start;
+        let bestScore = -Infinity;
+        for (let cursor = start; cursor <= end; cursor += 1) {
+            const distancePenalty = Math.abs(cursor - expected) / Math.max(1, searchRadius);
+            const score = Number(signal[cursor] || 0) - distancePenalty * 0.28;
+            if (score > bestScore) {
+                bestScore = score;
+                best = cursor;
+            }
+        }
+        if (bestScore < 0.58) return [];
+        const threshold = Math.max(0.52, Number(signal[best] || 0) * 0.82);
+        let bandStart = best;
+        let bandEnd = best;
+        while (bandStart > start && Number(signal[bandStart - 1] || 0) >= threshold) bandStart -= 1;
+        while (bandEnd < end && Number(signal[bandEnd + 1] || 0) >= threshold) bandEnd += 1;
+        bands.push({ start: bandStart, end: bandEnd, score: bestScore });
+    }
+    return bands;
+}
+
+function detectWorkflowSliceLayout(signals, requestedGrid = 'auto') {
+    const candidateGrids = requestedGrid === 'auto' ? [3, 2, 4] : [Number(requestedGrid) || 3];
+    const candidates = candidateGrids.map((grid) => {
+        const xBands = findWorkflowSliceBands(signals.columnSeparator, grid);
+        const yBands = findWorkflowSliceBands(signals.rowSeparator, grid);
+        const complete = xBands.length === grid - 1 && yBands.length === grid - 1;
+        const score = complete
+            ? (xBands.concat(yBands).reduce((sum, band) => sum + band.score, 0) / Math.max(1, xBands.length + yBands.length)) + 0.3
+            : 0;
+        return { grid, xBands, yBands, complete, score };
+    }).sort((a, b) => b.score - a.score);
+    const best = candidates[0] || { grid: 3, complete: false, xBands: [], yBands: [] };
+    const grid = best.grid || 3;
+    const xRanges = best.complete
+        ? buildWorkflowSliceRangesFromBands(0, signals.width - 1, best.xBands, grid)
+        : buildWorkflowEvenRanges(0, signals.width - 1, grid);
+    const yRanges = best.complete
+        ? buildWorkflowSliceRangesFromBands(0, signals.height - 1, best.yBands, grid)
+        : buildWorkflowEvenRanges(0, signals.height - 1, grid);
+    return {
+        grid,
+        xRanges: xRanges.length ? xRanges : buildWorkflowEvenRanges(0, signals.width - 1, grid),
+        yRanges: yRanges.length ? yRanges : buildWorkflowEvenRanges(0, signals.height - 1, grid),
+        confidence: best.complete ? clampWorkflowNumber(best.score, 0.45, 0.98) : 0.35,
+        mode: best.complete ? 'separator' : 'equal'
+    };
+}
+
+async function runWorkflowAutoSliceImage(filePath, node, run) {
+    const cfg = loadSliceConfig();
+    const baseOutputDir = cfg.outputDir || getDefaultSliceOutputDir();
+    fs.mkdirSync(baseOutputDir, { recursive: true });
+    const source = sharp(filePath, { limitInputPixels: false }).rotate();
+    const metadata = await source.metadata();
+    const sourceWidth = Math.max(1, Number(metadata.width) || 1);
+    const sourceHeight = Math.max(1, Number(metadata.height) || 1);
+    const sampleMaxSide = Number(node.config?.sampleMaxSide || 0) || Math.max(sourceWidth, sourceHeight);
+    const sampleRatio = Math.min(1, sampleMaxSide / Math.max(sourceWidth, sourceHeight));
+    const sampleWidth = Math.max(1, Math.round(sourceWidth * sampleRatio));
+    const sampleHeight = Math.max(1, Math.round(sourceHeight * sampleRatio));
+    const { data, info } = await sharp(filePath, { limitInputPixels: false })
+        .rotate()
+        .resize(sampleWidth, sampleHeight, { fit: 'fill' })
+        .ensureAlpha()
+        .raw()
+        .toBuffer({ resolveWithObject: true });
+    const signals = analyzeWorkflowSliceSignals(data, info.width, info.height);
+    const requestedGrid = String(node.config?.grid || node.config?.gridSize || 'auto').trim() || 'auto';
+    const layout = detectWorkflowSliceLayout(signals, requestedGrid);
+    const inset = Math.max(0, Number(node.config?.shrink ?? node.config?.sliceInsetPx ?? 2) || 0);
+    const xRanges = insetWorkflowSliceRanges(layout.xRanges, Math.round(inset * sampleRatio));
+    const yRanges = insetWorkflowSliceRanges(layout.yRanges, Math.round(inset * sampleRatio));
+    const baseName = sanitizePathSegment(path.basename(filePath, path.extname(filePath)), 'slice-task');
+    const stamp = new Date().toISOString().replace(/[-:]/g, '').replace(/\..+$/, '').replace('T', '_');
+    const taskDir = path.join(baseOutputDir, `${baseName}_${stamp}`);
+    fs.mkdirSync(taskDir, { recursive: true });
+    const files = [];
+    for (let row = 0; row < yRanges.length; row += 1) {
+        for (let col = 0; col < xRanges.length; col += 1) {
+            const xRange = xRanges[col];
+            const yRange = yRanges[row];
+            const left = clampWorkflowNumber(Math.round(xRange.start / sampleRatio), 0, sourceWidth - 1);
+            const top = clampWorkflowNumber(Math.round(yRange.start / sampleRatio), 0, sourceHeight - 1);
+            const right = clampWorkflowNumber(Math.round(xRange.end / sampleRatio), left, sourceWidth - 1);
+            const bottom = clampWorkflowNumber(Math.round(yRange.end / sampleRatio), top, sourceHeight - 1);
+            const width = Math.max(1, right - left + 1);
+            const height = Math.max(1, bottom - top + 1);
+            const targetPath = path.join(taskDir, `${baseName}_${row + 1}-${col + 1}.png`);
+            await sharp(filePath, { limitInputPixels: false })
+                .rotate()
+                .extract({ left, top, width, height })
+                .png()
+                .toFile(targetPath);
+            files.push(targetPath);
+        }
+    }
+    return {
+        sourcePath: filePath,
+        taskDir,
+        files,
+        gridSize: layout.grid,
+        mode: layout.mode,
+        confidence: layout.confidence,
+        runId: run.id
+    };
+}
+
+async function runWorkflowSliceNode(run, node, artifacts) {
+    const inputPaths = (Array.isArray(artifacts.variantPaths) && artifacts.variantPaths.length)
+        ? artifacts.variantPaths
+        : (Array.isArray(artifacts.extractedPaths) && artifacts.extractedPaths.length
+            ? artifacts.extractedPaths
+            : (artifacts.extractedPath ? [artifacts.extractedPath] : (artifacts.inputImages || [])));
+    const imagePaths = inputPaths
+        .map((filePath) => String(filePath || '').trim())
+        .filter((filePath) => filePath && fs.existsSync(filePath) && fs.statSync(filePath).isFile());
+    if (!imagePaths.length) {
+        throw new Error('智能切片缺少可用输入图片');
+    }
+    const results = [];
+    for (const imagePath of imagePaths) {
+        results.push(await runWorkflowAutoSliceImage(imagePath, node, run));
+    }
+    return {
+        sliceInputPaths: imagePaths,
+        sliceResultPaths: results.flatMap((item) => item.files),
+        sliceOutputDirs: results.map((item) => item.taskDir),
+        sliceSummary: results.map((item) => ({
+            sourcePath: item.sourcePath,
+            taskDir: item.taskDir,
+            fileCount: item.files.length,
+            gridSize: item.gridSize,
+            mode: item.mode,
+            confidence: item.confidence
+        }))
+    };
+}
+
+function getWorkflowTemplateInputPaths(artifacts) {
+    const templateInputPathSet = new Set();
+    const pushTemplateInput = (value) => {
+        (Array.isArray(value) ? value : [value]).forEach((item) => {
+            const filePath = String(item || '').trim();
+            if (filePath) templateInputPathSet.add(filePath);
+        });
+    };
+    pushTemplateInput(artifacts.sliceResultPaths);
+    pushTemplateInput(artifacts.variantPaths);
+    pushTemplateInput(artifacts.extractedPaths);
+    pushTemplateInput(artifacts.extractedPath);
+    pushTemplateInput(artifacts.inputImages);
+    return Array.from(templateInputPathSet);
+}
+
+async function runWorkflowTemplateNode(run, node, artifacts, sender) {
+    if (templateProcess) {
+        throw new Error('智能模板任务正在运行，请等待当前模板任务结束');
+    }
+
+    const templateInputPaths = getWorkflowTemplateInputPaths(artifacts);
+    const designs = templateInputPaths
+        .map((filePath) => String(filePath || '').trim())
+        .filter((filePath) => filePath && fs.existsSync(filePath) && fs.statSync(filePath).isFile())
+        .map((filePath) => ({
+            name: path.basename(filePath),
+            path: filePath
+        }));
+
+    if (!designs.length) {
+        throw new Error('智能模板缺少可用输入图片');
+    }
+
+    const templateRendererScript = getTemplateRendererScriptPath();
+    if (!fs.existsSync(templateRendererScript)) {
+        throw new Error('缺少 template_renderer.py');
+    }
+
+    const cfg = loadTemplateConfig();
+    const selectedTemplates = Array.isArray(node.config?.selectedTemplates) ? node.config.selectedTemplates : [];
+    const activeTemplateGroups = selectedTemplates
+        .map((item) => String(item || '').trim())
+        .filter(Boolean);
+
+    if (!activeTemplateGroups.length) {
+        throw new Error('智能模板节点未选择模板');
+    }
+
+    const templateGroups = listTemplateFolders();
+    const resolvedTemplateGroups = activeTemplateGroups
+        .map((name) => templateGroups.find((item) => item.name === name))
+        .filter(Boolean)
+        .map((group) => ({
+            name: group.name,
+            scenes: (group.scenes || []).filter((scene) => scene.valid).map((scene) => ({
+                name: scene.name,
+                relativePath: scene.relativePath
+            }))
+        }))
+        .filter((group) => group.scenes.length > 0);
+
+    if (!resolvedTemplateGroups.length) {
+        throw new Error('智能模板节点选择的模板不存在或没有可用场景');
+    }
+
+    const pythonRuntime = getPythonRuntime(templateRendererScript);
+    if (!pythonRuntime) {
+        throw new Error('未检测到可用 Python 运行环境，请安装 Python 或 py 启动器');
+    }
+
+    const watermarkPresetId = String(node.config?.watermarkPresetId || artifacts.watermarkPresetId || cfg.watermarkPresetId || '').trim();
+    const savedPresets = loadWatermarkPresets();
+    const selectedPreset = savedPresets.find((item) => item.id === watermarkPresetId) || null;
+    const parameterPresetId = String(node.config?.parameterPresetId || cfg.parameterPresetId || '').trim();
+    const parameterPresets = loadTemplateParameterPresets();
+    const selectedParameterPreset = parameterPresetId
+        ? (parameterPresets.find((item) => item.id === parameterPresetId) || {}).effects || null
+        : null;
+    const resolvedOutputDir = String(node.config?.outputDir || cfg.outputDir || getDefaultTemplateOutputDir()).trim();
+    ensureDir(resolvedOutputDir);
+
+    const jobPayload = {
+        outputDir: resolvedOutputDir,
+        templateRootDir: getTemplateRootDir(),
+        templateGroups: resolvedTemplateGroups,
+        designs,
+        watermarkPreset: selectedPreset,
+        effectPreset: selectedParameterPreset
+    };
+
+    sendTemplateLog(
+        sender,
+        'info',
+        `工作流智能模板开始：${run.name}，${designs.length} 张图，${resolvedTemplateGroups.length} 个模板`
+    );
+
+    const outputPaths = [];
+    const outputItems = [];
+    const outputDirs = new Set();
+    const publishTemplateProgress = () => {
+        if (!outputPaths.length) return;
+        const latestRun = loadWorkflowData().runs.find((item) => item.id === run.id) || run;
+        const currentNodeStates = latestRun.nodeStates && typeof latestRun.nodeStates === 'object'
+            ? latestRun.nodeStates
+            : {};
+        const currentNodeState = currentNodeStates[node.id] || {};
+        const partialArtifacts = {
+            templateInputPaths,
+            templateOutputPaths: outputPaths.slice(),
+            templateOutputDirs: Array.from(outputDirs).filter(Boolean),
+            templateOutputItems: outputItems.slice()
+        };
+        updateWorkflowRunState(run.id, {
+            artifacts: mergeWorkflowDisplayArtifacts(latestRun.artifacts || run.artifacts, partialArtifacts, node.id),
+            nodeStates: {
+                ...currentNodeStates,
+                [node.id]: {
+                    ...currentNodeState,
+                    status: 'running',
+                    message: `已生成 ${outputPaths.length} 张模板图`,
+                    updatedAt: new Date().toISOString()
+                }
+            }
+        }, sender);
+    };
+    const doneSummary = await new Promise((resolve, reject) => {
+        const child = spawn(pythonRuntime.command, pythonRuntime.scriptArgs, {
+            cwd: path.dirname(templateRendererScript),
+            windowsHide: true,
+            stdio: ['pipe', 'pipe', 'pipe'],
+            env: {
+                ...process.env,
+                PYTHONUTF8: '1'
+            }
+        });
+
+        let stdoutBuffer = '';
+        let stderrBuffer = '';
+        let doneMessage = null;
+
+        const handleMessage = (message) => {
+            if (!message || typeof message !== 'object') return;
+            if (message.outputDir) {
+                outputDirs.add(String(message.outputDir || '').trim());
+            }
+            if (message.outputPath) {
+                const outputPath = String(message.outputPath || '').trim();
+                if (outputPath && fs.existsSync(outputPath) && !outputPaths.includes(outputPath)) {
+                    outputPaths.push(outputPath);
+                    outputItems.push({
+                        path: outputPath,
+                        outputDir: String(message.outputDir || path.dirname(outputPath) || '').trim(),
+                        groupName: String(message.groupName || '').trim(),
+                        sceneName: String(message.sceneName || '').trim(),
+                        designName: String(message.designName || '').trim(),
+                        designPath: String(message.designPath || '').trim()
+                    });
+                    publishTemplateProgress();
+                }
+            }
+            if (message.type === 'log') {
+                sendTemplateLog(sender, message.level || 'info', message.message || '', message);
+            } else if (message.type === 'progress') {
+                safeSend(sender, 'template:progress', message);
+            } else if (message.type === 'done') {
+                doneMessage = message;
+            }
+        };
+
+        child.stdout.on('data', (chunk) => {
+            stdoutBuffer += chunk.toString('utf-8');
+            const lines = stdoutBuffer.split(/\r?\n/);
+            stdoutBuffer = lines.pop() || '';
+            lines.forEach((line) => {
+                const text = line.trim();
+                if (!text) return;
+                try {
+                    handleMessage(JSON.parse(text));
+                } catch {
+                    sendTemplateLog(sender, 'info', text);
+                }
+            });
+        });
+
+        child.stderr.on('data', (chunk) => {
+            stderrBuffer += chunk.toString('utf-8');
+        });
+
+        child.on('error', reject);
+
+        child.on('close', (code, signal) => {
+            if (stdoutBuffer.trim()) {
+                try {
+                    handleMessage(JSON.parse(stdoutBuffer.trim()));
+                } catch {
+                    sendTemplateLog(sender, 'info', stdoutBuffer.trim());
+                }
+            }
+            if (code !== 0) {
+                reject(new Error(stderrBuffer.trim() || `智能模板任务异常结束 (code=${code ?? 'null'}, signal=${signal ?? 'null'})`));
+                return;
+            }
+            resolve(doneMessage || { processed: outputPaths.length, failed: 0, total: outputPaths.length });
+        });
+
+        child.stdin.end(JSON.stringify(jobPayload), 'utf-8');
+    });
+
+    if (!outputPaths.length) {
+        throw new Error('智能模板没有生成任何结果');
+    }
+
+    sendTemplateLog(sender, 'success', `工作流智能模板完成：生成 ${outputPaths.length} 张图`);
+
+    return {
+        templateInputPaths,
+        templateOutputPaths: outputPaths,
+        templateOutputItems: outputItems,
+        templateOutputDirs: Array.from(outputDirs).filter(Boolean),
+        templateSummary: {
+            processed: Number(doneSummary.processed || outputPaths.length),
+            failed: Number(doneSummary.failed || 0),
+            total: Number(doneSummary.total || outputPaths.length)
+        }
+    };
+}
+
+function collectWorkflowExportFiles(artifacts) {
+    const files = [];
+    const pushFile = (filePath) => {
+        const normalized = String(filePath || '').trim();
+        if (normalized && fs.existsSync(normalized) && fs.statSync(normalized).isFile() && !files.includes(normalized)) {
+            files.push(normalized);
+        }
+    };
+    [
+        artifacts.extractedPath,
+        ...(Array.isArray(artifacts.extractedPaths) ? artifacts.extractedPaths : []),
+        ...(Array.isArray(artifacts.variantPaths) ? artifacts.variantPaths : []),
+        ...(Array.isArray(artifacts.sliceResultPaths) ? artifacts.sliceResultPaths : []),
+        ...(Array.isArray(artifacts.templateOutputPaths) ? artifacts.templateOutputPaths : []),
+        ...(Array.isArray(artifacts.publishOutputPaths) ? artifacts.publishOutputPaths : [])
+    ].forEach(pushFile);
+    if (!files.length) {
+        (Array.isArray(artifacts.inputImages) ? artifacts.inputImages : []).forEach(pushFile);
+    }
+    return files;
+}
+
+function exportWorkflowArtifacts(run, node, artifacts) {
+    const outputDir = String(node.config?.outputDir || '').trim();
+    if (!outputDir) {
+        throw new Error('导出保存节点缺少导出目录');
+    }
+    const files = collectWorkflowExportFiles(artifacts);
+    if (!files.length) {
+        throw new Error('导出保存节点没有可导出的文件');
+    }
+    const runFolder = ensureDir(path.join(outputDir, sanitizePathSegment(path.basename(run.name, path.extname(run.name)), 'workflow-export')));
+    const exportedPaths = files.map((filePath) => {
+        const targetPath = ensureUniqueFilePath(path.join(runFolder, path.basename(filePath)));
+        fs.copyFileSync(filePath, targetPath);
+        return targetPath;
+    });
+    return { exportDir: runFolder, exportedPaths };
+}
+
+async function runWorkflowNode(run, node, graph, sender, inputArtifacts = {}) {
+    const artifacts = { ...(inputArtifacts || {}) };
+    if (node.type === 'input') {
+        const inputImages = run.sourceType === 'folder' ? listWorkflowFolderImages(run.sourcePath) : [run.sourcePath].filter(Boolean);
+        return {
+            status: 'done',
+            artifacts: {
+                inputPath: run.sourcePath,
+                inputImages
+            }
+        };
+    }
+    if (node.type === 'extract') {
+        const extractedPaths = await runWorkflowExtractNode(run, node, sender, artifacts);
+        return {
+            status: 'done',
+            artifacts: {
+                extractedPath: extractedPaths[0] || '',
+                extractedPaths
+            }
+        };
+    }
+    if (node.type === 'variation') {
+        try {
+            const variantPaths = await runWorkflowVariationNodes(run, node, artifacts);
+            return { status: 'done', artifacts: { variantPaths, variationError: '' } };
+        } catch (error) {
+            const message = compactPrintAiErrorMessage(error, '印花裂变失败', '已跳过本次裂变');
+            return { status: 'done', artifacts: { ...artifacts, variationError: message }, message, level: 'warning' };
+        }
+    }
+    if (node.type === 'slice') {
+        const result = await runWorkflowSliceNode(run, node, artifacts);
+        return { status: 'done', artifacts: result };
+    }
+    if (node.type === 'template') {
+        const result = await runWorkflowTemplateNode(run, node, artifacts, sender);
+        return { status: 'done', artifacts: result };
+    }
+    if (node.type === 'watermark') {
+        return {
+            status: 'done',
+            artifacts: {
+                ...artifacts,
+                watermarkPresetId: String(node.config?.watermarkPresetId || '').trim()
+            }
+        };
+    }
+    if (node.type === 'publish') {
+        const result = await runWorkflowPublishNode(run, node, artifacts, sender);
+        return { status: 'done', artifacts: result };
+    }
+    if (node.type === 'export') {
+        const result = exportWorkflowArtifacts(run, node, artifacts);
+        return { status: 'done', artifacts: result };
+    }
+    return { status: 'done', artifacts };
+}
+
+function clearWorkflowArtifactsFromNode(artifacts, nodeType) {
+    const next = { ...(artifacts || {}) };
+    const order = getWorkflowNodeDef(nodeType)?.order || 0;
+    if (order <= 10) {
+        delete next.extractedPath;
+        delete next.extractedPaths;
+        delete next.extractionError;
+    }
+    if (order <= 20) {
+        delete next.variantPaths;
+        delete next.variationError;
+    }
+    if (order <= 30) {
+        delete next.sliceInputPaths;
+        delete next.sliceResultPaths;
+        delete next.sliceOutputDirs;
+        delete next.sliceSummary;
+    }
+    if (order <= 40) {
+        delete next.templateInputPaths;
+        delete next.templateOutputPaths;
+        delete next.templateOutputDirs;
+        delete next.templateSummary;
+    }
+    if (order <= 50) {
+        delete next.watermarkPresetId;
+    }
+    if (order <= 60) {
+        delete next.publishRecords;
+        delete next.publishOutputPaths;
+        delete next.publishOutputDir;
+    }
+    if (order <= 70) {
+        delete next.exportDir;
+        delete next.exportedPaths;
+    }
+    return next;
+}
+
+async function startWorkflowRun(payload, sender) {
+    const graph = normalizeWorkflowGraph(payload?.graph);
+    const validation = validateWorkflowGraph(graph);
+    if (!validation.ok) {
+        throw new Error(validation.errors.join('\n'));
+    }
+    const ids = new Set(Array.isArray(payload?.runIds) ? payload.runIds.map((id) => String(id || '').trim()).filter(Boolean) : []);
+    if (!ids.size) {
+        throw new Error('请先导入并选择要运行的工作流任务');
+    }
+    const topo = getWorkflowGraphTopo(graph);
+    let data = loadWorkflowData();
+    data.runs = data.runs.map((run) => ids.has(run.id)
+        ? { ...run, status: 'running', error: '', progress: 0, currentNodeId: '', currentNodeType: '', artifacts: {}, nodeStates: {}, updatedAt: new Date().toISOString() }
+        : run);
+    saveWorkflowData(data);
+    broadcastWorkflowData(sender, data);
+
+    void (async () => {
+        for (const runId of ids) {
+            let run = updateWorkflowRunState(runId, { status: 'running', artifacts: {}, nodeStates: {}, progress: 0, error: '' }, sender);
+            if (!run) continue;
+            const nodeStates = { ...(run.nodeStates || {}) };
+            const nodeArtifacts = {};
+            for (let index = 0; index < topo.nodes.length; index += 1) {
+                const node = topo.nodes[index];
+                const startedAt = new Date().toISOString();
+                const startedAtMs = Date.now();
+                try {
+                    nodeStates[node.id] = { status: 'running', message: '', startedAt, updatedAt: startedAt };
+                    run = updateWorkflowRunState(runId, {
+                        status: 'running',
+                        currentNodeId: node.id,
+                        currentNodeType: node.type,
+                        nodeStates,
+                        progress: Math.round((index / Math.max(1, topo.nodes.length)) * 100)
+                    }, sender) || run;
+                    const inputArtifacts = getWorkflowNodeInputArtifacts(run, topo, node, nodeArtifacts);
+                    const result = await runWorkflowNode(run, node, topo, sender, inputArtifacts);
+                    nodeArtifacts[node.id] = result.artifacts || {};
+                    const finishedAt = new Date().toISOString();
+                    nodeStates[node.id] = {
+                        status: result.status,
+                        message: result.message || '',
+                        startedAt,
+                        finishedAt,
+                        durationMs: Math.max(0, Date.now() - startedAtMs),
+                        updatedAt: finishedAt
+                    };
+                    run = updateWorkflowRunState(runId, {
+                        status: result.status === 'paused' ? 'paused' : 'running',
+                        artifacts: mergeWorkflowDisplayArtifacts(run.artifacts, result.artifacts || {}, node.id, nodeArtifacts),
+                        nodeStates,
+                        error: result.level === 'warning' ? '' : (result.message || ''),
+                        progress: Math.round(((index + 1) / Math.max(1, topo.nodes.length)) * 100)
+                    }, sender) || run;
+                    if (result.status === 'paused') break;
+                } catch (error) {
+                    const finishedAt = new Date().toISOString();
+                    const message = compactPrintAiErrorMessage(error, '节点执行失败', '请检查节点配置或稍后重试');
+                    nodeStates[node.id] = {
+                        status: 'failed',
+                        message,
+                        startedAt,
+                        finishedAt,
+                        durationMs: Math.max(0, Date.now() - startedAtMs),
+                        updatedAt: finishedAt
+                    };
+                    updateWorkflowRunState(runId, {
+                        status: 'failed',
+                        currentNodeId: node.id,
+                        currentNodeType: node.type,
+                        nodeStates,
+                        error: message
+                    }, sender);
+                    break;
+                }
+            }
+            const latest = loadWorkflowData().runs.find((item) => item.id === runId);
+            if (latest && latest.status === 'running') {
+                updateWorkflowRunState(runId, { status: 'done', progress: 100, currentNodeId: '', currentNodeType: '', error: '' }, sender);
+            }
+        }
+        broadcastWorkflowData(sender);
+    })();
+
+    return loadWorkflowData();
+}
+
+async function retryWorkflowNode(payload, sender) {
+    const graph = normalizeWorkflowGraph(payload?.graph);
+    const validation = validateWorkflowGraph(graph);
+    if (!validation.ok) {
+        throw new Error(validation.errors.join('\n'));
+    }
+    const runId = String(payload?.runId || '').trim();
+    const nodeId = String(payload?.nodeId || '').trim();
+    if (!runId) throw new Error('请先选择要重新运行的任务');
+    if (!nodeId) throw new Error('请先选择要重新运行的节点');
+    const topo = getWorkflowNodesFrom(graph, nodeId);
+    const startNode = topo.nodes[0];
+    let data = loadWorkflowData();
+    const currentRun = data.runs.find((run) => run.id === runId);
+    if (!currentRun) throw new Error('找不到要重新运行的任务');
+    const executionNodeIds = new Set(topo.nodes.map((node) => node.id));
+    const nodeStates = { ...(currentRun.nodeStates || {}) };
+    Object.keys(nodeStates).forEach((id) => {
+        if (executionNodeIds.has(id)) {
+            delete nodeStates[id];
+        }
+    });
+    const nodeArtifacts = {};
+    Object.entries(currentRun.artifacts?.nodeArtifacts || {}).forEach(([id, artifact]) => {
+        if (!executionNodeIds.has(id)) {
+            nodeArtifacts[id] = artifact;
+        }
+    });
+    const clearedArtifacts = { nodeArtifacts };
+    clearedArtifacts.nodeArtifacts = nodeArtifacts;
+    data.runs = data.runs.map((run) => run.id === runId
+        ? {
+            ...run,
+            status: 'running',
+            error: '',
+            currentNodeId: startNode.id,
+            currentNodeType: startNode.type,
+            artifacts: clearedArtifacts,
+            nodeStates,
+            updatedAt: new Date().toISOString()
+        }
+        : run);
+    saveWorkflowData(data);
+    broadcastWorkflowData(sender, data);
+
+    void (async () => {
+        let run = updateWorkflowRunState(runId, { status: 'running', artifacts: clearedArtifacts, nodeStates, error: '' }, sender);
+        if (!run) return;
+        for (let index = 0; index < topo.nodes.length; index += 1) {
+            const node = topo.nodes[index];
+            const startedAt = new Date().toISOString();
+            const startedAtMs = Date.now();
+            try {
+                nodeStates[node.id] = { status: 'running', message: '', startedAt, updatedAt: startedAt };
+                run = updateWorkflowRunState(runId, {
+                    status: 'running',
+                    currentNodeId: node.id,
+                    currentNodeType: node.type,
+                    nodeStates,
+                    progress: Math.round((index / Math.max(1, topo.nodes.length)) * 100)
+                }, sender) || run;
+                const inputArtifacts = getWorkflowNodeInputArtifacts(run, topo, node, nodeArtifacts);
+                const result = await runWorkflowNode(run, node, topo, sender, inputArtifacts);
+                nodeArtifacts[node.id] = result.artifacts || {};
+                const finishedAt = new Date().toISOString();
+                nodeStates[node.id] = {
+                    status: result.status,
+                    message: result.message || '',
+                    startedAt,
+                    finishedAt,
+                    durationMs: Math.max(0, Date.now() - startedAtMs),
+                    updatedAt: finishedAt
+                };
+                run = updateWorkflowRunState(runId, {
+                    status: result.status === 'paused' ? 'paused' : 'running',
+                    artifacts: mergeWorkflowDisplayArtifacts(run.artifacts, result.artifacts || {}, node.id, nodeArtifacts),
+                    nodeStates,
+                    error: result.level === 'warning' ? '' : (result.message || ''),
+                    progress: Math.round(((index + 1) / Math.max(1, topo.nodes.length)) * 100)
+                }, sender) || run;
+                if (result.status === 'paused') break;
+            } catch (error) {
+                const finishedAt = new Date().toISOString();
+                const message = compactPrintAiErrorMessage(error, '节点执行失败', '请检查节点配置或稍后重试');
+                nodeStates[node.id] = {
+                    status: 'failed',
+                    message,
+                    startedAt,
+                    finishedAt,
+                    durationMs: Math.max(0, Date.now() - startedAtMs),
+                    updatedAt: finishedAt
+                };
+                updateWorkflowRunState(runId, {
+                    status: 'failed',
+                    currentNodeId: node.id,
+                    currentNodeType: node.type,
+                    nodeStates,
+                    error: message
+                }, sender);
+                break;
+            }
+        }
+        const latest = loadWorkflowData().runs.find((item) => item.id === runId);
+        if (latest && latest.status === 'running') {
+            updateWorkflowRunState(runId, { status: 'done', progress: 100, currentNodeId: '', currentNodeType: '', error: '' }, sender);
+        }
+        broadcastWorkflowData(sender);
+    })();
+
+    return loadWorkflowData();
 }
 
 function normalizeProductPublishImage(item, index = 0) {
@@ -1982,6 +3448,284 @@ function importProductPublishRecordFromTemplateTask(payload) {
         }));
     }
     return saveProductPublishData(currentData);
+}
+
+function getProductPublishWorkflowExportDefaults(cfg, nodeConfig = {}) {
+    const defaults = {
+        ...createDefaultProductPublishConfig().exportTemplateDefaults,
+        ...(cfg?.exportTemplateDefaults || {})
+    };
+    const profileId = String(nodeConfig?.exportProfileId || '').trim();
+    const profile = profileId
+        ? (Array.isArray(cfg?.exportTemplateProfiles) ? cfg.exportTemplateProfiles : []).find((item) => item.id === profileId)
+        : null;
+    return {
+        ...defaults,
+        ...(profile?.fields || {}),
+        mainCodePrefix: String((profile?.fields || defaults).mainCodePrefix || 'A').trim() || 'A',
+        categoryId: String((profile?.fields || defaults).categoryId || '124300').trim() || '124300',
+        outputDir: normalizeDirectoryPath((profile?.fields || defaults).outputDir, getDefaultProductPublishOutputDir()),
+        urlPrefix: String((profile?.fields || defaults).urlPrefix || '').trim(),
+        ossBucket: String((profile?.fields || defaults).ossBucket || '').trim(),
+        ossRegion: String((profile?.fields || defaults).ossRegion || '').trim(),
+        ossAccessKeyId: String((profile?.fields || defaults).ossAccessKeyId || '').trim(),
+        ossAccessKeySecret: String((profile?.fields || defaults).ossAccessKeySecret || '').trim(),
+        ossObjectPrefix: String((profile?.fields || defaults).ossObjectPrefix || 'products').trim() || 'products',
+        shipLeadTime: String((profile?.fields || defaults).shipLeadTime || '2').trim() || '2',
+        originPlace: String((profile?.fields || defaults).originPlace || '中国-浙江省').trim() || '中国-浙江省',
+        customized: String((profile?.fields || defaults).customized || '否').trim() || '否',
+        specName1: String((profile?.fields || defaults).specName1 || '尺寸').trim() || '尺寸',
+        specName2: String((profile?.fields || defaults).specName2 || '颜色').trim() || '颜色',
+        specValue1: String((profile?.fields || defaults).specValue1 || '白色').trim() || '白色',
+        specValue2: String((profile?.fields || defaults).specValue2 || '0').trim() || '0',
+        declaredPrice: String((profile?.fields || defaults).declaredPrice || '0.01').trim() || '0.01',
+        suggestedPrice: String((profile?.fields || defaults).suggestedPrice || '').trim(),
+        lengthCm: String((profile?.fields || defaults).lengthCm || '0').trim() || '0',
+        widthCm: String((profile?.fields || defaults).widthCm || '0').trim() || '0',
+        heightCm: String((profile?.fields || defaults).heightCm || '0').trim() || '0',
+        weightG: String((profile?.fields || defaults).weightG || '0').trim() || '0',
+        inventory: String((profile?.fields || defaults).inventory || '0').trim() || '0',
+        sensitive: String((profile?.fields || defaults).sensitive || '否').trim() || '否'
+    };
+}
+
+function buildProductPublishWorkflowUrlPrefixUrls(record, bulk) {
+    const prefix = String(bulk?.urlPrefix || '').trim().replace(/\/+$/, '');
+    if (!prefix) return [];
+    const folderName = encodeURIComponent(String(record?.groupName || 'product').trim() || 'product');
+    return (Array.isArray(record?.images) ? record.images : []).map((image, index) => {
+        const rawName = String(
+            image?.name
+            || path.basename(String(image?.path || ''))
+            || `image-${index + 1}.jpg`
+        ).trim() || `image-${index + 1}.jpg`;
+        return `${prefix}/${folderName}/${encodeURIComponent(rawName)}`;
+    }).filter(Boolean);
+}
+
+function applyProductPublishWorkflowExportFields(records, bulk) {
+    const prefix = String(bulk?.mainCodePrefix || 'A').trim() || 'A';
+    return (Array.isArray(records) ? records : []).map((record, index) => {
+        const urls = Array.isArray(record.urls) ? record.urls.map((item) => String(item || '').trim()).filter(Boolean) : [];
+        const firstUrl = String(urls[0] || '').trim();
+        return normalizeProductPublishRecord({
+            ...record,
+            urls,
+            urlStatus: firstUrl ? 'ready' : 'pending',
+            categoryId: String(bulk?.categoryId || '').trim(),
+            mainCode: `${prefix}${index + 1}`,
+            shipLeadTime: String(bulk?.shipLeadTime || '2').trim() || '2',
+            originPlace: String(bulk?.originPlace || '中国-浙江省').trim() || '中国-浙江省',
+            previewImageUrl: firstUrl,
+            customized: String(bulk?.customized || '否').trim() || '否',
+            specName1: String(bulk?.specName1 || '').trim(),
+            specName2: String(bulk?.specName2 || '').trim(),
+            specValue1: String(bulk?.specValue1 || '').trim(),
+            specValue2: String(bulk?.specValue2 || '').trim(),
+            declaredPrice: String(bulk?.declaredPrice || '').trim(),
+            suggestedPrice: String(bulk?.suggestedPrice || '').trim(),
+            lengthCm: String(bulk?.lengthCm || '0').trim() || '0',
+            widthCm: String(bulk?.widthCm || '0').trim() || '0',
+            heightCm: String(bulk?.heightCm || '0').trim() || '0',
+            weightG: String(bulk?.weightG || '0').trim() || '0',
+            inventory: String(bulk?.inventory || '0').trim() || '0',
+            sensitive: String(bulk?.sensitive || '否').trim() || '否',
+            updatedAt: new Date().toISOString()
+        }, index);
+    });
+}
+
+function buildProductPublishWorkflowRecords(run, artifacts, cfg) {
+    const outputPaths = (Array.isArray(artifacts?.templateOutputPaths) && artifacts.templateOutputPaths.length
+        ? artifacts.templateOutputPaths
+        : (Array.isArray(artifacts?.inputImages) ? artifacts.inputImages : []))
+        .map((item) => String(item || '').trim())
+        .filter((filePath) => filePath && fs.existsSync(filePath) && fs.statSync(filePath).isFile());
+    if (!outputPaths.length) {
+        throw new Error('产品发布节点缺少模板输出图片');
+    }
+
+    const groups = new Map();
+    outputPaths.forEach((filePath) => {
+        const folder = path.dirname(filePath);
+        if (!groups.has(folder)) groups.set(folder, []);
+        groups.get(folder).push(filePath);
+    });
+
+    return Array.from(groups.entries()).map(([folder, files], index) => {
+        const groupName = path.basename(folder) || path.basename(run.name, path.extname(run.name)) || `产品${index + 1}`;
+        const images = files
+            .sort((a, b) => a.localeCompare(b, 'zh-CN'))
+            .map((filePath, imageIndex) => ({
+                id: `image-${imageIndex + 1}`,
+                name: path.basename(filePath),
+                path: filePath,
+                sceneName: path.basename(filePath, path.extname(filePath))
+            }));
+        const sceneNames = images.map((item) => item.sceneName).filter(Boolean);
+        const productType = inferProductPublishTypeFromNames([
+            groupName,
+            run.name,
+            sceneNames,
+            images.map((item) => item.name)
+        ], cfg.productTypeMappings);
+        return normalizeProductPublishRecord({
+            id: `product-workflow-${Date.now()}-${index + 1}-${crypto.randomBytes(2).toString('hex')}`,
+            sourceTaskKey: `workflow::${run.id}::${folder}`,
+            groupName,
+            productType,
+            mainCode: groupName,
+            outputDir: folder,
+            designName: path.basename(run.name, path.extname(run.name)),
+            sceneNames,
+            images,
+            titleEn: '',
+            titleZh: '',
+            titleStatus: 'pending',
+            urls: [],
+            urlStatus: 'pending',
+            exportStatus: 'idle',
+            customized: '否',
+            sensitive: '否'
+        }, index);
+    });
+}
+
+function saveProductPublishWorkflowRecords(records) {
+    const data = loadProductPublishData();
+    const nextRecords = Array.isArray(data.records) ? data.records.slice() : [];
+    (Array.isArray(records) ? records : []).forEach((record) => {
+        const normalized = normalizeProductPublishRecord(record);
+        const existingIndex = nextRecords.findIndex((item) => item.sourceTaskKey === normalized.sourceTaskKey);
+        if (existingIndex >= 0) {
+            nextRecords[existingIndex] = normalizeProductPublishRecord({
+                ...nextRecords[existingIndex],
+                ...normalized,
+                id: nextRecords[existingIndex].id || normalized.id,
+                createdAt: nextRecords[existingIndex].createdAt || normalized.createdAt
+            }, existingIndex);
+        } else {
+            nextRecords.unshift(normalized);
+        }
+    });
+    return saveProductPublishData({ records: nextRecords });
+}
+
+function validateProductPublishWorkflowRecords(records, bulk) {
+    const errors = [];
+    const titleLimit = 250;
+    (Array.isArray(records) ? records : []).forEach((record) => {
+        const name = String(record?.groupName || '未命名产品').trim() || '未命名产品';
+        if (!Array.isArray(record?.urls) || !record.urls.length) {
+            errors.push(`“${name}”缺少图片 URL`);
+        }
+        if (!String(record?.titleZh || '').trim()) {
+            errors.push(`“${name}”缺少中文标题`);
+        }
+        if (!String(record?.titleEn || '').trim()) {
+            errors.push(`“${name}”缺少英文标题`);
+        }
+        if (Array.from(String(record?.titleZh || '')).length > titleLimit) {
+            errors.push(`“${name}”中文标题超过 ${titleLimit} 字符`);
+        }
+        if (Array.from(String(record?.titleEn || '')).length > titleLimit) {
+            errors.push(`“${name}”英文标题超过 ${titleLimit} 字符`);
+        }
+    });
+    const declaredPrice = Number(String(bulk?.declaredPrice || '').trim());
+    if (!Number.isFinite(declaredPrice) || declaredPrice < 0.01) {
+        errors.push('申报价必须大于等于 0.01');
+    }
+    return errors;
+}
+
+async function runWorkflowPublishNode(run, node, artifacts, sender) {
+    const cfg = loadProductPublishConfig();
+    const bulk = getProductPublishWorkflowExportDefaults(cfg, node.config || {});
+    let records = buildProductPublishWorkflowRecords(run, artifacts, cfg);
+
+    const promptPresetId = String(node.config?.promptPresetId || cfg.titlePromptPresetId || '').trim();
+    const promptPreset = (Array.isArray(cfg.titlePromptPresets) ? cfg.titlePromptPresets : []).find((item) => item.id === promptPresetId);
+    const titleCfg = {
+        ...cfg,
+        titlePromptPresetId: promptPresetId || cfg.titlePromptPresetId,
+        titlePromptDoc: String(promptPreset?.doc || cfg.titlePromptDoc || DEFAULT_PRODUCT_PUBLISH_PROMPT_DOC).trim()
+    };
+
+    sendTemplateLog(sender, 'info', `工作流产品发布开始：${records.length} 个父级产品`);
+    for (let index = 0; index < records.length; index += 1) {
+        const record = records[index];
+        sendTemplateLog(sender, 'info', `正在生成标题：${record.groupName || `产品${index + 1}`}`);
+        const title = await generateProductPublishTitle(record, titleCfg);
+        records[index] = normalizeProductPublishRecord({
+            ...record,
+            titleEn: title.titleEn,
+            titleZh: title.titleZh,
+            titleStatus: 'generated',
+            titleHistory: [
+                ...(Array.isArray(record.titleHistory) ? record.titleHistory : []),
+                {
+                    id: `title-history-${Date.now()}-${index + 1}`,
+                    titleEn: title.titleEn,
+                    titleZh: title.titleZh,
+                    createdAt: new Date().toISOString()
+                }
+            ]
+        }, index);
+    }
+
+    if (isProductPublishOssConfigured(bulk)) {
+        for (let index = 0; index < records.length; index += 1) {
+            const record = records[index];
+            sendTemplateLog(sender, 'info', `正在上传图片：${record.groupName || `产品${index + 1}`}`);
+            const uploadedUrls = await uploadProductPublishRecordImagesToOss(record, bulk);
+            records[index] = normalizeProductPublishRecord({
+                ...record,
+                urls: uploadedUrls,
+                urlStatus: uploadedUrls.length ? 'ready' : 'pending',
+                previewImageUrl: uploadedUrls[0] || ''
+            }, index);
+        }
+    } else {
+        records = records.map((record, index) => normalizeProductPublishRecord({
+            ...record,
+            urls: buildProductPublishWorkflowUrlPrefixUrls(record, bulk),
+            urlStatus: buildProductPublishWorkflowUrlPrefixUrls(record, bulk).length ? 'ready' : 'pending'
+        }, index));
+    }
+
+    records = applyProductPublishWorkflowExportFields(records, bulk);
+    const validationErrors = validateProductPublishWorkflowRecords(records, bulk);
+    if (validationErrors.length) {
+        throw new Error(validationErrors.join('\n'));
+    }
+
+    const templatePath = resolveProductPublishTemuTemplatePath();
+    if (!templatePath) {
+        throw new Error(`未找到 ${PRODUCT_PUBLISH_TEMU_TEMPLATE_NAME}，请放到下载、文档或项目根目录`);
+    }
+
+    const workbook = buildProductPublishTemuWorkbook(records, templatePath);
+    const outputDir = ensureDir(normalizeDirectoryPath(bulk.outputDir, getDefaultProductPublishOutputDir()));
+    const filePath = ensureUniqueFilePath(path.join(outputDir, buildProductPublishExportFileName(records.length)));
+    XLSX.writeFile(workbook, filePath, { compression: true });
+
+    const now = new Date().toISOString();
+    records = records.map((record, index) => normalizeProductPublishRecord({
+        ...record,
+        exportStatus: 'done',
+        exportedAt: now,
+        exportFilePath: filePath,
+        exportFileName: path.basename(filePath)
+    }, index));
+    saveProductPublishWorkflowRecords(records);
+    sendTemplateLog(sender, 'success', `工作流产品发布完成：${filePath}`);
+
+    return {
+        publishRecords: records,
+        publishOutputPaths: [filePath],
+        publishOutputDir: outputDir
+    };
 }
 
 function resolveAiChatCompletionsUrl(rawUrl) {
@@ -3562,7 +5306,6 @@ let PRODUCT_PREFIXES = Object.keys(PRODUCT_MAP).sort((a, b) => b.length - a.leng
 function updateProductRules(newRules) {
     PRODUCT_MAP = newRules;
     PRODUCT_PREFIXES = Object.keys(PRODUCT_MAP).sort((a, b) => b.length - a.length);
-    console.log('[Rules] Updated product rules:', PRODUCT_MAP);
 }
 
 function matchProductPrefix(filename) {
@@ -4092,6 +5835,95 @@ app.whenReady().then(() => {
                 });
             });
         return { copied, outputDir: cfg.outputDir };
+    });
+
+    ipcMain.handle('workflow:load-config', () => {
+        return loadWorkflowConfig();
+    });
+
+    ipcMain.handle('workflow:save-config', (event, cfg) => {
+        return saveWorkflowConfig(cfg || {});
+    });
+
+    ipcMain.handle('workflow:load-data', () => {
+        return loadWorkflowData();
+    });
+
+    ipcMain.handle('workflow:validate', (event, payload) => {
+        return validateWorkflowGraph(payload?.graph || payload);
+    });
+
+    async function selectWorkflowInputs(event, mode = 'files', payload = {}) {
+        const workflowPresetId = String(payload?.workflowPresetId || payload?.presetId || '').trim();
+        const sourceInputNodeId = String(payload?.sourceInputNodeId || payload?.inputNodeId || '').trim();
+        const folderMode = mode === 'folders';
+        const result = await dialog.showOpenDialog(mainWindow, {
+            title: folderMode ? '选择工作流输入文件夹' : '选择工作流输入图片',
+            defaultPath: app.getPath('pictures'),
+            properties: folderMode ? ['openDirectory', 'multiSelections'] : ['openFile', 'multiSelections'],
+            filters: folderMode ? undefined : [
+                { name: '图片', extensions: ['jpg', 'jpeg', 'png', 'webp', 'bmp', 'avif'] },
+                { name: '所有文件', extensions: ['*'] }
+            ]
+        });
+        if (result.canceled || !result.filePaths.length) {
+            return { canceled: true, ...loadWorkflowData() };
+        }
+        const imported = importWorkflowInputs(result.filePaths, workflowPresetId, sourceInputNodeId);
+        broadcastWorkflowData(event.sender, imported);
+        return { canceled: false, ...imported };
+    }
+
+    ipcMain.handle('workflow:select-inputs', async (event, payload) => {
+        return selectWorkflowInputs(event, 'files', payload || {});
+    });
+
+    ipcMain.handle('workflow:select-input-files', async (event, payload) => {
+        return selectWorkflowInputs(event, 'files', payload || {});
+    });
+
+    ipcMain.handle('workflow:select-input-folders', async (event, payload) => {
+        return selectWorkflowInputs(event, 'folders', payload || {});
+    });
+
+    ipcMain.handle('workflow:import-inputs', (event, payload) => {
+        const result = importWorkflowInputs(
+            payload?.filePaths || [],
+            String(payload?.workflowPresetId || payload?.presetId || '').trim(),
+            String(payload?.sourceInputNodeId || payload?.inputNodeId || '').trim()
+        );
+        broadcastWorkflowData(event.sender, result);
+        return result;
+    });
+
+    ipcMain.handle('workflow:select-export-dir', async () => {
+        const result = await dialog.showOpenDialog(mainWindow, {
+            title: '选择工作流导出目录',
+            properties: ['openDirectory', 'createDirectory']
+        });
+        if (result.canceled || !result.filePaths.length) return { canceled: true };
+        return { canceled: false, dir: result.filePaths[0] };
+    });
+
+    ipcMain.handle('workflow:start', (event, payload) => {
+        return startWorkflowRun(payload || {}, event.sender);
+    });
+
+    ipcMain.handle('workflow:retry-node', (event, payload) => {
+        return retryWorkflowNode(payload || {}, event.sender);
+    });
+
+    ipcMain.handle('workflow:delete-runs', (event, payload) => {
+        const ids = new Set(Array.isArray(payload?.runIds) ? payload.runIds.map((id) => String(id || '').trim()).filter(Boolean) : []);
+        const data = loadWorkflowData();
+        data.runs = ids.size ? data.runs.filter((run) => !ids.has(run.id)) : data.runs;
+        const saved = saveWorkflowData(data);
+        broadcastWorkflowData(event.sender, saved);
+        return saved;
+    });
+
+    ipcMain.handle('workflow:pause', () => {
+        return { paused: true };
     });
 
     ipcMain.handle('template:load-config', () => {
