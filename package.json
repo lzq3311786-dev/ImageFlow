@@ -1,6 +1,6 @@
 {
   "name": "img-studio",
-  "version": "2.1.7",
+  "version": "2.1.8",
   "description": "ImageFlow - 图片压缩、智能归类、智能切片与智能模板",
   "main": "main.js",
   "scripts": {
@@ -37,6 +37,7 @@
     "files": [
       "main.js",
       "*.html",
+      "!workflow-*.html",
       "*.png",
       "*.ico",
       "node_modules/**/*"

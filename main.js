@@ -1,4 +1,4 @@
-const { app, BrowserWindow, Menu, globalShortcut, ipcMain, dialog, Tray, shell } = require('electron');
+const { app, BrowserWindow, Menu, globalShortcut, ipcMain, dialog, Tray, shell, screen } = require('electron');
 const remoteMain = require('@electron/remote/main');
 const { autoUpdater } = require('electron-updater');
 const path = require('path');
@@ -15,6 +15,7 @@ remoteMain.initialize();
 // --- Tray ---
 let tray = null;
 let mainWindow = null;
+let workflowConfirmWindow = null;
 let autoUpdaterEventsBound = false;
 let autoUpdaterFeedUrl = '';
 let updateState = {
@@ -1054,6 +1055,24 @@ function normalizePrintAiConfig(cfg) {
     };
 }
 
+function resolvePrintAiVariationPrompt(cfg, nodeConfig = {}) {
+    const printCfg = cfg || loadPrintAiConfig();
+    const explicitPrompt = String(nodeConfig?.prompt || '').trim();
+    if (explicitPrompt) return explicitPrompt;
+
+    const prompts = Array.isArray(printCfg.variationPrompts) ? printCfg.variationPrompts : [];
+    const promptPresetId = String(nodeConfig?.promptPresetId || '').trim();
+    const selectedPrompt = promptPresetId
+        ? prompts.find((item) => String(item?.id || '') === promptPresetId)
+        : prompts[0];
+    return String(
+        selectedPrompt?.prompt
+        || prompts[0]?.prompt
+        || createDefaultPrintAiConfig().variationPrompts[0]?.prompt
+        || ''
+    ).trim();
+}
+
 function loadPrintAiConfig() {
     return normalizePrintAiConfig(readJsonFile(PRINT_AI_CONFIG_FILE, null));
 }
@@ -1517,6 +1536,7 @@ const WORKFLOW_NODE_DEFS = [
     { type: 'variation', label: '印花裂变', order: 20, branchable: true },
     { type: 'slice', label: '智能切片', order: 30, branchable: false },
     { type: 'template', label: '智能模板', order: 40, branchable: true },
+    { type: 'confirm', label: '人工确认', order: 45, branchable: false },
     { type: 'watermark', label: '智能水印', order: 50, branchable: false },
     { type: 'publish', label: '产品发布', order: 60, branchable: false },
     { type: 'export', label: '导出保存', order: 70, branchable: false }
@@ -1681,6 +1701,77 @@ function getWorkflowOutgoingLinks(graph, nodeId) {
     ));
 }
 
+function isWorkflowLinkOrderAllowed(fromType, toType) {
+    const fromDef = getWorkflowNodeDef(fromType);
+    const toDef = getWorkflowNodeDef(toType);
+    if (!fromDef || !toDef) return false;
+    if (fromDef.type === 'export' || toDef.type === 'input') return false;
+    if (fromDef.type === 'confirm' || toDef.type === 'confirm') return true;
+    return Number(fromDef.order) < Number(toDef.order);
+}
+
+function sortWorkflowNodesByLinks(nodes, links) {
+    const indexed = new Map((Array.isArray(nodes) ? nodes : []).map((node, index) => [node.id, { node, index }]));
+    const indegree = new Map(Array.from(indexed.keys()).map((id) => [id, 0]));
+    const outgoing = new Map(Array.from(indexed.keys()).map((id) => [id, []]));
+    (Array.isArray(links) ? links : []).forEach((link) => {
+        if (!indexed.has(link.from) || !indexed.has(link.to)) return;
+        indegree.set(link.to, (indegree.get(link.to) || 0) + 1);
+        outgoing.get(link.from).push(link.to);
+    });
+    const compareNodes = (a, b) => {
+        const itemA = indexed.get(a);
+        const itemB = indexed.get(b);
+        const orderA = getWorkflowNodeDef(itemA?.node?.type)?.order || 0;
+        const orderB = getWorkflowNodeDef(itemB?.node?.type)?.order || 0;
+        return orderA - orderB || (itemA?.index || 0) - (itemB?.index || 0);
+    };
+    const queue = Array.from(indegree.entries())
+        .filter(([, count]) => count === 0)
+        .map(([id]) => id)
+        .sort(compareNodes);
+    const sortedIds = [];
+    while (queue.length) {
+        const id = queue.shift();
+        sortedIds.push(id);
+        (outgoing.get(id) || []).forEach((targetId) => {
+            indegree.set(targetId, (indegree.get(targetId) || 0) - 1);
+            if (indegree.get(targetId) === 0) {
+                queue.push(targetId);
+                queue.sort(compareNodes);
+            }
+        });
+    }
+    if (sortedIds.length !== indexed.size) {
+        return Array.from(indexed.values())
+            .sort((a, b) => compareNodes(a.node.id, b.node.id))
+            .map((item) => item.node);
+    }
+    return sortedIds.map((id) => indexed.get(id).node);
+}
+
+function hasWorkflowGraphCycle(nodes, links) {
+    const nodeIds = new Set((Array.isArray(nodes) ? nodes : []).map((node) => node.id));
+    const indegree = new Map(Array.from(nodeIds).map((id) => [id, 0]));
+    const outgoing = new Map(Array.from(nodeIds).map((id) => [id, []]));
+    (Array.isArray(links) ? links : []).forEach((link) => {
+        if (!nodeIds.has(link.from) || !nodeIds.has(link.to)) return;
+        indegree.set(link.to, (indegree.get(link.to) || 0) + 1);
+        outgoing.get(link.from).push(link.to);
+    });
+    const queue = Array.from(indegree.entries()).filter(([, count]) => count === 0).map(([id]) => id);
+    let visited = 0;
+    while (queue.length) {
+        const id = queue.shift();
+        visited += 1;
+        (outgoing.get(id) || []).forEach((targetId) => {
+            indegree.set(targetId, (indegree.get(targetId) || 0) - 1);
+            if (indegree.get(targetId) === 0) queue.push(targetId);
+        });
+    }
+    return visited !== nodeIds.size;
+}
+
 function collectWorkflowReachableNodeIds(graph, startIds) {
     const nodesById = new Map((Array.isArray(graph?.nodes) ? graph.nodes : []).map((node) => [node.id, node]));
     const reachable = new Set();
@@ -1705,35 +1796,41 @@ function getWorkflowExecutionGraph(graph, startNodeId = '') {
     const normalized = normalizeWorkflowGraph(graph);
     const normalizedStartNodeId = String(startNodeId || '').trim();
     const nodesById = new Map(normalized.nodes.map((node) => [node.id, node]));
+    const resolveNodeId = (id) => {
+        const value = String(id || '').trim();
+        if (!value) return '';
+        if (nodesById.has(value)) return value;
+        const legacyInputNode = normalized.nodes.find((node) => (
+            node.type === 'input'
+            && String(node.config?.inputGroupId || '').trim() === value
+        ));
+        return legacyInputNode?.id || value;
+    };
     let startIds = [];
     if (normalizedStartNodeId) {
-        if (!nodesById.has(normalizedStartNodeId)) {
+        const resolvedStartNodeId = resolveNodeId(normalizedStartNodeId);
+        if (!nodesById.has(resolvedStartNodeId)) {
             throw new Error('找不到要运行的节点');
         }
-        const startNode = nodesById.get(normalizedStartNodeId);
-        if (startNode?.type === 'input' && !getWorkflowOutgoingLinks(normalized, normalizedStartNodeId).length) {
+        const startNode = nodesById.get(resolvedStartNodeId);
+        if (startNode?.type === 'input' && !getWorkflowOutgoingLinks(normalized, resolvedStartNodeId).length) {
             throw new Error('导入图片节点未连接到后续节点，无法单独运行');
         }
-        if (startNode?.type !== 'input' && !getWorkflowIncomingNodeIds(normalized, normalizedStartNodeId).length) {
+        if (startNode?.type !== 'input' && !getWorkflowIncomingNodeIds(normalized, resolvedStartNodeId).length) {
             throw new Error('节点未接入输入链路，无法运行');
         }
-        startIds = [normalizedStartNodeId];
+        startIds = [resolvedStartNodeId];
     } else {
         const inputNodes = normalized.nodes.filter((node) => node.type === 'input');
         const connectedInputNodes = inputNodes.filter((node) => getWorkflowOutgoingLinks(normalized, node.id).length > 0);
         startIds = connectedInputNodes.map((node) => node.id);
     }
     const reachable = collectWorkflowReachableNodeIds(normalized, startIds);
-    const indexedNodes = normalized.nodes.map((node, index) => ({ node, index }));
-    const nodes = indexedNodes
-        .filter(({ node }) => reachable.has(node.id))
-        .sort((a, b) => {
-            const orderA = getWorkflowNodeDef(a.node.type)?.order || 0;
-            const orderB = getWorkflowNodeDef(b.node.type)?.order || 0;
-            return orderA - orderB || a.index - b.index;
-        })
-        .map(({ node }) => node);
     const links = normalized.links.filter((link) => reachable.has(link.from) && reachable.has(link.to));
+    const nodes = sortWorkflowNodesByLinks(
+        normalized.nodes.filter((node) => reachable.has(node.id)),
+        links
+    );
     return { ...normalized, nodes, links };
 }
 
@@ -1754,8 +1851,34 @@ function getWorkflowNodesFrom(graph, startNodeId = '') {
     const normalized = normalizeWorkflowGraph(graph);
     return {
         ...executionGraph,
-        links: normalized.links.filter((link) => executionNodeIds.has(link.to))
+        links: normalized.links.filter((link) => executionNodeIds.has(link.from) && executionNodeIds.has(link.to))
     };
+}
+
+function getWorkflowResolvedNodeId(graph, nodeId = '') {
+    const normalized = normalizeWorkflowGraph(graph);
+    const value = String(nodeId || '').trim();
+    if (!value) return '';
+    if (normalized.nodes.some((node) => node.id === value)) return value;
+    return normalized.nodes.find((node) => (
+        node.type === 'input'
+        && String(node.config?.inputGroupId || '').trim() === value
+    ))?.id || '';
+}
+
+function ensureWorkflowRunNodeReachable(graph, run, nodeId = '') {
+    const normalizedNodeId = getWorkflowResolvedNodeId(graph, nodeId);
+    if (!normalizedNodeId) throw new Error('找不到要运行的节点');
+    const sourceInputNodeId = String(run?.sourceInputNodeId || '').trim();
+    if (!sourceInputNodeId) {
+        throw new Error(`${run?.name || '当前任务'} 没有绑定导入节点，请重新导入到具体的导入图片节点`);
+    }
+    const sourceGraph = getWorkflowNodesFrom(graph, sourceInputNodeId);
+    const reachableIds = new Set(sourceGraph.nodes.map((node) => node.id));
+    if (!reachableIds.has(normalizedNodeId)) {
+        throw new Error(`${run?.name || '当前任务'} 不属于这个节点的输入链路`);
+    }
+    return normalizedNodeId;
 }
 
 function getWorkflowIncomingNodeIds(graph, nodeId) {
@@ -1801,6 +1924,16 @@ function getWorkflowNodeInputArtifacts(run, graph, node, nodeArtifacts) {
     if (node.type === 'input') return {};
     const incomingIds = getWorkflowIncomingNodeIds(graph, node.id);
     return mergeWorkflowArtifacts(...incomingIds.map((id) => nodeArtifacts?.[id]).filter(Boolean));
+}
+
+function getWorkflowInputArtifactsForRun(run) {
+    const inputImages = run?.sourceType === 'folder'
+        ? listWorkflowFolderImages(run.sourcePath)
+        : [run?.sourcePath].filter(Boolean);
+    return {
+        inputPath: run?.sourcePath || '',
+        inputImages
+    };
 }
 
 function mergeWorkflowDisplayArtifacts(currentArtifacts, nodeOutput, nodeId, nodeArtifacts) {
@@ -1858,13 +1991,16 @@ function validateWorkflowGraph(graph) {
         if (!from || !to) return;
         const fromDef = getWorkflowNodeDef(from.type);
         const toDef = getWorkflowNodeDef(to.type);
-        if ((fromDef?.order || 0) > (toDef?.order || 0)) {
+        if (!isWorkflowLinkOrderAllowed(from.type, to.type)) {
             addIssue('error', `节点顺序错误：${from.title} 不能连接到 ${to.title}`, [from.id, to.id]);
         }
         outCount.set(from.id, (outCount.get(from.id) || 0) + 1);
         if (!outgoingLinksByFrom.has(from.id)) outgoingLinksByFrom.set(from.id, []);
         outgoingLinksByFrom.get(from.id).push(link);
     });
+    if (hasWorkflowGraphCycle(normalized.nodes, normalized.links)) {
+        addIssue('error', '工作流连线存在循环，请断开重复回路');
+    }
     normalized.nodes.forEach((node) => {
         const def = getWorkflowNodeDef(node.type);
         if (!def) {
@@ -1888,9 +2024,9 @@ function validateWorkflowGraph(graph) {
         if (node.type === 'variation') {
             const cfg = loadPrintAiConfig();
             const model = String(node.config?.model || cfg.variationModel || '').trim();
-            const prompt = String(node.config?.prompt || '').trim();
-            if (!model) addIssue('warning', '印花裂变节点未选择模型，将使用失败状态提示', node.id);
-            if (!prompt) addIssue('warning', '印花裂变节点未填写提示词，将使用印花裂变默认提示词', node.id);
+            const prompt = resolvePrintAiVariationPrompt(cfg, node.config);
+            if (!model) addIssue('error', '印花裂变节点缺少模型', node.id);
+            if (!prompt) addIssue('error', '印花裂变节点缺少裂变提示词', node.id);
         }
         if (node.type === 'template' && (!Array.isArray(node.config?.selectedTemplates) || !node.config.selectedTemplates.length)) {
             addIssue('warning', '智能模板节点未指定模板，运行到该节点会失败', node.id);
@@ -2049,8 +2185,10 @@ async function runWorkflowVariationNode(run, node, artifacts = {}) {
     if (!cfg.baseUrl || !model) {
         throw new Error('印花裂变缺少 API 地址或模型');
     }
-    const defaultPrompt = cfg.variationPrompts?.[0]?.prompt || createDefaultPrintAiConfig().variationPrompts[0].prompt;
-    const prompt = String(node.config?.prompt || defaultPrompt || '').trim();
+    const prompt = resolvePrintAiVariationPrompt(cfg, node.config);
+    if (!prompt) {
+        throw new Error('印花裂变缺少裂变提示词');
+    }
     const aspectRatio = String(node.config?.aspectRatio || cfg.aspectRatio || '3:2');
     const generated = await requestPrintAiImageEdit({
         baseUrl: cfg.baseUrl,
@@ -2628,13 +2766,9 @@ function exportWorkflowArtifacts(run, node, artifacts) {
 async function runWorkflowNode(run, node, graph, sender, inputArtifacts = {}) {
     const artifacts = { ...(inputArtifacts || {}) };
     if (node.type === 'input') {
-        const inputImages = run.sourceType === 'folder' ? listWorkflowFolderImages(run.sourcePath) : [run.sourcePath].filter(Boolean);
         return {
             status: 'done',
-            artifacts: {
-                inputPath: run.sourcePath,
-                inputImages
-            }
+            artifacts: getWorkflowInputArtifactsForRun(run)
         };
     }
     if (node.type === 'extract') {
@@ -2671,6 +2805,13 @@ async function runWorkflowNode(run, node, graph, sender, inputArtifacts = {}) {
                 ...artifacts,
                 watermarkPresetId: String(node.config?.watermarkPresetId || '').trim()
             }
+        };
+    }
+    if (node.type === 'confirm') {
+        return {
+            status: 'paused',
+            artifacts,
+            message: '请核对上一个节点的输出内容，确认无误后继续运行'
         };
     }
     if (node.type === 'publish') {
@@ -2725,30 +2866,68 @@ function clearWorkflowArtifactsFromNode(artifacts, nodeType) {
 
 async function startWorkflowRun(payload, sender) {
     const graph = normalizeWorkflowGraph(payload?.graph);
-    const validation = validateWorkflowGraph(graph);
-    if (!validation.ok) {
-        throw new Error(validation.errors.join('\n'));
-    }
     const ids = new Set(Array.isArray(payload?.runIds) ? payload.runIds.map((id) => String(id || '').trim()).filter(Boolean) : []);
     if (!ids.size) {
         throw new Error('请先导入并选择要运行的工作流任务');
     }
-    const topo = getWorkflowGraphTopo(graph);
     let data = loadWorkflowData();
     data.runs = data.runs.map((run) => ids.has(run.id)
-        ? { ...run, status: 'running', error: '', progress: 0, currentNodeId: '', currentNodeType: '', artifacts: {}, nodeStates: {}, updatedAt: new Date().toISOString() }
+        ? {
+            ...run,
+            status: 'running',
+            error: '',
+            progress: 0,
+            currentNodeId: '',
+            currentNodeType: '',
+            artifacts: getWorkflowInputArtifactsForRun(run),
+            nodeStates: {},
+            updatedAt: new Date().toISOString()
+        }
         : run);
     saveWorkflowData(data);
     broadcastWorkflowData(sender, data);
 
     void (async () => {
         for (const runId of ids) {
-            let run = updateWorkflowRunState(runId, { status: 'running', artifacts: {}, nodeStates: {}, progress: 0, error: '' }, sender);
+            const initialArtifacts = getWorkflowInputArtifactsForRun(data.runs.find((item) => item.id === runId) || {});
+            let run = updateWorkflowRunState(runId, { status: 'running', artifacts: initialArtifacts, nodeStates: {}, progress: 0, error: '' }, sender);
             if (!run) continue;
+            let topo;
+            try {
+                const sourceInputNodeId = String(run.sourceInputNodeId || '').trim();
+                if (!sourceInputNodeId) throw new Error(`${run.name || '当前任务'} 没有绑定导入节点，请重新导入到具体的导入图片节点`);
+                topo = getWorkflowNodesFrom(graph, sourceInputNodeId);
+                const validation = validateWorkflowGraph(topo);
+                if (!validation.ok) {
+                    const error = new Error(validation.errors.join('\n'));
+                    error.workflowNodeId = validation.issues.find((issue) => issue.level === 'error')?.nodeIds?.[0] || '';
+                    throw error;
+                }
+            } catch (error) {
+                updateWorkflowRunState(runId, {
+                    status: 'failed',
+                    error: error.message || '无法定位当前任务的工作流链路',
+                    progress: 0,
+                    currentNodeId: String(error.workflowNodeId || '').trim(),
+                    currentNodeType: graph.nodes.find((node) => node.id === String(error.workflowNodeId || '').trim())?.type || '',
+                    nodeStates: {},
+                    updatedAt: new Date().toISOString()
+                }, sender);
+                continue;
+            }
             const nodeStates = { ...(run.nodeStates || {}) };
             const nodeArtifacts = {};
-            for (let index = 0; index < topo.nodes.length; index += 1) {
-                const node = topo.nodes[index];
+            const sourceInputNode = topo.nodes.find((node) => node.type === 'input' && node.id === String(run.sourceInputNodeId || '').trim());
+            if (sourceInputNode) {
+                nodeArtifacts[sourceInputNode.id] = getWorkflowInputArtifactsForRun(run);
+            }
+            const executableNodes = topo.nodes.filter((node) => node.type !== 'input');
+            if (!executableNodes.length) {
+                updateWorkflowRunState(runId, { status: 'done', progress: 100, currentNodeId: '', currentNodeType: '', error: '' }, sender);
+                continue;
+            }
+            for (let index = 0; index < executableNodes.length; index += 1) {
+                const node = executableNodes[index];
                 const startedAt = new Date().toISOString();
                 const startedAtMs = Date.now();
                 try {
@@ -2758,7 +2937,7 @@ async function startWorkflowRun(payload, sender) {
                         currentNodeId: node.id,
                         currentNodeType: node.type,
                         nodeStates,
-                        progress: Math.round((index / Math.max(1, topo.nodes.length)) * 100)
+                        progress: Math.round((index / Math.max(1, executableNodes.length)) * 100)
                     }, sender) || run;
                     const inputArtifacts = getWorkflowNodeInputArtifacts(run, topo, node, nodeArtifacts);
                     const result = await runWorkflowNode(run, node, topo, sender, inputArtifacts);
@@ -2777,7 +2956,7 @@ async function startWorkflowRun(payload, sender) {
                         artifacts: mergeWorkflowDisplayArtifacts(run.artifacts, result.artifacts || {}, node.id, nodeArtifacts),
                         nodeStates,
                         error: result.level === 'warning' ? '' : (result.message || ''),
-                        progress: Math.round(((index + 1) / Math.max(1, topo.nodes.length)) * 100)
+                        progress: Math.round(((index + 1) / Math.max(1, executableNodes.length)) * 100)
                     }, sender) || run;
                     if (result.status === 'paused') break;
                 } catch (error) {
@@ -2814,19 +2993,20 @@ async function startWorkflowRun(payload, sender) {
 
 async function retryWorkflowNode(payload, sender) {
     const graph = normalizeWorkflowGraph(payload?.graph);
-    const validation = validateWorkflowGraph(graph);
-    if (!validation.ok) {
-        throw new Error(validation.errors.join('\n'));
-    }
     const runId = String(payload?.runId || '').trim();
     const nodeId = String(payload?.nodeId || '').trim();
     if (!runId) throw new Error('请先选择要重新运行的任务');
     if (!nodeId) throw new Error('请先选择要重新运行的节点');
-    const topo = getWorkflowNodesFrom(graph, nodeId);
-    const startNode = topo.nodes[0];
     let data = loadWorkflowData();
     const currentRun = data.runs.find((run) => run.id === runId);
     if (!currentRun) throw new Error('找不到要重新运行的任务');
+    const startNodeId = ensureWorkflowRunNodeReachable(graph, currentRun, nodeId);
+    const topo = getWorkflowNodesFrom(graph, startNodeId);
+    const validation = validateWorkflowGraph(topo);
+    if (!validation.ok) {
+        throw new Error(validation.errors.join('\n'));
+    }
+    const startNode = topo.nodes[0];
     const executionNodeIds = new Set(topo.nodes.map((node) => node.id));
     const nodeStates = { ...(currentRun.nodeStates || {}) };
     Object.keys(nodeStates).forEach((id) => {
@@ -2840,15 +3020,20 @@ async function retryWorkflowNode(payload, sender) {
             nodeArtifacts[id] = artifact;
         }
     });
-    const clearedArtifacts = { nodeArtifacts };
+    const sourceInputNode = topo.nodes.find((node) => node.type === 'input' && node.id === String(currentRun.sourceInputNodeId || '').trim());
+    if (sourceInputNode) {
+        nodeArtifacts[sourceInputNode.id] = getWorkflowInputArtifactsForRun(currentRun);
+    }
+    const clearedArtifacts = { ...getWorkflowInputArtifactsForRun(currentRun), nodeArtifacts };
     clearedArtifacts.nodeArtifacts = nodeArtifacts;
+    const executableNodes = topo.nodes.filter((node) => node.type !== 'input');
     data.runs = data.runs.map((run) => run.id === runId
         ? {
             ...run,
             status: 'running',
             error: '',
-            currentNodeId: startNode.id,
-            currentNodeType: startNode.type,
+            currentNodeId: executableNodes[0]?.id || '',
+            currentNodeType: executableNodes[0]?.type || '',
             artifacts: clearedArtifacts,
             nodeStates,
             updatedAt: new Date().toISOString()
@@ -2860,8 +3045,13 @@ async function retryWorkflowNode(payload, sender) {
     void (async () => {
         let run = updateWorkflowRunState(runId, { status: 'running', artifacts: clearedArtifacts, nodeStates, error: '' }, sender);
         if (!run) return;
-        for (let index = 0; index < topo.nodes.length; index += 1) {
-            const node = topo.nodes[index];
+        if (!executableNodes.length) {
+            updateWorkflowRunState(runId, { status: 'done', progress: 100, currentNodeId: '', currentNodeType: '', error: '' }, sender);
+            broadcastWorkflowData(sender);
+            return;
+        }
+        for (let index = 0; index < executableNodes.length; index += 1) {
+            const node = executableNodes[index];
             const startedAt = new Date().toISOString();
             const startedAtMs = Date.now();
             try {
@@ -2871,7 +3061,7 @@ async function retryWorkflowNode(payload, sender) {
                     currentNodeId: node.id,
                     currentNodeType: node.type,
                     nodeStates,
-                    progress: Math.round((index / Math.max(1, topo.nodes.length)) * 100)
+                    progress: Math.round((index / Math.max(1, executableNodes.length)) * 100)
                 }, sender) || run;
                 const inputArtifacts = getWorkflowNodeInputArtifacts(run, topo, node, nodeArtifacts);
                 const result = await runWorkflowNode(run, node, topo, sender, inputArtifacts);
@@ -2890,7 +3080,134 @@ async function retryWorkflowNode(payload, sender) {
                     artifacts: mergeWorkflowDisplayArtifacts(run.artifacts, result.artifacts || {}, node.id, nodeArtifacts),
                     nodeStates,
                     error: result.level === 'warning' ? '' : (result.message || ''),
-                    progress: Math.round(((index + 1) / Math.max(1, topo.nodes.length)) * 100)
+                    progress: Math.round(((index + 1) / Math.max(1, executableNodes.length)) * 100)
+                }, sender) || run;
+                if (result.status === 'paused') break;
+            } catch (error) {
+                const finishedAt = new Date().toISOString();
+                const message = compactPrintAiErrorMessage(error, '节点执行失败', '请检查节点配置或稍后重试');
+                nodeStates[node.id] = {
+                    status: 'failed',
+                    message,
+                    startedAt,
+                    finishedAt,
+                    durationMs: Math.max(0, Date.now() - startedAtMs),
+                    updatedAt: finishedAt
+                };
+                updateWorkflowRunState(runId, {
+                    status: 'failed',
+                    currentNodeId: node.id,
+                    currentNodeType: node.type,
+                    nodeStates,
+                    error: message
+                }, sender);
+                break;
+            }
+        }
+        const latest = loadWorkflowData().runs.find((item) => item.id === runId);
+        if (latest && latest.status === 'running') {
+            updateWorkflowRunState(runId, { status: 'done', progress: 100, currentNodeId: '', currentNodeType: '', error: '' }, sender);
+        }
+        broadcastWorkflowData(sender);
+    })();
+
+    return loadWorkflowData();
+}
+
+async function confirmWorkflowNode(payload, sender) {
+    const graph = normalizeWorkflowGraph(payload?.graph);
+    const runId = String(payload?.runId || '').trim();
+    const nodeId = String(payload?.nodeId || '').trim();
+    if (!runId) throw new Error('请先选择要确认的任务');
+    if (!nodeId) throw new Error('请先选择要确认的节点');
+    let data = loadWorkflowData();
+    const currentRun = data.runs.find((run) => run.id === runId);
+    if (!currentRun) throw new Error('找不到要继续的任务');
+    const confirmNodeId = ensureWorkflowRunNodeReachable(graph, currentRun, nodeId);
+    const topo = getWorkflowNodesFrom(graph, confirmNodeId);
+    const validation = validateWorkflowGraph(topo);
+    if (!validation.ok) {
+        throw new Error(validation.errors.join('\n'));
+    }
+    const confirmNode = topo.nodes[0];
+    if (!confirmNode || confirmNode.type !== 'confirm') {
+        throw new Error('当前节点不是人工确认节点');
+    }
+    const nodeStates = { ...(currentRun.nodeStates || {}) };
+    const nodeArtifacts = { ...((currentRun.artifacts || {}).nodeArtifacts || {}) };
+    const now = new Date().toISOString();
+    nodeStates[confirmNode.id] = {
+        ...(nodeStates[confirmNode.id] || {}),
+        status: 'done',
+        message: '已人工确认',
+        finishedAt: now,
+        updatedAt: now
+    };
+    data.runs = data.runs.map((run) => run.id === runId
+        ? {
+            ...run,
+            status: 'running',
+            error: '',
+            currentNodeId: confirmNode.id,
+            currentNodeType: confirmNode.type,
+            nodeStates,
+            updatedAt: now
+        }
+        : run);
+    saveWorkflowData(data);
+    broadcastWorkflowData(sender, data);
+
+    void (async () => {
+        let run = updateWorkflowRunState(runId, {
+            status: 'running',
+            error: '',
+            nodeStates
+        }, sender);
+        if (!run) return;
+        const nodes = topo.nodes.slice(1);
+        if (!nodes.length) {
+            updateWorkflowRunState(runId, {
+                status: 'done',
+                progress: 100,
+                currentNodeId: '',
+                currentNodeType: '',
+                error: '',
+                nodeStates
+            }, sender);
+            broadcastWorkflowData(sender);
+            return;
+        }
+        for (let index = 0; index < nodes.length; index += 1) {
+            const node = nodes[index];
+            const startedAt = new Date().toISOString();
+            const startedAtMs = Date.now();
+            try {
+                nodeStates[node.id] = { status: 'running', message: '', startedAt, updatedAt: startedAt };
+                run = updateWorkflowRunState(runId, {
+                    status: 'running',
+                    currentNodeId: node.id,
+                    currentNodeType: node.type,
+                    nodeStates,
+                    progress: Math.round((index / Math.max(1, nodes.length)) * 100)
+                }, sender) || run;
+                const inputArtifacts = getWorkflowNodeInputArtifacts(run, topo, node, nodeArtifacts);
+                const result = await runWorkflowNode(run, node, topo, sender, inputArtifacts);
+                nodeArtifacts[node.id] = result.artifacts || {};
+                const finishedAt = new Date().toISOString();
+                nodeStates[node.id] = {
+                    status: result.status,
+                    message: result.message || '',
+                    startedAt,
+                    finishedAt,
+                    durationMs: Math.max(0, Date.now() - startedAtMs),
+                    updatedAt: finishedAt
+                };
+                run = updateWorkflowRunState(runId, {
+                    status: result.status === 'paused' ? 'paused' : 'running',
+                    artifacts: mergeWorkflowDisplayArtifacts(run.artifacts, result.artifacts || {}, node.id, nodeArtifacts),
+                    nodeStates,
+                    error: result.level === 'warning' ? '' : (result.message || ''),
+                    progress: Math.round(((index + 1) / Math.max(1, nodes.length)) * 100)
                 }, sender) || run;
                 if (result.status === 'paused') break;
             } catch (error) {
@@ -5063,6 +5380,107 @@ function safeSend(sender, channel, data) {
     }
 }
 
+function escapeHtml(value) {
+    return String(value || '')
+        .replace(/&/g, '&amp;')
+        .replace(/</g, '&lt;')
+        .replace(/>/g, '&gt;')
+        .replace(/"/g, '&quot;')
+        .replace(/'/g, '&#39;');
+}
+
+function closeWorkflowConfirmWindow() {
+    if (workflowConfirmWindow && !workflowConfirmWindow.isDestroyed()) {
+        workflowConfirmWindow.close();
+    }
+    workflowConfirmWindow = null;
+}
+
+function playWorkflowConfirmSound() {
+    try {
+        if (typeof shell.beep === 'function') {
+            shell.beep();
+            return;
+        }
+    } catch (_) {}
+    try {
+        process.stdout.write('\x07');
+    } catch (_) {}
+}
+
+function showWorkflowConfirmExternalNotice(payload = {}) {
+    const runId = String(payload.runId || '').trim();
+    const title = String(payload.title || '需要人工确认').trim();
+    const message = String(payload.message || '请核对上一个节点的输出内容。').trim();
+    closeWorkflowConfirmWindow();
+    const display = screen.getDisplayNearestPoint(screen.getCursorScreenPoint());
+    const workArea = display?.workArea || screen.getPrimaryDisplay().workArea;
+    const width = 360;
+    const height = 150;
+    workflowConfirmWindow = new BrowserWindow({
+        width,
+        height,
+        x: Math.round(workArea.x + workArea.width - width - 18),
+        y: Math.round(workArea.y + workArea.height - height - 18),
+        frame: false,
+        resizable: false,
+        movable: false,
+        minimizable: false,
+        maximizable: false,
+        fullscreenable: false,
+        skipTaskbar: true,
+        alwaysOnTop: true,
+        show: false,
+        backgroundColor: '#00000000',
+        transparent: true,
+        webPreferences: {
+            nodeIntegration: true,
+            contextIsolation: false
+        }
+    });
+    workflowConfirmWindow.setAlwaysOnTop(true, 'screen-saver');
+    workflowConfirmWindow.setVisibleOnAllWorkspaces(true, { visibleOnFullScreen: true });
+    workflowConfirmWindow.loadURL(`data:text/html;charset=utf-8,${encodeURIComponent(`
+<!doctype html>
+<html>
+<head>
+<meta charset="utf-8">
+<style>
+html,body{margin:0;width:100%;height:100%;overflow:hidden;background:transparent;font-family:"Microsoft YaHei",sans-serif;color:#111827;}
+*{box-shadow:none!important;filter:none!important;text-shadow:none!important;}
+.card{position:absolute;inset:0;padding:15px;border-radius:18px;border:1px solid rgba(245,158,11,.34);background:#FFFFFF;box-sizing:border-box;}
+.title{font-size:15px;font-weight:900;margin-bottom:7px;}
+.text{font-size:12px;line-height:1.55;color:#475569;height:50px;overflow:hidden;}
+.actions{position:absolute;right:14px;bottom:12px;display:flex;gap:8px;}
+button{height:32px;min-width:74px;padding:0 14px;border:0;border-radius:999px;font-size:12px;font-weight:800;cursor:pointer;}
+.secondary{background:#F1F5F9;color:#334155;}
+.primary{background:#111827;color:#fff;}
+button:hover{filter:brightness(.96);}
+</style>
+</head>
+<body>
+<div class="card">
+<div class="title">${escapeHtml(title)}</div>
+<div class="text">${escapeHtml(message)}</div>
+<div class="actions">
+<button class="secondary" onclick="require('electron').ipcRenderer.send('workflow-confirm-notice:dismiss')">知道了</button>
+<button class="primary" onclick="require('electron').ipcRenderer.send('workflow-confirm-notice:view','${escapeHtml(runId)}')">查看</button>
+</div>
+</div>
+</body>
+</html>
+`)}`);
+    workflowConfirmWindow.once('ready-to-show', () => {
+        if (!workflowConfirmWindow || workflowConfirmWindow.isDestroyed()) return;
+        workflowConfirmWindow.showInactive();
+        playWorkflowConfirmSound();
+    });
+    workflowConfirmWindow.on('closed', () => {
+        workflowConfirmWindow = null;
+    });
+    return { ok: true };
+}
+
 function getUpdateSnapshot() {
     const cfg = loadUpdateConfig();
     const resolvedSource = resolveUpdateSource(cfg);
@@ -5911,6 +6329,28 @@ app.whenReady().then(() => {
 
     ipcMain.handle('workflow:retry-node', (event, payload) => {
         return retryWorkflowNode(payload || {}, event.sender);
+    });
+
+    ipcMain.handle('workflow:confirm-node', (event, payload) => {
+        return confirmWorkflowNode(payload || {}, event.sender);
+    });
+
+    ipcMain.handle('workflow:show-confirm-notice', (event, payload) => {
+        return showWorkflowConfirmExternalNotice(payload || {});
+    });
+
+    ipcMain.on('workflow-confirm-notice:dismiss', () => {
+        closeWorkflowConfirmWindow();
+    });
+
+    ipcMain.on('workflow-confirm-notice:view', (event, runId) => {
+        const id = String(runId || '').trim();
+        closeWorkflowConfirmWindow();
+        if (mainWindow && !mainWindow.isDestroyed()) {
+            mainWindow.show();
+            mainWindow.focus();
+            safeSend(mainWindow.webContents, 'workflow:confirm-notice-view', { runId: id });
+        }
     });
 
     ipcMain.handle('workflow:delete-runs', (event, payload) => {

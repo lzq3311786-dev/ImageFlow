@@ -3656,13 +3656,23 @@
             display: flex;
             align-items: center;
             justify-content: space-between;
+            gap: 10px;
             border-bottom: 1px solid rgba(74, 91, 122, 0.08);
         }
 
         .workflow-panel-title {
+            min-width: 0;
+            flex: 1 1 auto;
+            overflow: hidden;
+            text-overflow: ellipsis;
+            white-space: nowrap;
             font-size: 13px;
             font-weight: 800;
             color: #1A1D1F;
+        }
+
+        #workflowNodeTypeHint:empty {
+            display: none;
         }
 
         .workflow-status-chip {
@@ -3718,8 +3728,8 @@
 
         .workflow-dock-notice {
             position: absolute;
-            left: 84px;
-            top: 50%;
+            left: 50%;
+            bottom: 28px;
             z-index: 29;
             display: none;
             max-width: min(560px, calc(100% - 80px));
@@ -3731,12 +3741,12 @@
             font-size: 12px;
             font-weight: 800;
             line-height: 1.5;
-            box-shadow: 0 16px 38px rgba(15, 23, 42, 0.16);
+            box-shadow: none;
             backdrop-filter: blur(16px);
-            transform: translateY(-50%);
+            transform: translateX(-50%);
             pointer-events: none;
             white-space: normal;
-            text-align: left;
+            text-align: center;
         }
 
         .workflow-dock-notice.active {
@@ -3947,6 +3957,8 @@
         .workflow-side-body {
             min-height: 0;
             overflow: auto;
+            scrollbar-gutter: stable;
+            overflow-anchor: none;
             padding: 12px 12px 74px;
             display: grid;
             align-content: start;
@@ -3995,6 +4007,7 @@
         .workflow-inspector-hero,
         .workflow-inspector-section {
             min-width: 0;
+            overflow-anchor: none;
             border: 1px solid rgba(74, 91, 122, 0.10);
             border-radius: 18px;
             background: #FFFFFF;
@@ -4104,11 +4117,113 @@
             backdrop-filter: blur(16px);
         }
 
+        .workflow-inspector-actions.confirm-actions {
+            justify-content: stretch;
+        }
+
+        .workflow-inspector-confirm-btn {
+            width: 100%;
+            height: 44px;
+            border: 0;
+            border-radius: 16px;
+            background: #10B981;
+            color: #FFFFFF;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            gap: 9px;
+            font-size: 13px;
+            font-weight: 900;
+            cursor: pointer;
+        }
+
+        .workflow-inspector-confirm-btn svg {
+            width: 18px;
+            height: 18px;
+            stroke: currentColor;
+            stroke-width: 2.6;
+            fill: none;
+            stroke-linecap: round;
+            stroke-linejoin: round;
+        }
+
+        .workflow-inspector-confirm-btn:disabled {
+            cursor: not-allowed;
+            background: #CBD5E1;
+            color: #64748B;
+        }
+
+        .workflow-confirm-info-card {
+            display: grid;
+            gap: 12px;
+            padding: 2px;
+        }
+
+        .workflow-confirm-info-title {
+            padding: 14px;
+            border-radius: 16px;
+            background: #FFF7ED;
+            color: #9A3412;
+            font-size: 13px;
+            font-weight: 800;
+            line-height: 1.5;
+        }
+
+        .workflow-confirm-info-row {
+            display: grid;
+            grid-template-columns: 54px minmax(0, 1fr);
+            align-items: center;
+            gap: 10px;
+            min-width: 0;
+            padding: 10px 12px;
+            border-radius: 14px;
+            background: #F8FAFC;
+            border: 1px solid rgba(100, 116, 139, 0.10);
+        }
+
+        .workflow-confirm-info-row span {
+            color: #64748B;
+            font-size: 12px;
+            font-weight: 800;
+        }
+
+        .workflow-confirm-info-row b {
+            min-width: 0;
+            overflow: hidden;
+            text-overflow: ellipsis;
+            white-space: nowrap;
+            color: #111827;
+            font-size: 13px;
+            font-weight: 900;
+        }
+
         .workflow-inspector-action-row .btn {
             min-width: 0;
             height: 32px;
             padding: 0 10px;
             font-size: 12px;
+        }
+
+        .workflow-input-content {
+            display: grid;
+            gap: 10px;
+            min-width: 0;
+        }
+
+        .workflow-input-preview-wrap {
+            min-width: 0;
+            padding: 8px;
+            border: 1px solid rgba(74, 91, 122, 0.08);
+            border-radius: 16px;
+            background: #F8FAFC;
+        }
+
+        .workflow-input-list-title {
+            padding: 0 2px;
+            color: #64748B;
+            font-size: 11px;
+            font-weight: 900;
+            letter-spacing: 0.08em;
         }
 
         .workflow-inspector-icon-btn {
@@ -4133,8 +4248,9 @@
         }
 
         .workflow-inspector-icon-btn:hover {
-            transform: translateY(-4px);
-            box-shadow: 0 14px 24px rgba(15, 23, 42, 0.16);
+            transform: scale(1.045);
+            box-shadow: 0 12px 22px rgba(15, 23, 42, 0.14);
+            border-color: rgba(37, 99, 235, 0.22);
         }
 
         .workflow-inspector-icon-btn svg {
@@ -4181,6 +4297,23 @@
             grid-template-columns: repeat(auto-fill, minmax(74px, 1fr));
             gap: 8px;
             min-width: 0;
+            max-height: 286px;
+            overflow: auto;
+            overscroll-behavior: contain;
+            align-content: start;
+            overflow-anchor: none;
+        }
+
+        .workflow-inspector-preview-grid::-webkit-scrollbar {
+            display: none;
+        }
+
+        .workflow-inspector-preview-grid.mode-single {
+            grid-template-columns: 1fr;
+        }
+
+        .workflow-inspector-preview-grid.mode-list {
+            grid-template-columns: 1fr;
         }
 
         .workflow-inspector-preview-item {
@@ -4194,13 +4327,42 @@
             cursor: pointer;
         }
 
+        .workflow-inspector-preview-grid.mode-single .workflow-inspector-preview-item {
+            padding: 6px;
+            border-radius: 14px;
+            background: #F8FAFC;
+            border: 1px solid rgba(74, 91, 122, 0.08);
+        }
+
+        .workflow-inspector-preview-grid.mode-list .workflow-inspector-preview-item {
+            grid-template-columns: 74px minmax(0, 1fr);
+            align-items: center;
+            gap: 10px;
+            padding: 6px;
+            border-radius: 14px;
+            background: #F8FAFC;
+            border: 1px solid rgba(74, 91, 122, 0.08);
+        }
+
         .workflow-inspector-preview-item img {
             width: 100%;
             height: 74px;
-            object-fit: cover;
+            object-fit: contain;
             border-radius: 12px;
             border: 1px solid rgba(74, 91, 122, 0.10);
             background: #EEF2F7;
+        }
+
+        .workflow-inspector-preview-grid.mode-single .workflow-inspector-preview-item img {
+            height: auto;
+            max-height: 224px;
+            object-fit: contain;
+        }
+
+        .workflow-inspector-preview-grid.mode-list .workflow-inspector-preview-item img {
+            width: 74px;
+            height: 74px;
+            object-fit: contain;
         }
 
         .workflow-inspector-preview-name {
@@ -4209,6 +4371,40 @@
             white-space: nowrap;
             font-size: 11px;
             color: #64748B;
+        }
+
+        .workflow-preview-mode-switch {
+            display: grid;
+            grid-template-columns: repeat(4, minmax(0, 1fr));
+            gap: 6px;
+            margin-top: 12px;
+            padding: 6px;
+            border-radius: 16px;
+            background: #F1F5F9;
+            border: 1px solid rgba(74, 91, 122, 0.08);
+        }
+
+        .workflow-preview-mode-btn {
+            height: 30px;
+            border: none;
+            border-radius: 12px;
+            background: transparent;
+            color: #64748B;
+            font-size: 11px;
+            font-weight: 800;
+            cursor: pointer;
+            transition: transform 0.16s ease, background 0.16s ease, color 0.16s ease, box-shadow 0.16s ease;
+        }
+
+        .workflow-preview-mode-btn:hover {
+            transform: translateY(-1px);
+            color: #0F172A;
+        }
+
+        .workflow-preview-mode-btn.active {
+            background: #FFFFFF;
+            color: #0F172A;
+            box-shadow: 0 8px 18px rgba(15, 23, 42, 0.08);
         }
 
         .workflow-inspector-log-list {
@@ -11845,6 +12041,7 @@
             { type: 'variation', label: '印花裂变', order: 20, branchable: true },
             { type: 'slice', label: '智能切片', order: 30, branchable: false },
             { type: 'template', label: '智能模板', order: 40, branchable: true },
+            { type: 'confirm', label: '人工确认', order: 45, branchable: false },
             { type: 'watermark', label: '智能水印', order: 50, branchable: false },
             { type: 'publish', label: '产品发布', order: 60, branchable: false },
             { type: 'export', label: '导出保存', order: 70, branchable: false }
@@ -11885,6 +12082,8 @@
             toolbarAnimationStartedAt: 0,
             toolbarAnimationFrame: 0,
             toolbarHoverAction: '',
+            toolbarActionKeepSelectedUntil: 0,
+            toolbarActionKeepSelectedNodeId: '',
             undoStack: [],
             redoStack: [],
             historyLastSnapshot: '',
@@ -11896,11 +12095,56 @@
             failureWatchTimers: new Map(),
             validationIssues: [],
             dockNoticeTimer: 0,
+            confirmToastRunId: '',
+            notifiedConfirmKeys: new Set(),
+            confirmNoticeListenerReady: false,
+            inspectorPreviewMode: localStorage.getItem('imageflow.workflow.previewMode') || 'masonry',
+            nodePreviewMode: localStorage.getItem('imageflow.workflow.nodePreviewMode') || 'adaptive',
+            shouldFitCanvasOnNextEditorFrame: false,
+            dotFieldPointer: { x: -9999, y: -9999 },
+            dotFieldFrame: 0,
+            dotFieldDraggingNode: null,
             models: []
         };
 
         function getWorkflowNodeDef(type) {
             return workflowNodeDefs.find((item) => item.type === type) || workflowNodeDefs[0];
+        }
+
+        function getWorkflowNodeNameSuffix(index) {
+            const value = Math.max(0, Number(index) || 0);
+            if (value < 26) return String.fromCharCode(65 + value);
+            return `${Math.floor(value / 26)}${String.fromCharCode(65 + (value % 26))}`;
+        }
+
+        function getUniqueWorkflowNodeTitle(type, preferredTitle = '') {
+            const def = getWorkflowNodeDef(type);
+            const existing = new Set((workflowState.graph?._nodes || [])
+                .map((node) => String(node.title || '').trim())
+                .filter(Boolean));
+            const preferred = String(preferredTitle || '').trim();
+            if (preferred && preferred !== def.label && !existing.has(preferred)) return preferred;
+            let index = 0;
+            while (index < 999) {
+                const candidate = `${def.label} ${getWorkflowNodeNameSuffix(index)}`;
+                if (!existing.has(candidate)) return candidate;
+                index += 1;
+            }
+            return `${def.label} ${Date.now()}`;
+        }
+
+        function ensureWorkflowNodeDisplayTitle(node) {
+            if (!node) return;
+            const type = String(node.properties?.workflowType || '').replace(/^imageflow\//, '');
+            const def = getWorkflowNodeDef(type);
+            const title = String(node.title || '').trim();
+            if (!title || title === def.label) {
+                node.title = getUniqueWorkflowNodeTitle(type);
+            }
+        }
+
+        function getWorkflowInputNodeSourceId(node) {
+            return String(node?.properties?.workflowId || node?.properties?.workflowConfig?.inputGroupId || '').trim();
         }
 
         function getActiveWorkflowPreset() {
@@ -11943,6 +12187,15 @@
             if (!runs.length) return { status: 'idle', run: null, state: null };
             const selected = new Set((workflowState.selectedRunIds || []).map((id) => String(id || '').trim()).filter(Boolean));
             const byUpdatedAt = (a, b) => new Date(b.updatedAt || b.createdAt || 0) - new Date(a.updatedAt || a.createdAt || 0);
+            if (type === 'input') {
+                const inputRuns = getWorkflowInputNodeRuns(node).slice().sort(byUpdatedAt);
+                if (!inputRuns.length) return { status: 'idle', run: null, state: null };
+                return {
+                    status: 'done',
+                    run: inputRuns[0],
+                    state: { status: 'done', message: '已导入内容' }
+                };
+            }
             const orderedRuns = runs.slice().sort((a, b) => {
                 const aSelected = selected.has(String(a.id || '')) ? 1 : 0;
                 const bSelected = selected.has(String(b.id || '')) ? 1 : 0;
@@ -12006,7 +12259,22 @@
         }
 
         function hasRunningWorkflowVisualRun() {
-            return getWorkflowRunsForPreset().some((run) => run.status === 'running');
+            return getWorkflowRunsForPreset().some((run) => String(run.status || '') === 'running') || getWorkflowRunningNodeIds().size > 0;
+        }
+
+        function getWorkflowRunningNodeIds() {
+            const ids = new Set();
+            getWorkflowRunsForPreset().forEach((run) => {
+                if (String(run.status || '') === 'running' && String(run.currentNodeId || '').trim()) {
+                    ids.add(String(run.currentNodeId || '').trim());
+                }
+                Object.entries(run.nodeStates || {}).forEach(([nodeId, state]) => {
+                    if (String(state?.status || '') === 'running' && String(nodeId || '').trim()) {
+                        ids.add(String(nodeId || '').trim());
+                    }
+                });
+            });
+            return ids;
         }
 
         function syncWorkflowRunAnimationLoop() {
@@ -12036,6 +12304,7 @@
             if (type === 'input') return [360, 366];
             if (type === 'template') return [360, 150];
             if (type === 'extract' || type === 'variation' || type === 'slice') return [320, 366];
+            if (type === 'confirm') return [300, 164];
             if (type === 'watermark') return [320, 318];
             if (type === 'publish') return [340, 366];
             return [270, 144];
@@ -12059,7 +12328,7 @@
             const size = node.properties?.workflowCollapsed
                 ? getWorkflowNodeCollapsedSize(type)
                 : getWorkflowNodeVisualSize(type);
-            if (!node.properties?.workflowCollapsed && ['template', 'publish', 'slice', 'variation'].includes(type)) {
+            if (!node.properties?.workflowCollapsed && ['input', 'extract', 'template', 'publish', 'slice', 'variation', 'watermark'].includes(type)) {
                 size[1] = Math.max(size[1], Number(node.properties?.workflowDynamicHeight || 0));
             }
             node.size = size.slice();
@@ -12123,8 +12392,8 @@
             if (status === 'running') {
                 const elapsed = performance.now() - (workflowState.runAnimationStartedAt || performance.now());
                 const pulse = 0.5 + Math.sin(elapsed / 260) * 0.5;
-                const alpha = 0.10 + pulse * 0.18;
-                return `rgba(96,165,250,${alpha.toFixed(3)})`;
+                const blue = Math.round(241 + pulse * 7);
+                return `rgb(${blue},247,255)`;
             }
             const colorMap = {
                 done: '#ECFDF5',
@@ -12210,6 +12479,14 @@
             return '';
         }
 
+        function getWorkflowLiteNodeByWorkflowId(workflowId) {
+            const id = String(workflowId || '').trim();
+            if (!id) return null;
+            return (workflowState.graph?._nodes || []).find((node) => (
+                String(node?.properties?.workflowId || '').trim() === id
+            )) || null;
+        }
+
         function drawWorkflowRunFrame(ctx, node, status) {
             if (!['running', 'done', 'failed', 'paused'].includes(status)) return;
             const collapsed = Boolean(node.properties?.workflowCollapsed);
@@ -12224,16 +12501,25 @@
             const elapsed = performance.now() - (workflowState.runAnimationStartedAt || performance.now());
             const pulse = status === 'running' ? 0.5 + Math.sin(elapsed / 220) * 0.5 : 0;
             ctx.save();
-            if (false && !collapsed && style.fill && status !== 'running') {
-                const panelY = status === 'running' ? 88 : 58;
+            if (!collapsed && style.fill && status !== 'running') {
+                const panelY = 58;
                 const panelHeight = Math.max(44, node.size[1] - panelY - 8);
                 drawWorkflowRoundedPanel(ctx, 8, panelY, node.size[0] - 16, panelHeight, nodeRadius, style.fill);
             }
-            if (false && !collapsed && status === 'running') {
-                ctx.globalAlpha = 0.18 + pulse * 0.18;
-                drawWorkflowRoundedPanel(ctx, 18, 104, node.size[0] - 36, 42, 999, style.color);
-                ctx.globalAlpha = 0.12 + pulse * 0.12;
-                drawWorkflowRoundedPanel(ctx, 34, 162, node.size[0] - 68, 24, 999, '#2DD4BF');
+            if (!collapsed && status === 'running') {
+                const bodyY = getWorkflowHeaderHeight() + 8;
+                const bodyHeight = Math.max(42, node.size[1] - bodyY - 10);
+                ctx.globalAlpha = 0.28 + pulse * 0.34;
+                drawWorkflowRoundedPanel(ctx, 8, bodyY, node.size[0] - 16, bodyHeight, Math.max(14, nodeRadius - 4), '#DBEAFE');
+                ctx.globalAlpha = 0.18 + pulse * 0.22;
+                drawWorkflowRoundedPanel(ctx, 18, bodyY + 12, node.size[0] - 36, Math.max(28, bodyHeight - 24), Math.max(12, nodeRadius - 8), '#BFDBFE');
+                const perimeter = Math.max(1, (node.size[0] + node.size[1]) * 2);
+                const dashOffset = -((elapsed / 18) % perimeter);
+                ctx.globalAlpha = 0.82;
+                ctx.setLineDash([58, 28]);
+                ctx.lineDashOffset = dashOffset;
+                strokeWorkflowRoundedRect(ctx, 1.5, 1.5, node.size[0] - 3, node.size[1] - 3, nodeRadius + 1, '#3B82F6', 1.8);
+                ctx.setLineDash([]);
                 ctx.globalAlpha = 1;
             }
             ctx.restore();
@@ -12259,7 +12545,7 @@
         function isWorkflowNodeRunnableFromToolbar(node) {
             if (!node) return false;
             const type = String(node.properties?.workflowType || '').replace(/^imageflow\//, '');
-            if (type === 'export') return false;
+            if (type === 'input' || type === 'export' || type === 'confirm') return false;
             const graph = node.graph || workflowState.graph;
             if (!graph) return false;
             const hasOutgoing = Object.values(graph.links || {}).some((link) => Number(link?.origin_id) === Number(node.id));
@@ -12273,14 +12559,24 @@
             const height = 38;
             const y = (Number(node.pos?.[1]) || 0) - height - 10;
             const runAction = hasWorkflowNodeRunHistory(node) ? 'retry-node' : 'run-node';
+            const type = String(node.properties?.workflowType || '').replace(/^imageflow\//, '');
             const actions = [];
             if (isWorkflowNodeRunnableFromToolbar(node)) {
                 actions.push({ action: runAction, title: runAction === 'run-node' ? '运行' : '重跑' });
+            }
+            if (isWorkflowNodePreviewModeAvailable(type)) {
+                actions.push({ action: 'node-preview-mode', title: `预览：${getWorkflowPreviewModeLabel(getWorkflowNodePreviewMode(node))}` });
             }
             actions.push(
                 { action: 'copy-node', title: '复制' },
                 { action: 'delete-node', title: '删除' }
             );
+            if (type === 'confirm') {
+                actions.splice(0, actions.length,
+                    { action: 'copy-node', title: '复制' },
+                    { action: 'delete-node', title: '删除' }
+                );
+            }
             const buttonSize = 28;
             const gap = 6;
             const totalWidth = actions.length * buttonSize + Math.max(0, actions.length - 1) * gap;
@@ -12322,11 +12618,72 @@
             ctx.fill();
         }
 
+        function drawWorkflowPreviewModeIcon(ctx, mode, cx, cy, color = '#334155') {
+            const kind = getWorkflowPreviewIconKind(mode);
+            ctx.save();
+            ctx.strokeStyle = color;
+            ctx.fillStyle = color;
+            ctx.lineWidth = 1.85;
+            ctx.lineCap = 'round';
+            ctx.lineJoin = 'round';
+            const rr = (x, y, w, h, r = 2.5, fill = false) => {
+                ctx.beginPath();
+                ctx.roundRect(x, y, w, h, r);
+                if (fill) ctx.fill();
+                else ctx.stroke();
+            };
+            const drawImageMark = (x, y, w, h) => {
+                ctx.beginPath();
+                ctx.arc(x + w * 0.28, y + h * 0.32, 0.9, 0, Math.PI * 2);
+                ctx.fill();
+                ctx.beginPath();
+                ctx.moveTo(x + w * 0.18, y + h * 0.78);
+                ctx.lineTo(x + w * 0.42, y + h * 0.52);
+                ctx.lineTo(x + w * 0.58, y + h * 0.68);
+                ctx.lineTo(x + w * 0.76, y + h * 0.48);
+                ctx.lineTo(x + w * 0.88, y + h * 0.78);
+                ctx.stroke();
+            };
+            if (kind === 'adaptive') {
+                rr(cx - 8, cy - 8, 6.2, 6.2, 1.6);
+                rr(cx + 1.8, cy - 8, 6.2, 6.2, 1.6);
+                rr(cx - 8, cy + 1.8, 6.2, 6.2, 1.6);
+                ctx.beginPath();
+                ctx.moveTo(cx + 1, cy + 4.8);
+                ctx.lineTo(cx + 8, cy + 4.8);
+                ctx.moveTo(cx + 5.8, cy + 1.8);
+                ctx.lineTo(cx + 8.8, cy + 4.8);
+                ctx.lineTo(cx + 5.8, cy + 7.8);
+                ctx.stroke();
+            } else if (kind === 'single') {
+                rr(cx - 8.2, cy - 7, 15.2, 13, 3);
+                drawImageMark(cx - 8.2, cy - 7, 15.2, 13);
+            } else if (kind === 'list') {
+                rr(cx - 8.5, cy - 7.5, 5.8, 5.8, 1.6);
+                rr(cx - 8.5, cy + 1.7, 5.8, 5.8, 1.6);
+                ctx.beginPath();
+                ctx.moveTo(cx - 0.2, cy - 5.1);
+                ctx.lineTo(cx + 8, cy - 5.1);
+                ctx.moveTo(cx - 0.2, cy - 2.3);
+                ctx.lineTo(cx + 5.5, cy - 2.3);
+                ctx.moveTo(cx - 0.2, cy + 4.1);
+                ctx.lineTo(cx + 8, cy + 4.1);
+                ctx.moveTo(cx - 0.2, cy + 6.9);
+                ctx.lineTo(cx + 5.5, cy + 6.9);
+                ctx.stroke();
+            } else {
+                rr(cx - 8, cy - 7, 16, 14, 3);
+                drawImageMark(cx - 8, cy - 7, 16, 14);
+            }
+            ctx.restore();
+        }
+
         function drawWorkflowToolbarIcon(ctx, action, cx, cy, active = false) {
             ctx.save();
             const activeColorMap = {
                 'run-node': '#2563EB',
                 'retry-node': '#F59E0B',
+                'node-preview-mode': '#2563EB',
                 'copy-node': '#0891B2',
                 'delete-node': '#DC2626'
             };
@@ -12369,6 +12726,8 @@
                 ctx.moveTo(cx + 5.5, cy - 5.5);
                 ctx.lineTo(cx - 5.5, cy + 5.5);
                 ctx.stroke();
+            } else if (action === 'node-preview-mode') {
+                drawWorkflowPreviewModeIcon(ctx, getWorkflowNodePreviewMode(), cx, cy, iconColor);
             }
             ctx.restore();
         }
@@ -12378,6 +12737,7 @@
             const fillMap = {
                 'run-node': '#EFF6FF',
                 'retry-node': '#FFF7ED',
+                'node-preview-mode': '#EFF6FF',
                 'copy-node': '#ECFEFF',
                 'delete-node': '#FEF2F2'
             };
@@ -12389,6 +12749,7 @@
             const colorMap = {
                 'run-node': '37,99,235',
                 'retry-node': '245,158,11',
+                'node-preview-mode': '37,99,235',
                 'copy-node': '8,145,178',
                 'delete-node': '220,38,38'
             };
@@ -12489,6 +12850,7 @@
             const originState = getWorkflowNodeRunVisualState(origin).status;
             const targetState = getWorkflowNodeRunVisualState(target).status;
             if (targetState === 'failed') return 'failed';
+            if (targetState === 'paused') return 'paused';
             if (targetState === 'running' && ['done', 'running'].includes(originState)) return 'active';
             if (originState === 'done' && targetState === 'done') return 'done';
             return 'idle';
@@ -12498,6 +12860,7 @@
             if (state === 'active') return { color: '#38BDF8', gradient: ['#34D399', '#2DD4BF', '#60A5FA'], width: 4.2, alpha: 0.96 };
             if (state === 'done') return { color: '#34D399', width: 3, alpha: 0.88 };
             if (state === 'failed') return { color: '#EF4444', width: 3, alpha: 0.86 };
+            if (state === 'paused') return { color: '#F59E0B', width: 3.4, alpha: 0.94 };
             return { color: '#94A3B8', width: workflowState.canvas?.connections_width || 3, alpha: 0.74 };
         }
 
@@ -12854,6 +13217,7 @@
             const toDef = getWorkflowNodeDef(toType);
             if (!fromDef || !toDef) return false;
             if (fromDef.type === 'export' || toDef.type === 'input') return false;
+            if (fromDef.type === 'confirm' || toDef.type === 'confirm') return true;
             return Number(fromDef.order) < Number(toDef.order);
         }
 
@@ -12896,6 +13260,19 @@
                 canvasEl.classList.add('workflow-cursor-default');
                 canvasEl.style.cursor = 'default';
             }
+        }
+
+        function resetWorkflowCanvasPointerStateAfterDialog() {
+            const canvas = workflowState.canvas;
+            if (!canvas) return;
+            canvas.pointer_is_down = false;
+            canvas.pointer_is_double = false;
+            canvas.last_mouse_dragging = false;
+            canvas.block_click = false;
+            if (canvas.ds) canvas.ds.dragging = false;
+            requestAnimationFrame(() => {
+                workflowState.graph?.setDirtyCanvas(true, true);
+            });
         }
 
         function startWorkflowLinkEndpointDrag(hit, event) {
@@ -13061,6 +13438,185 @@
             ctx.restore();
         }
 
+        function getWorkflowNodePreviewModeOptions() {
+            return [
+                { value: 'single', label: '单图' },
+                { value: 'adaptive', label: '自适应' },
+                { value: 'list', label: '列表' }
+            ];
+        }
+
+        function normalizeWorkflowNodePreviewMode(mode) {
+            const value = String(mode || '').trim();
+            if (['fit', 'focus'].includes(value)) return 'single';
+            if (['grid', 'masonry', 'contain'].includes(value)) return 'adaptive';
+            return getWorkflowNodePreviewModeOptions().some((item) => item.value === value) ? value : 'adaptive';
+        }
+
+        function getWorkflowNodePreviewMode(node = workflowState.selectedNode) {
+            return normalizeWorkflowNodePreviewMode(node?.properties?.workflowPreviewMode || workflowState.nodePreviewMode);
+        }
+
+        function getWorkflowInspectorPreviewMode(node = workflowState.selectedNode) {
+            return normalizeWorkflowPreviewMode(node?.properties?.workflowInspectorPreviewMode || workflowState.inspectorPreviewMode);
+        }
+
+        function getWorkflowPreviewModeLabel(mode, scope = 'node') {
+            const options = scope === 'inspector' ? getWorkflowPreviewModeOptions() : getWorkflowNodePreviewModeOptions();
+            const value = scope === 'inspector'
+                ? normalizeWorkflowPreviewMode(mode)
+                : normalizeWorkflowNodePreviewMode(mode);
+            return options.find((item) => item.value === value)?.label || '预览';
+        }
+
+        function getWorkflowPreviewIconKind(mode) {
+            const value = String(mode || '').trim();
+            if (value === 'single' || value === 'fit' || value === 'focus') return 'single';
+            if (value === 'adaptive' || value === 'grid' || value === 'masonry' || value === 'contain') return 'adaptive';
+            if (value === 'list') return 'list';
+            return 'adaptive';
+        }
+
+        function isWorkflowNodePreviewModeAvailable(type) {
+            return ['input', 'extract', 'variation', 'slice', 'template', 'watermark', 'publish'].includes(String(type || '').replace(/^imageflow\//, ''));
+        }
+
+        function setWorkflowNodePreviewMode(node, mode) {
+            if (!node?.properties) return '';
+            const nextMode = normalizeWorkflowNodePreviewMode(mode);
+            node.properties.workflowPreviewMode = nextMode;
+            return nextMode;
+        }
+
+        function cycleWorkflowNodePreviewMode(node = workflowState.selectedNode) {
+            if (!node) return;
+            const options = getWorkflowNodePreviewModeOptions();
+            const current = getWorkflowNodePreviewMode(node);
+            const index = Math.max(0, options.findIndex((item) => item.value === current));
+            const next = options[(index + 1) % options.length];
+            setWorkflowNodePreviewMode(node, next.value);
+            showWorkflowDockNotice(`节点预览：${next.label}`, 'info');
+            if (node && (workflowState.graph?._nodes || []).includes(node)) {
+                selectWorkflowCanvasNode(node);
+            }
+            workflowState.graph?.setDirtyCanvas(true, true);
+            renderWorkflowInspector();
+            commitWorkflowHistory('已切换节点预览模式');
+        }
+
+        function getWorkflowAdaptivePreviewGrid(count) {
+            const total = Math.max(1, Number(count) || 1);
+            if (total <= 3) return { columns: total, rows: 1, slots: total };
+            if (total === 4) return { columns: 2, rows: 2, slots: 4 };
+            if (total <= 6) return { columns: 3, rows: 2, slots: 6 };
+            if (total <= 8) return { columns: 4, rows: 2, slots: 8 };
+            if (total === 9) return { columns: 3, rows: 3, slots: 9 };
+            if (total <= 12) return { columns: 4, rows: 3, slots: 12 };
+            return { columns: 4, rows: 3, slots: 12 };
+        }
+
+        function getWorkflowNodePreviewContentHeight(mode, count, width, options = {}) {
+            const itemCount = Math.max(1, Number(count) || 1);
+            const gap = Number(options.gap ?? 8);
+            const pad = Number(options.pad ?? 10);
+            const innerW = Math.max(1, Number(width || 1) - pad * 2);
+            if (mode === 'single') {
+                const itemH = clampNumber(innerW * 0.62, 86, 132);
+                return pad * 2 + itemCount * itemH + Math.max(0, itemCount - 1) * gap;
+            }
+            if (mode === 'list') {
+                const rowH = 54;
+                return pad * 2 + itemCount * rowH + Math.max(0, itemCount - 1) * gap;
+            }
+            return 0;
+        }
+
+        function updateWorkflowNodeDynamicHeightForPreview(node, panelY, panelWidth, itemCount, options = {}) {
+            const mode = getWorkflowNodePreviewMode(node);
+            if (!node?.properties) return;
+            const baseHeight = getWorkflowNodeVisualSize(node.properties.workflowType || '')[1];
+            const contentHeight = ['single', 'list'].includes(mode)
+                ? getWorkflowNodePreviewContentHeight(mode, itemCount, panelWidth, options)
+                : Number(options.defaultPanelHeight || 0);
+            const desiredHeight = Math.max(baseHeight, contentHeight ? panelY + contentHeight + 14 : baseHeight);
+            if (node.properties.workflowDynamicHeight !== desiredHeight) {
+                node.properties.workflowDynamicHeight = desiredHeight;
+                node.size[1] = desiredHeight;
+                workflowState.graph?.setDirtyCanvas(true, true);
+            }
+        }
+
+        function drawWorkflowNodeImagePreviewItems(ctx, node, imagePaths, rect, options = {}) {
+            const paths = Array.from(new Set((Array.isArray(imagePaths) ? imagePaths : [])
+                .map((item) => String(item || '').trim())
+                .filter(Boolean)));
+            if (!paths.length) return;
+            const mode = getWorkflowNodePreviewMode(node);
+            const x = Number(rect.x || 0);
+            const y = Number(rect.y || 0);
+            const width = Math.max(1, Number(rect.width || 1));
+            const height = Math.max(1, Number(rect.height || 1));
+            const gap = Number(options.gap ?? 8);
+            const pad = Number(options.pad ?? 10);
+            const count = Number(options.count || paths.length);
+            const innerX = x + pad;
+            const innerY = y + pad;
+            const innerW = Math.max(1, width - pad * 2);
+            const innerH = Math.max(1, height - pad * 2);
+            const drawBadge = (box, extraCount) => {
+                if (!box || extraCount <= 0) return;
+                drawWorkflowRoundedPanel(ctx, box.x, box.y + box.height - 26, box.width, 26, [0, 0, 10, 10], 'rgba(15,23,42,0.72)');
+                ctx.fillStyle = '#FFFFFF';
+                ctx.font = '12px sans-serif';
+                ctx.textAlign = 'center';
+                ctx.fillText(`+${extraCount}`, box.x + box.width / 2, box.y + box.height - 9);
+            };
+            if (mode === 'single') {
+                const itemH = clampNumber(innerW * 0.62, 86, 132);
+                paths.forEach((filePath, index) => {
+                    const itemY = innerY + index * (itemH + gap);
+                    const image = getWorkflowPreviewImageElement(filePath);
+                    drawWorkflowImageCover(ctx, image, innerX, itemY, innerW, itemH, 10, 'contain');
+                    addWorkflowPreviewHitRegion(node, filePath, innerX, itemY, innerW, itemH);
+                });
+                return;
+            }
+            if (mode === 'list') {
+                const rowH = 54;
+                paths.forEach((filePath, index) => {
+                    const itemY = innerY + index * (rowH + gap);
+                    drawWorkflowRoundedPanel(ctx, innerX, itemY, innerW, rowH, 10, '#F8FAFC', 'rgba(74,91,122,0.08)');
+                    const image = getWorkflowPreviewImageElement(filePath);
+                    const thumb = 42;
+                    drawWorkflowImageCover(ctx, image, innerX + 6, itemY + 6, thumb, thumb, 8, 'contain');
+                    addWorkflowPreviewHitRegion(node, filePath, innerX, itemY, innerW, rowH);
+                    ctx.fillStyle = '#334155';
+                    ctx.font = '11px sans-serif';
+                    ctx.textAlign = 'left';
+                    drawWorkflowSingleLineText(ctx, pathUtil.basename(filePath), innerX + 58, itemY + rowH / 2 + 4, innerW - 68);
+                });
+                return;
+            }
+            const grid = getWorkflowAdaptivePreviewGrid(paths.length);
+            const columns = grid.columns;
+            const maxSlots = Math.max(1, Math.min(paths.length, grid.slots));
+            let lastBox = null;
+            const rows = Math.max(1, Math.ceil(maxSlots / columns));
+            const itemW = (innerW - gap * (columns - 1)) / columns;
+            const itemH = (innerH - gap * (rows - 1)) / rows;
+            paths.slice(0, maxSlots).forEach((filePath, index) => {
+                const col = index % columns;
+                const row = Math.floor(index / columns);
+                const itemX = innerX + col * (itemW + gap);
+                const itemY = innerY + row * (itemH + gap);
+                const image = getWorkflowPreviewImageElement(filePath);
+                drawWorkflowImageCover(ctx, image, itemX, itemY, itemW, itemH, 10, 'contain');
+                addWorkflowPreviewHitRegion(node, filePath, itemX, itemY, itemW, itemH);
+                lastBox = { x: itemX, y: itemY, width: itemW, height: itemH };
+            });
+            drawBadge(lastBox, Math.max(0, count - maxSlots));
+        }
+
         function getWorkflowPreviewImageElement(filePath) {
             const source = String(filePath || '');
             const src = /^(data:|file:|https?:)/i.test(source) ? source : toFileUrl(source);
@@ -13192,6 +13748,39 @@
                 .filter(Boolean);
         }
 
+        function hasWorkflowDropFiles(dataTransfer) {
+            const types = Array.from(dataTransfer?.types || []);
+            return types.includes('Files') || (dataTransfer?.files?.length || 0) > 0;
+        }
+
+        function getWorkflowCanvasDropPosition(event) {
+            if (!workflowState.canvas || !event) return null;
+            try {
+                const [canvasX, canvasY] = workflowState.canvas.convertEventToCanvasOffset(event);
+                return [canvasX, canvasY];
+            } catch {
+                try {
+                    workflowState.canvas.adjustMouseEvent(event);
+                    return [event.canvasX, event.canvasY];
+                } catch {
+                    return null;
+                }
+            }
+        }
+
+        function createWorkflowInputNodeForDrop(event) {
+            const dropPos = getWorkflowCanvasDropPosition(event);
+            const size = getWorkflowNodeVisualSize('input');
+            const node = createWorkflowCanvasNode('input', Array.isArray(dropPos)
+                ? [dropPos[0] - size[0] / 2, dropPos[1] - Math.min(72, size[1] / 2)]
+                : null);
+            if (!node) return null;
+            selectWorkflowCanvasNode(node);
+            workflowState.graph?.setDirtyCanvas(true, true);
+            commitWorkflowHistory('已拖拽创建导入节点');
+            return node;
+        }
+
         function setWorkflowInputDropTarget(targetNode = null) {
             let changed = false;
             workflowState.workflowInputDropTargetNode = targetNode || null;
@@ -13215,7 +13804,7 @@
             try {
                 const result = await ipcRenderer.invoke('workflow:import-inputs', {
                     workflowPresetId: getActiveWorkflowPresetId(),
-                    sourceInputNodeId: String(targetNode?.properties?.workflowConfig?.inputGroupId || targetNode?.properties?.workflowId || '').trim(),
+                    sourceInputNodeId: getWorkflowInputNodeSourceId(targetNode),
                     filePaths: paths
                 });
                 workflowState.data = result;
@@ -13224,6 +13813,7 @@
                 workflowState.selectedRunIds = importedIds;
                 workflowState.runModalRunIds = importedIds.slice();
                 syncWorkflowRunAnimationLoop();
+                syncWorkflowDotFieldLoop();
                 syncWorkflowInputNodePreview();
                 renderWorkflowRuns();
                 renderWorkflowRunModalList();
@@ -13242,13 +13832,18 @@
                 canvasEl.addEventListener(eventName, (event) => {
                     event.preventDefault();
                     event.stopPropagation();
+                    if (!hasWorkflowDropFiles(event.dataTransfer)) {
+                        if (event.dataTransfer) event.dataTransfer.dropEffect = 'none';
+                        setWorkflowInputDropTarget(null);
+                        return;
+                    }
                     const node = getWorkflowNodeFromPointerEvent(event);
                     const isInputNode = node?.properties?.workflowType === 'input';
                     if (isInputNode) {
                         if (event.dataTransfer) event.dataTransfer.dropEffect = 'copy';
                         setWorkflowInputDropTarget(node);
                     } else {
-                        if (event.dataTransfer) event.dataTransfer.dropEffect = 'none';
+                        if (event.dataTransfer) event.dataTransfer.dropEffect = 'copy';
                         setWorkflowInputDropTarget(null);
                     }
                 }, true);
@@ -13261,14 +13856,22 @@
             canvasEl.addEventListener('drop', async (event) => {
                 event.preventDefault();
                 event.stopPropagation();
-                const node = getWorkflowNodeFromPointerEvent(event) || workflowState.workflowInputDropTargetNode;
+                const paths = getWorkflowDropFilePaths(event.dataTransfer);
+                let node = getWorkflowNodeFromPointerEvent(event) || workflowState.workflowInputDropTargetNode;
                 const isInputNode = node?.properties?.workflowType === 'input';
                 setWorkflowInputDropTarget(null);
-                if (!isInputNode) {
-                    updateWorkflowStatus('请把图片或文件夹拖到“导入图片/文件夹”节点上');
+                if (!paths.length) {
+                    updateWorkflowStatus('拖拽内容没有可读取的本地路径');
                     return;
                 }
-                await importWorkflowDroppedInputs(getWorkflowDropFilePaths(event.dataTransfer), node);
+                if (!isInputNode) {
+                    node = createWorkflowInputNodeForDrop(event);
+                    if (!node) {
+                        updateWorkflowStatus('创建导入节点失败');
+                        return;
+                    }
+                }
+                await importWorkflowDroppedInputs(paths, node);
             }, true);
         }
 
@@ -13364,10 +13967,117 @@
         function drawWorkflowCanvasGrid(canvas, ctx) {
             const width = canvas.width;
             const height = canvas.height;
+            const pointer = workflowState.dotFieldPointer || { x: -9999, y: -9999 };
+            const now = performance.now();
+            const draggedNode = workflowState.canvas?.node_dragged || workflowState.dotFieldDraggingNode || null;
+            const ds = workflowState.canvas?.ds || { scale: 1, offset: [0, 0] };
+            const scale = Number(ds.scale || 1) || 1;
+            const offset = Array.isArray(ds.offset) ? ds.offset : [0, 0];
+            const toGraphPoint = (point) => {
+                try {
+                    if (workflowState.canvas?.convertCanvasToOffset) {
+                        const converted = workflowState.canvas.convertCanvasToOffset([point.x, point.y]);
+                        return { x: Number(converted?.[0] || 0), y: Number(converted?.[1] || 0) };
+                    }
+                } catch (_) {}
+                return {
+                    x: point.x / scale - Number(offset[0] || 0),
+                    y: point.y / scale - Number(offset[1] || 0)
+                };
+            };
+            const toCanvasPoint = (point) => {
+                try {
+                    if (workflowState.canvas?.convertOffsetToCanvas) {
+                        const converted = workflowState.canvas.convertOffsetToCanvas([point.x, point.y]);
+                        return { x: Number(converted?.[0] || 0), y: Number(converted?.[1] || 0) };
+                    }
+                } catch (_) {}
+                return {
+                    x: (point.x + Number(offset[0] || 0)) * scale,
+                    y: (point.y + Number(offset[1] || 0)) * scale
+                };
+            };
+            const graphPointer = toGraphPoint(pointer);
+            const runningNodeIds = getWorkflowRunningNodeIds();
+            const nodes = (workflowState.graph?._nodes || []).map((node) => {
+                const nodeX = Number(node.pos?.[0] || 0);
+                const nodeY = Number(node.pos?.[1] || 0);
+                const nodeW = Number(node.size?.[0] || 0);
+                const nodeH = Number(node.size?.[1] || 0);
+                const workflowId = String(node?.properties?.workflowId || '').trim();
+                const status = getWorkflowNodeRuntimeStatus(node);
+                const hover = (
+                    graphPointer.x >= nodeX &&
+                    graphPointer.x <= nodeX + nodeW &&
+                    graphPointer.y >= nodeY &&
+                    graphPointer.y <= nodeY + nodeH
+                );
+                const center = toCanvasPoint({ x: nodeX + nodeW / 2, y: nodeY + nodeH / 2 });
+                return {
+                    x: center.x,
+                    y: center.y,
+                    running: status === 'running' || runningNodeIds.has(workflowId),
+                    done: status === 'done',
+                    selected: workflowState.selectedNode === node,
+                    hover,
+                    dragging: draggedNode === node
+                };
+            });
             ctx.save();
             ctx.setTransform(1, 0, 0, 1, 0, 0);
-            ctx.fillStyle = '#F8FAFC';
+            const bg = ctx.createLinearGradient(0, 0, width, height);
+            bg.addColorStop(0, '#F8FAFC');
+            bg.addColorStop(0.56, '#F7FBFF');
+            bg.addColorStop(1, '#F8FFF9');
+            ctx.fillStyle = bg;
             ctx.fillRect(0, 0, width, height);
+            const gap = 24;
+            const t = now / 1000;
+            for (let y = 12; y < height; y += gap) {
+                for (let x = 12; x < width; x += gap) {
+                    const px = pointer.x;
+                    const py = pointer.y;
+                    const mouseDistance = Math.hypot(px - x, py - y);
+                    let force = Math.max(0, 1 - mouseDistance / 120);
+                    let dx = force * Math.cos(mouseDistance / 18 - t * 5) * 3.35;
+                    let dy = force * Math.sin(mouseDistance / 18 - t * 5) * 3.35;
+                    let alpha = 0.17 + force * 0.28;
+                    let radius = 1.1 + force * 1.0;
+                    let color = '37, 99, 235';
+                    nodes.forEach((item) => {
+                        const nx = item.x;
+                        const ny = item.y;
+                        const distance = Math.hypot(nx - x, ny - y);
+                        const range = item.dragging ? 320 : (item.running ? 292 : (item.selected || item.hover) ? 205 : 108);
+                        const nodeForce = Math.max(0, 1 - distance / range);
+                        if (nodeForce <= 0) return;
+                        const wave = Math.sin(distance / 18 - t * (item.dragging ? 8.5 : item.running ? 6.8 : 3.2));
+                        const strength = item.dragging ? 13.5 : item.running ? 10.2 : (item.selected || item.hover) ? 5.4 : 2.6;
+                        dx += nodeForce * wave * strength;
+                        dy += nodeForce * Math.cos(distance / 20 - t * 4.4) * strength;
+                        alpha += nodeForce * (item.dragging ? 0.56 : item.running ? 0.48 : (item.selected || item.hover) ? 0.28 : 0.14);
+                        radius += nodeForce * (item.dragging ? 2.55 : item.running ? 2.05 : (item.selected || item.hover) ? 1.28 : 0.72);
+                        color = item.dragging ? '14, 165, 233' : item.running ? '59, 130, 246' : item.done ? '34, 197, 94' : '96, 165, 250';
+                    });
+                    ctx.beginPath();
+                    ctx.arc(x + dx, y + dy, Math.min(4.2, radius), 0, Math.PI * 2);
+                    ctx.fillStyle = `rgba(${color}, ${Math.min(0.78, alpha)})`;
+                    ctx.fill();
+                }
+            }
+            nodes.filter((item) => item.running || item.dragging).forEach((item) => {
+                const color = item.dragging ? '14, 165, 233' : '59, 130, 246';
+                const base = item.dragging ? 118 : 96;
+                for (let i = 0; i < 3; i += 1) {
+                    const radius = base + ((now / (item.dragging ? 7 : 9) + i * 46) % 138);
+                    const alpha = Math.max(0, (1 - (radius - base) / 138) * (item.dragging ? 0.24 : 0.18));
+                    ctx.beginPath();
+                    ctx.arc(item.x, item.y, radius, 0, Math.PI * 2);
+                    ctx.strokeStyle = `rgba(${color}, ${alpha.toFixed(3)})`;
+                    ctx.lineWidth = item.dragging ? 1.4 : 1.1;
+                    ctx.stroke();
+                }
+            });
             ctx.restore();
             return true;
         }
@@ -13390,18 +14100,49 @@
         }
 
         function getWorkflowNodeActionButtons(node, type) {
+            const width = Number(node?.size?.[0] || getWorkflowNodeVisualSize(type)[0]);
+            const actionWidth = type === 'confirm' ? Math.min(150, width - 36) : 86;
+            const rowWidth = Math.max(160, width - 36);
             if (type === 'input') {
                 return [
-                    { action: 'import-files', label: '导入图片', x: 18, y: 86, width: 94, height: 28 },
-                    { action: 'import-folders', label: '导入文件夹', x: 120, y: 86, width: 106, height: 28 }
+                    { action: 'import-auto', label: '导入', x: 18, y: 86, width: actionWidth, height: 30, rowWidth }
                 ];
             }
             if (type === 'export') {
                 return [
-                    { action: 'export-dir', label: '选择目录', x: 18, y: 92, width: 96, height: 28 }
+                    { action: 'export-dir', label: '选择目录', x: 18, y: 92, width: actionWidth, height: 30, rowWidth }
+                ];
+            }
+            if (type === 'confirm') {
+                return [
+                    { action: 'confirm-manual', label: '确认继续', icon: 'check', x: (width - actionWidth) / 2, y: 108, width: actionWidth, height: 32, rowWidth: actionWidth }
                 ];
             }
             return [];
+        }
+
+        function getWorkflowNodeActionSummary(node, type) {
+            if (type === 'input') {
+                const runs = getWorkflowInputNodeRuns(node);
+                if (!runs.length) return { text: '未导入内容', title: '' };
+                const latest = runs.slice().sort((a, b) => new Date(b.updatedAt || b.createdAt || 0) - new Date(a.updatedAt || a.createdAt || 0))[0];
+                const count = runs.length;
+                const imageCount = runs.reduce((sum, run) => sum + getWorkflowRunImageCount(run), 0);
+                const sourcePath = String(latest?.sourcePath || latest?.name || '').trim();
+                return {
+                    text: sourcePath || `${count} 个父级 / ${imageCount} 张图`,
+                    title: sourcePath || ''
+                };
+            }
+            if (type === 'export') {
+                const dir = String(node?.properties?.workflowConfig?.outputDir || '').trim();
+                return { text: dir || '未选择目录', title: dir };
+            }
+            if (type === 'confirm') {
+                const run = getWorkflowPausedConfirmRunForNode(node);
+                return { text: '', title: run?.name || '' };
+            }
+            return { text: '', title: '' };
         }
 
         function getWorkflowDefaultPromptOptions(type) {
@@ -13578,14 +14319,62 @@
 
         function drawWorkflowNodeActionButtons(ctx, node, type) {
             const buttons = getWorkflowNodeActionButtons(node, type);
+            const localMouse = getWorkflowCanvasLocalMouse(node);
             ctx.save();
             buttons.forEach((button) => {
-                drawWorkflowRoundedPanel(ctx, button.x, button.y, button.width, button.height, 999, '#FFFFFF', 'rgba(100,116,139,0.24)');
-                ctx.fillStyle = '#1F2937';
+                const summary = getWorkflowNodeActionSummary(node, type);
+                const summaryX = button.x + button.width + 12;
+                const summaryW = Math.max(0, (button.rowWidth || (node.size[0] - 36)) - button.width - 12);
+                const hover = localMouse && localMouse[0] >= button.x && localMouse[0] <= button.x + button.width && localMouse[1] >= button.y && localMouse[1] <= button.y + button.height;
+                const disabled = button.action === 'confirm-manual' && !getWorkflowPausedConfirmRunForNode(node);
+                const activeHover = hover;
+                const pressed = activeHover && workflowState.canvas?.pointer_is_down;
+                const hoverWave = activeHover && !disabled && !pressed ? Math.sin(performance.now() / 160) * 0.8 : 0;
+                const liftOffset = disabled ? 0 : (pressed ? 1 : (activeHover ? -2.5 + hoverWave : 0));
+                const fill = disabled ? '#F1F5F9' : '#FFFFFF';
+                const stroke = disabled ? 'rgba(148,163,184,0.20)' : (activeHover ? 'rgba(15,23,42,0.30)' : 'rgba(100,116,139,0.22)');
+                if (activeHover && !disabled && !pressed) {
+                    workflowState.graph?.setDirtyCanvas(true, true);
+                    ctx.save();
+                    ctx.globalAlpha = 0.10 + (hoverWave + 0.8) * 0.035;
+                    drawWorkflowRoundedPanel(ctx, button.x, button.y + 3, button.width, button.height, 999, '#2563EB');
+                    ctx.restore();
+                }
+                drawWorkflowRoundedPanel(ctx, button.x, button.y + liftOffset, button.width, button.height, 999, fill, stroke);
+                ctx.fillStyle = disabled ? '#94A3B8' : (activeHover ? '#0F172A' : '#1F2937');
                 ctx.font = '12px sans-serif';
                 ctx.textAlign = 'center';
                 ctx.textBaseline = 'middle';
-                ctx.fillText(button.label, button.x + button.width / 2, button.y + button.height / 2 + 0.5);
+                if (button.icon === 'check') {
+                    const textWidth = ctx.measureText(button.label).width;
+                    const iconSize = 11;
+                    const gap = 6;
+                    const groupX = button.x + (button.width - textWidth - iconSize - gap) / 2;
+                    const centerY = button.y + liftOffset + button.height / 2;
+                    ctx.save();
+                    ctx.strokeStyle = ctx.fillStyle;
+                    ctx.lineWidth = 2;
+                    ctx.lineCap = 'round';
+                    ctx.lineJoin = 'round';
+                    ctx.beginPath();
+                    ctx.moveTo(groupX + 1, centerY);
+                    ctx.lineTo(groupX + 4.5, centerY + 4);
+                    ctx.lineTo(groupX + iconSize, centerY - 4);
+                    ctx.stroke();
+                    ctx.restore();
+                    ctx.textAlign = 'left';
+                    ctx.fillText(button.label, groupX + iconSize + gap, centerY + 0.5);
+                } else {
+                    ctx.fillText(button.label, button.x + button.width / 2, button.y + liftOffset + button.height / 2 + 0.5);
+                }
+                if (summaryW > 18) {
+                    ctx.fillStyle = summary.text === '未导入内容' || summary.text === '未选择目录' || summary.text === '暂无待确认'
+                    ? '#94A3B8'
+                        : '#475569';
+                    ctx.font = '11px sans-serif';
+                    ctx.textAlign = 'left';
+                    drawWorkflowSingleLineText(ctx, summary.text, summaryX, button.y + button.height / 2 + 0.5, summaryW);
+                }
             });
             ctx.restore();
         }
@@ -13668,6 +14457,15 @@
             )) || null;
         }
 
+        function getWorkflowCanvasLocalMouse(node) {
+            const mouse = workflowState.canvas?.graph_mouse || workflowState.canvas?.last_mouse || null;
+            if (!node || !Array.isArray(mouse)) return null;
+            return [
+                Number(mouse[0] || 0) - Number(node.pos?.[0] || 0),
+                Number(mouse[1] || 0) - Number(node.pos?.[1] || 0)
+            ];
+        }
+
         function selectWorkflowCanvasNode(node) {
             if (!node) return;
             if (workflowState.selectedNode !== node) {
@@ -13685,16 +14483,26 @@
             workflowState.graph?.setDirtyCanvas(true, true);
         }
 
-        function handleWorkflowNodeAction(node, action) {
+        async function handleWorkflowNodeAction(node, action) {
             selectWorkflowCanvasNode(node);
-            if (action === 'import-files') {
-                importWorkflowInputs('files');
+            if (action === 'import-auto') {
+                const mode = String(node?.properties?.workflowConfig?.mode || 'image-folder');
+                await importWorkflowInputs(mode === 'folder' ? 'folders' : 'files', node);
+            } else if (action === 'import-files') {
+                await importWorkflowInputs('files', node);
             } else if (action === 'import-folders') {
-                importWorkflowInputs('folders');
+                await importWorkflowInputs('folders', node);
             } else if (action === 'config') {
                 updateWorkflowStatus(`正在配置：${node.title || '节点'}`);
             } else if (action === 'export-dir') {
-                selectWorkflowExportDir();
+                await selectWorkflowExportDir(node);
+            } else if (action === 'confirm-manual') {
+                const run = getWorkflowPausedConfirmRunForNode(node);
+                if (run) {
+                    await confirmWorkflowManualNode(run);
+                } else {
+                    showWorkflowDockNotice('当前人工确认节点没有待确认任务', 'warning');
+                }
             } else if (action === 'run-node') {
                 retryWorkflowNodeFromCanvas(node, { fresh: true });
             } else if (action === 'retry-node') {
@@ -13707,6 +14515,10 @@
                 const presetRuns = getWorkflowRunsForPreset();
                 const nodeType = String(node?.properties?.workflowType || '').replace(/^imageflow\//, '');
                 const nodeId = String(node?.properties?.workflowId || '').trim();
+                if (nodeType === 'input') {
+                    showWorkflowDockNotice('导入节点只负责接入图片，不需要运行', 'warning');
+                    return;
+                }
                 const nodeBoundRuns = nodeType === 'input' ? getWorkflowInputNodeRuns(node) : [];
                 const run = (nodeBoundRuns.length
                     ? (nodeBoundRuns.find((item) => workflowState.selectedRunIds.includes(item.id)) || nodeBoundRuns[0])
@@ -13724,11 +14536,6 @@
                 }
                 const graph = workflowGraphToPayload();
                 await saveWorkflowPreset();
-                const validation = await validateWorkflowNow();
-                if (!canRunWorkflowAfterValidation(validation)) {
-                    blockWorkflowRunForValidation(validation);
-                    return;
-                }
                 workflowState.data = await ipcRenderer.invoke('workflow:retry-node', {
                     graph,
                     runId: run.id,
@@ -13738,6 +14545,7 @@
                 workflowState.selectedRunIds = [run.id];
                 watchWorkflowRunFailure(run.id);
                 syncWorkflowRunAnimationLoop();
+                syncWorkflowDotFieldLoop();
                 updateWorkflowStatus(options.fresh ? `已运行节点：${node.title || '节点'}` : `已从 ${node.title || '节点'} 重新运行`);
                 renderWorkflowRuns();
                 renderWorkflowHome();
@@ -13754,7 +14562,7 @@
             const def = getWorkflowNodeDef(type);
             const nextNode = LiteGraph.createNode(`imageflow/${def.type}`);
             if (!nextNode) return;
-            nextNode.title = node.title || def.label;
+            nextNode.title = getUniqueWorkflowNodeTitle(type, `${node.title || def.label} 副本`);
             nextNode.pos = [
                 (Number(node.pos?.[0]) || 0) + 44,
                 (Number(node.pos?.[1]) || 0) + 44
@@ -13766,6 +14574,15 @@
             } catch {
                 nextNode.properties.workflowConfig = { ...(node.properties?.workflowConfig || {}) };
             }
+            if (def.type === 'input') {
+                nextNode.properties.workflowConfig = {
+                    ...(nextNode.properties.workflowConfig || {}),
+                    inputGroupId: `wf-input-group-${Date.now()}-${workflowState.nodeSeq}-${Math.random().toString(16).slice(2, 6)}`,
+                    inputRunIds: []
+                };
+            }
+            nextNode.properties.workflowPreviewMode = getWorkflowNodePreviewMode(node);
+            nextNode.properties.workflowInspectorPreviewMode = getWorkflowInspectorPreviewMode(node);
             nextNode.properties.workflowCollapsed = Boolean(node.properties?.workflowCollapsed);
             applyWorkflowNodeVisualLayout(nextNode);
             workflowState.graph.add(nextNode);
@@ -13812,6 +14629,8 @@
                 await retryWorkflowNodeFromCanvas(node, { fresh: true });
             } else if (action === 'retry-node') {
                 await retryWorkflowNodeFromCanvas(node);
+            } else if (action === 'node-preview-mode') {
+                cycleWorkflowNodePreviewMode(node);
             } else if (action === 'copy-node') {
                 copyWorkflowCanvasNode(node);
             } else if (action === 'delete-node') {
@@ -13983,14 +14802,15 @@
 
         function drawWorkflowInputNodeBody(ctx, node) {
             const preview = node.properties.workflowPreview || {};
-            const thumbs = Array.isArray(preview.thumbs) ? preview.thumbs.slice(0, 6) : [];
+            const thumbs = Array.isArray(preview.thumbs) ? preview.thumbs.slice(0, 96) : [];
             drawWorkflowNodePorts(ctx, node, 'input');
-            ctx.fillStyle = '#64748B';
-            ctx.font = '12px sans-serif';
-            ctx.textAlign = 'left';
-            drawWorkflowSingleLineText(ctx, preview.text || '等待导入图片或文件夹', 238, 103, node.size[0] - 256);
             drawWorkflowNodeActionButtons(ctx, node, 'input');
-            drawWorkflowRoundedPanel(ctx, 12, 122, node.size[0] - 24, 230, getWorkflowPreviewNodeRadius(), '#EEF4FF', 'rgba(74,91,122,0.10)');
+            const panelX = 12;
+            const panelY = 122;
+            const panelW = node.size[0] - 24;
+            updateWorkflowNodeDynamicHeightForPreview(node, panelY, panelW, thumbs.length, { pad: 10, gap: 8, defaultPanelHeight: 230 });
+            const panelH = Math.max(230, node.size[1] - panelY - 14);
+            drawWorkflowRoundedPanel(ctx, panelX, panelY, panelW, panelH, getWorkflowPreviewNodeRadius(), '#EEF4FF', 'rgba(74,91,122,0.10)');
             if (!thumbs.length) {
                 ctx.fillStyle = '#94A3B8';
                 ctx.font = '13px sans-serif';
@@ -13998,38 +14818,12 @@
                 ctx.fillText('导入后显示预览', node.size[0] / 2, 238);
                 return;
             }
-            const panelX = 12;
-            const panelY = 122;
-            const panelW = node.size[0] - 24;
-            const panelH = 230;
-            const pad = 10;
-            const gap = 8;
-            const columns = thumbs.length === 1 ? 1 : (thumbs.length === 4 ? 2 : Math.min(3, thumbs.length));
-            const rows = Math.ceil(thumbs.length / columns);
-            const thumbW = (panelW - pad * 2 - gap * (columns - 1)) / columns;
-            const thumbH = (panelH - pad * 2 - gap * (rows - 1)) / rows;
-            thumbs.forEach((filePath, index) => {
-                const col = index % columns;
-                const row = Math.floor(index / columns);
-                const x = panelX + pad + col * (thumbW + gap);
-                const y = panelY + pad + row * (thumbH + gap);
-                const image = getWorkflowPreviewImageElement(filePath);
-                drawWorkflowImageCover(ctx, image, x, y, thumbW, thumbH, 10, 'contain');
-                addWorkflowPreviewHitRegion(node, filePath, x, y, thumbW, thumbH);
-            });
-            const extraCount = Math.max(0, Number(preview.count || 0) - thumbs.length);
-            if (extraCount > 0) {
-                const lastIndex = thumbs.length - 1;
-                const col = lastIndex % columns;
-                const row = Math.floor(lastIndex / columns);
-                const x = panelX + pad + col * (thumbW + gap);
-                const y = panelY + pad + row * (thumbH + gap);
-                drawWorkflowRoundedPanel(ctx, x, y + thumbH - 26, thumbW, 26, [0, 0, 10, 10], 'rgba(15,23,42,0.72)');
-                ctx.fillStyle = '#FFFFFF';
-                ctx.font = '12px sans-serif';
-                ctx.textAlign = 'center';
-                ctx.fillText(`+${extraCount}`, x + thumbW / 2, y + thumbH - 9);
-            }
+            drawWorkflowNodeImagePreviewItems(ctx, node, thumbs, {
+                x: panelX,
+                y: panelY,
+                width: panelW,
+                height: panelH
+            }, { count: Number(preview.count || thumbs.length), pad: 10, gap: 8 });
         }
 
         function getWorkflowInputPreviewData() {
@@ -14115,6 +14909,55 @@
             return runs.slice(0, limit);
         }
 
+        function resolveWorkflowPayloadNodeId(graph, nodeId) {
+            const value = String(nodeId || '').trim();
+            const nodes = Array.isArray(graph?.nodes) ? graph.nodes : [];
+            if (!value) return '';
+            if (nodes.some((node) => String(node.id || '') === value)) return value;
+            return nodes.find((node) => (
+                node.type === 'input'
+                && String(node.config?.inputGroupId || '').trim() === value
+            ))?.id || '';
+        }
+
+        function getWorkflowPayloadReachableIds(graph, startNodeId) {
+            const nodes = Array.isArray(graph?.nodes) ? graph.nodes : [];
+            const links = Array.isArray(graph?.links) ? graph.links : [];
+            const nodeIds = new Set(nodes.map((node) => String(node.id || '').trim()).filter(Boolean));
+            const startId = resolveWorkflowPayloadNodeId(graph, startNodeId);
+            const reachable = new Set();
+            const queue = startId && nodeIds.has(startId) ? [startId] : [];
+            while (queue.length) {
+                const id = queue.shift();
+                if (!id || reachable.has(id)) continue;
+                reachable.add(id);
+                links.forEach((link) => {
+                    if (String(link.from || '').trim() !== id) return;
+                    const nextId = String(link.to || '').trim();
+                    if (nextId && nodeIds.has(nextId) && !reachable.has(nextId)) queue.push(nextId);
+                });
+            }
+            return reachable;
+        }
+
+        function isWorkflowRunReachableToNode(run, node) {
+            const nodeId = String(node?.properties?.workflowId || '').trim();
+            if (!nodeId) return false;
+            const type = String(node?.properties?.workflowType || '').replace(/^imageflow\//, '');
+            if (type === 'input') {
+                return getWorkflowInputNodeRuns(node).some((item) => String(item.id || '') === String(run?.id || ''));
+            }
+            const graph = workflowGraphToPayload();
+            const reachable = getWorkflowPayloadReachableIds(graph, run?.sourceInputNodeId || run?.inputNodeId || '');
+            return reachable.has(nodeId);
+        }
+
+        function getWorkflowPreviewRunsForNode(node, limit = 8) {
+            return getWorkflowPreviewRuns(999)
+                .filter((run) => isWorkflowRunReachableToNode(run, node))
+                .slice(0, limit);
+        }
+
         function getWorkflowArtifactImageList(value) {
             return Array.from(new Set((Array.isArray(value) ? value : [value])
                 .map((item) => String(item || '').trim())
@@ -14124,7 +14967,7 @@
         function getWorkflowNodePreviewArtifactEntries(node, limit = 8) {
             const nodeId = String(node?.properties?.workflowId || '').trim();
             if (!nodeId || !isWorkflowNodeReachableFromInput(node)) return [];
-            return getWorkflowPreviewRuns(limit)
+            return getWorkflowPreviewRunsForNode(node, limit)
                 .map((run) => ({
                     run,
                     artifacts: run?.artifacts?.nodeArtifacts?.[nodeId] || null
@@ -14157,7 +15000,7 @@
                     outputCount += sliceImages.length;
                 }
                 candidates.forEach((imagePath) => {
-                    const limit = type === 'slice' ? 60 : 5;
+                    const limit = 96;
                     if (thumbs.length < limit) thumbs.push(imagePath);
                 });
             });
@@ -14203,6 +15046,7 @@
             const type = node.properties?.workflowType || '';
             const panelY = type === 'variation' ? 222 : 186;
             const thumbs = Array.isArray(preview?.thumbs) ? preview.thumbs : [];
+            const previewMode = getWorkflowNodePreviewMode(node);
             const isGridPreview = (type === 'extract' || type === 'slice' || type === 'variation') && thumbs.length > 1;
             const thumbGap = 8;
             const columns = type === 'variation'
@@ -14213,7 +15057,9 @@
                 ? Math.max(120, gridWidth)
                 : Math.floor((gridWidth - (columns - 1) * thumbGap) / columns);
             const rows = isGridPreview ? Math.max(1, Math.ceil(thumbs.length / columns)) : 1;
-            const desiredHeight = isGridPreview
+            const desiredHeight = thumbs.length && ['single', 'list'].includes(previewMode)
+                ? Math.max(getWorkflowNodeVisualSize(type || 'extract')[1], panelY + getWorkflowNodePreviewContentHeight(previewMode, thumbs.length, gridWidth + 20, { pad: 10, gap: thumbGap }) + 14)
+                : isGridPreview
                 ? Math.max(366, panelY + 18 + rows * thumbSize + (rows - 1) * thumbGap + 18)
                 : getWorkflowNodeVisualSize(type || 'extract')[1];
             if (node.properties && node.properties.workflowDynamicHeight !== desiredHeight) {
@@ -14246,31 +15092,16 @@
                 ctx.fillText('运行后显示预览', node.size[0] / 2, panelY + panelHeight / 2 + 4);
                 return;
             }
-            if (isGridPreview) {
-                const gridX = 22;
-                const gridY = panelY + 14;
-                thumbs.forEach((imagePath, index) => {
-                    const col = index % columns;
-                    const row = Math.floor(index / columns);
-                    const x = gridX + col * (thumbSize + thumbGap);
-                    const y = gridY + row * (thumbSize + thumbGap);
-                    const image = getWorkflowPreviewImageElement(imagePath);
-                    drawWorkflowImageCover(ctx, image, x, y, thumbSize, thumbSize, 10, 'contain');
-                    addWorkflowPreviewHitRegion(node, imagePath, x, y, thumbSize, thumbSize);
-                });
-                return;
-            }
-            const mainImage = getWorkflowPreviewImageElement(thumbs[0]);
-            drawWorkflowImageCover(ctx, mainImage, 22, panelY + 10, node.size[0] - 44, panelHeight - 20, 14, 'contain');
-            addWorkflowPreviewHitRegion(node, thumbs[0], 22, panelY + 10, node.size[0] - 44, panelHeight - 20);
-            const extraCount = Math.max(0, Number(preview?.count || thumbs.length) - 1);
-            if (extraCount > 0) {
-                drawWorkflowRoundedPanel(ctx, node.size[0] - 82, panelY + panelHeight - 40, 56, 24, 999, 'rgba(15,23,42,0.72)');
-                ctx.fillStyle = '#FFFFFF';
-                ctx.font = '12px sans-serif';
-                ctx.textAlign = 'center';
-                ctx.fillText(`+${extraCount}`, node.size[0] - 54, panelY + panelHeight - 24);
-            }
+            drawWorkflowNodeImagePreviewItems(ctx, node, thumbs, {
+                x: 12,
+                y: panelY,
+                width: node.size[0] - 24,
+                height: panelHeight
+            }, { count: Number(preview?.count || thumbs.length), pad: 10, gap: thumbGap });
+        }
+
+        function drawWorkflowConfirmNodeBody(ctx, node) {
+            drawWorkflowNodeActionButtons(ctx, node, 'confirm');
         }
 
         function getWorkflowTemplateNodeGroup(node) {
@@ -14297,7 +15128,7 @@
                     count: 0
                 };
             }
-            getWorkflowPreviewRuns(12).forEach((run) => {
+            getWorkflowPreviewRunsForNode(node, 12).forEach((run) => {
                 const nodeArtifacts = run?.artifacts?.nodeArtifacts?.[nodeId] || {};
                 const outputItems = Array.isArray(nodeArtifacts.templateOutputItems)
                     ? nodeArtifacts.templateOutputItems
@@ -14362,6 +15193,7 @@
             const imagePaths = Array.isArray(preview?.imagePaths) ? preview.imagePaths.filter(Boolean) : (preview?.src ? [preview.src] : []);
             const visibleImages = imagePaths;
             const generatedRows = Array.isArray(preview?.rows) ? preview.rows.filter((row) => Array.isArray(row.imagePaths) && row.imagePaths.length) : [];
+            const previewMode = getWorkflowNodePreviewMode(node);
             if (!preview?.generated) {
                 const baseHeight = getWorkflowNodeVisualSize('template')[1];
                 if (node.properties && node.properties.workflowDynamicHeight !== baseHeight) {
@@ -14376,7 +15208,10 @@
             const thumbGap = 10;
             const rows = Math.max(1, Math.ceil(Math.max(visibleImages.length, 1) / columns));
             const panelY = 154;
-            const desiredHeight = Math.max(366, panelY + 14 + (generatedRows.length ? generatedRows.length * 106 : (36 + rows * thumbSize + (rows - 1) * thumbGap)) + 18);
+            const previewHeight = ['single', 'list'].includes(previewMode)
+                ? getWorkflowNodePreviewContentHeight(previewMode, visibleImages.length, node.size[0] - 24, { pad: 10, gap: thumbGap })
+                : (generatedRows.length ? generatedRows.length * 106 : (36 + rows * thumbSize + (rows - 1) * thumbGap));
+            const desiredHeight = Math.max(366, panelY + 14 + previewHeight + 18);
             if (node.properties && node.properties.workflowDynamicHeight !== desiredHeight) {
                 node.properties.workflowDynamicHeight = desiredHeight;
                 node.size[1] = desiredHeight;
@@ -14389,7 +15224,7 @@
             drawWorkflowSingleLineText(ctx, preview?.text || '请选择模板', 18, 142, node.size[0] - 36);
             drawWorkflowRoundedPanel(ctx, 12, panelY, node.size[0] - 24, panelHeight, getWorkflowPreviewNodeRadius(), '#F8FAFC', 'rgba(74,91,122,0.10)');
             if (!imagePaths.length) return;
-            if (preview?.generated && generatedRows.length) {
+            if (preview?.generated && generatedRows.length && previewMode === 'adaptive') {
                 const rowX = 20;
                 const rowWidth = node.size[0] - 40;
                 const rowHeight = 96;
@@ -14427,17 +15262,12 @@
                     }
                 });
             } else if (preview?.generated) {
-                const gridX = 22;
-                const gridY = panelY + 36;
-                visibleImages.forEach((imagePath, index) => {
-                    const col = index % columns;
-                    const row = Math.floor(index / columns);
-                    const x = gridX + col * (thumbSize + thumbGap);
-                    const y = gridY + row * (thumbSize + thumbGap);
-                    const image = getWorkflowPreviewImageElement(imagePath);
-                    drawWorkflowImageCover(ctx, image, x, y, thumbSize, thumbSize, 10, 'cover');
-                    addWorkflowPreviewHitRegion(node, imagePath, x, y, thumbSize, thumbSize);
-                });
+                drawWorkflowNodeImagePreviewItems(ctx, node, visibleImages, {
+                    x: 12,
+                    y: panelY,
+                    width: node.size[0] - 24,
+                    height: panelHeight
+                }, { count: Number(preview?.count || visibleImages.length), pad: 10, gap: thumbGap });
             } else {
                 const mainImage = getWorkflowPreviewImageElement(imagePaths[0]);
                 drawWorkflowImageCover(ctx, mainImage, 22, 164, node.size[0] - 44, 178, 14, 'contain');
@@ -14597,6 +15427,10 @@
             const thumbSize = 84;
             const thumbGap = 10;
             const rows = Math.max(1, Math.ceil(Math.max(visibleImages.length, 1) / columns));
+            const previewMode = getWorkflowNodePreviewMode(node);
+            const imageBlockHeight = visibleImages.length && ['single', 'list'].includes(previewMode)
+                ? getWorkflowNodePreviewContentHeight(previewMode, visibleImages.length, node.size[0] - 28, { pad: 10, gap: thumbGap })
+                : rows * thumbSize + (rows - 1) * thumbGap + 20;
             const titleMaxWidth = node.size[0] - 48;
             ctx.font = '12px sans-serif';
             const zhLines = getWorkflowWrappedTextLines(ctx, preview?.titleZh || '', titleMaxWidth);
@@ -14605,7 +15439,7 @@
             const titleBlockHeight = preview?.titleEn || preview?.titleZh
                 ? Math.max(58, titleLineCount * 16 + 16)
                 : 42;
-            const desiredHeight = Math.max(386, panelY + 14 + 34 + (rows * thumbSize) + ((rows - 1) * thumbGap) + 34 + titleBlockHeight + 18);
+            const desiredHeight = Math.max(386, panelY + 14 + 34 + imageBlockHeight + 24 + titleBlockHeight + 18);
             if (node.properties && node.properties.workflowDynamicHeight !== desiredHeight) {
                 node.properties.workflowDynamicHeight = desiredHeight;
                 node.size[1] = desiredHeight;
@@ -14621,28 +15455,12 @@
             const gridX = 24;
             const gridY = panelY + 40;
             if (visibleImages.length) {
-                visibleImages.forEach((imagePath, index) => {
-                    const col = index % columns;
-                    const row = Math.floor(index / columns);
-                    const x = gridX + col * (thumbSize + thumbGap);
-                    const y = gridY + row * (thumbSize + thumbGap);
-                    const image = getWorkflowPreviewImageElement(imagePath);
-                    drawWorkflowImageCover(ctx, image, x, y, thumbSize, thumbSize, 10, 'cover');
-                    addWorkflowPreviewHitRegion(node, imagePath, x, y, thumbSize, thumbSize);
-                });
-                const extraCount = Math.max(0, imagePaths.length - visibleImages.length);
-                if (extraCount > 0) {
-                    const lastIndex = visibleImages.length - 1;
-                    const col = lastIndex % columns;
-                    const row = Math.floor(lastIndex / columns);
-                    const x = gridX + col * (thumbSize + thumbGap);
-                    const y = gridY + row * (thumbSize + thumbGap);
-                    drawWorkflowRoundedPanel(ctx, x, y + thumbSize - 24, thumbSize, 24, 0, 'rgba(15,23,42,0.72)');
-                    ctx.fillStyle = '#FFFFFF';
-                    ctx.font = '12px sans-serif';
-                    ctx.textAlign = 'center';
-                    ctx.fillText(`+${extraCount}`, x + thumbSize / 2, y + thumbSize - 8);
-                }
+                drawWorkflowNodeImagePreviewItems(ctx, node, visibleImages, {
+                    x: gridX - 10,
+                    y: gridY - 10,
+                    width: node.size[0] - 28,
+                    height: imageBlockHeight
+                }, { count: imagePaths.length, pad: 10, gap: thumbGap });
             } else {
                 drawWorkflowRoundedPanel(ctx, gridX, gridY, node.size[0] - 48, thumbSize, 12, '#E2E8F0', 'rgba(100,116,139,0.18)');
                 ctx.fillStyle = '#94A3B8';
@@ -14650,7 +15468,7 @@
                 ctx.textAlign = 'center';
                 ctx.fillText('运行后显示发布图片', node.size[0] / 2, gridY + thumbSize / 2 + 4);
             }
-            const titleY = gridY + rows * thumbSize + (rows - 1) * thumbGap + 24;
+            const titleY = gridY + imageBlockHeight + 14;
             ctx.textAlign = 'left';
             ctx.fillStyle = '#64748B';
             ctx.font = '11px sans-serif';
@@ -14675,12 +15493,14 @@
             drawWorkflowNodePorts(ctx, node, type);
             if (type === 'export') {
                 drawWorkflowNodeActionButtons(ctx, node, type);
-            } else {
+            } else if (type !== 'confirm') {
                 drawWorkflowInlineSelects(ctx, node, type);
             }
             if (type === 'template') {
                 const preview = getWorkflowTemplateNodePreviewData(node);
                 drawWorkflowTemplateNodePreview(ctx, node, preview);
+            } else if (type === 'confirm') {
+                drawWorkflowConfirmNodeBody(ctx, node);
             } else if (type === 'extract' || type === 'variation' || type === 'slice') {
                 drawWorkflowProcessNodePreview(ctx, node, getWorkflowProcessNodePreviewData(node, type));
             } else if (type === 'watermark') {
@@ -14871,6 +15691,40 @@
             }
         }
 
+        function fitWorkflowCanvasToNodes(options = {}) {
+            const canvas = workflowState.canvas;
+            const graph = workflowState.graph;
+            const nodes = (graph?._nodes || []).filter(Boolean);
+            if (!canvas || !canvas.ds || !canvas.canvas || !nodes.length) return;
+            const padding = Number(options.padding || 96);
+            let minX = Infinity;
+            let minY = Infinity;
+            let maxX = -Infinity;
+            let maxY = -Infinity;
+            nodes.forEach((node) => {
+                const x = Number(node.pos?.[0] || 0);
+                const y = Number(node.pos?.[1] || 0);
+                const width = Number(node.size?.[0] || 240);
+                const height = Number(node.size?.[1] || 120);
+                minX = Math.min(minX, x);
+                minY = Math.min(minY, y);
+                maxX = Math.max(maxX, x + width);
+                maxY = Math.max(maxY, y + height);
+            });
+            if (![minX, minY, maxX, maxY].every(Number.isFinite)) return;
+            const boundsW = Math.max(1, maxX - minX);
+            const boundsH = Math.max(1, maxY - minY);
+            const viewW = Math.max(1, canvas.canvas.width - padding * 2);
+            const viewH = Math.max(1, canvas.canvas.height - padding * 2);
+            const scale = clampNumber(Math.min(viewW / boundsW, viewH / boundsH, 1.15), 0.18, 1.15);
+            const centerX = minX + boundsW / 2;
+            const centerY = minY + boundsH / 2;
+            canvas.ds.scale = scale;
+            canvas.ds.offset[0] = canvas.canvas.width / (2 * scale) - centerX;
+            canvas.ds.offset[1] = canvas.canvas.height / (2 * scale) - centerY;
+            canvas.setDirty(true, true);
+        }
+
         function initWorkflowCanvas() {
             if (workflowState.graph || !LGraph || !LGraphCanvas) return;
             registerWorkflowLiteGraphNodes();
@@ -14941,13 +15795,26 @@
                 workflowState.selectedNode = node;
                 toggleWorkflowInspector(false);
                 renderWorkflowInspector();
+                syncWorkflowDotFieldLoop();
             };
             workflowState.canvas.onNodeDeselected = () => {
+                const keepId = String(workflowState.toolbarActionKeepSelectedNodeId || '');
+                const keepUntil = Number(workflowState.toolbarActionKeepSelectedUntil || 0);
+                if (keepId && performance.now() < keepUntil) {
+                    const keptNode = getWorkflowLiteNodeByWorkflowId(keepId);
+                    if (keptNode) {
+                        workflowState.selectedNode = keptNode;
+                        workflowState.graph?.setDirtyCanvas(true, true);
+                        return;
+                    }
+                }
                 workflowState.selectedNode = null;
                 workflowState.toolbarNodeId = '';
                 workflowState.toolbarAnimationStartedAt = 0;
                 workflowState.toolbarHoverAction = '';
                 renderWorkflowInspector();
+                toggleWorkflowInspector(true);
+                syncWorkflowDotFieldLoop();
             };
             workflowState.graph.start();
             resizeWorkflowCanvas();
@@ -14970,8 +15837,11 @@
                 workflowState.canvas.adjustMouseEvent(event);
                 const toolbarButton = hitWorkflowSelectedNodeToolbar(event.canvasX, event.canvasY);
                 if (toolbarButton && workflowState.selectedNode) {
+                    const actionNode = workflowState.selectedNode;
+                    workflowState.toolbarActionKeepSelectedNodeId = String(actionNode?.properties?.workflowId || '');
+                    workflowState.toolbarActionKeepSelectedUntil = performance.now() + 400;
                     workflowState.canvasDragging = false;
-                    handleWorkflowSelectedNodeToolbarAction(workflowState.selectedNode, toolbarButton.action);
+                    handleWorkflowSelectedNodeToolbarAction(actionNode, toolbarButton.action);
                     event.preventDefault();
                     event.stopPropagation();
                     return;
@@ -15004,12 +15874,34 @@
                     event.stopPropagation();
                     return;
                 }
+                try {
+                    workflowState.canvas.adjustMouseEvent(event);
+                } catch (_) {}
+                workflowState.dotFieldDraggingNode = getWorkflowNodeAtCanvasPos(event.canvasX, event.canvasY) || null;
+                syncWorkflowDotFieldLoop();
                 workflowState.canvasDragging = true;
                 canvasEl.classList.remove('workflow-cursor-grab', 'workflow-cursor-grabbing', 'workflow-cursor-pointer');
                 canvasEl.classList.add('workflow-cursor-default');
                 canvasEl.style.cursor = 'default';
             }, true);
             canvasEl.addEventListener('mousemove', (event) => {
+                const rect = canvasEl.getBoundingClientRect();
+                const ratioX = (canvasEl.width || rect.width || 1) / Math.max(1, rect.width || 1);
+                const ratioY = (canvasEl.height || rect.height || 1) / Math.max(1, rect.height || 1);
+                workflowState.dotFieldPointer = {
+                    x: (event.clientX - rect.left) * ratioX,
+                    y: (event.clientY - rect.top) * ratioY
+                };
+                if (workflowState.canvas?.node_dragged) {
+                    workflowState.dotFieldDraggingNode = workflowState.canvas.node_dragged;
+                } else if (event.buttons === 1) {
+                    try {
+                        workflowState.canvas.adjustMouseEvent(event);
+                        const nodeAtPointer = getWorkflowNodeAtCanvasPos(event.canvasX, event.canvasY);
+                        if (nodeAtPointer) workflowState.dotFieldDraggingNode = nodeAtPointer;
+                    } catch (_) {}
+                }
+                syncWorkflowDotFieldLoop();
                 if (updateWorkflowLinkEndpointDrag(event)) {
                     event.preventDefault();
                     event.stopPropagation();
@@ -15024,12 +15916,17 @@
                     event.stopPropagation();
                     return;
                 }
+                workflowState.dotFieldDraggingNode = null;
+                syncWorkflowDotFieldLoop();
                 workflowState.canvasDragging = false;
                 canvasEl.classList.remove('workflow-cursor-grabbing', 'workflow-cursor-grab');
                 syncWorkflowCanvasCursor(event);
                 requestAnimationFrame(() => syncWorkflowCanvasCursor(event));
             }, true);
             canvasEl.addEventListener('mouseleave', () => {
+                workflowState.dotFieldPointer = { x: -9999, y: -9999 };
+                workflowState.dotFieldDraggingNode = null;
+                syncWorkflowDotFieldLoop();
                 workflowState.canvasDragging = false;
                 workflowState.toolbarHoverAction = '';
                 canvasEl.classList.remove('workflow-cursor-grab', 'workflow-cursor-grabbing', 'workflow-cursor-pointer');
@@ -15048,6 +15945,8 @@
                     event.stopPropagation();
                     return;
                 }
+                workflowState.dotFieldDraggingNode = null;
+                syncWorkflowDotFieldLoop();
                 if (!workflowState.canvasDragging) return;
                 workflowState.canvasDragging = false;
                 canvasEl.classList.remove('workflow-cursor-grabbing', 'workflow-cursor-grab', 'workflow-cursor-pointer');
@@ -15165,7 +16064,7 @@
             const def = getWorkflowNodeDef(type);
             const node = LiteGraph.createNode(`imageflow/${def.type}`);
             if (!node) return null;
-            node.title = def.label;
+            node.title = getUniqueWorkflowNodeTitle(def.type);
             node.pos = Array.isArray(pos)
                 ? [pos[0], pos[1]]
                 : workflowState.contextMenuGraphPos
@@ -15176,6 +16075,8 @@
             node.properties.workflowConfig = def.type === 'input'
                 ? { inputGroupId: `wf-input-group-${Date.now()}-${workflowState.nodeSeq}-${Math.random().toString(16).slice(2, 6)}` }
                 : {};
+            node.properties.workflowPreviewMode = 'adaptive';
+            node.properties.workflowInspectorPreviewMode = 'adaptive';
             applyWorkflowNodeVisualLayout(node);
             workflowState.graph.add(node);
             return node;
@@ -15203,8 +16104,13 @@
             return workflowNodeDefs.filter((def) => (
                 def.type !== 'input'
                 && def.type !== 'export'
-                && Number(def.order) > Number(fromDef.order)
-                && Number(def.order) < Number(toDef.order)
+                && (
+                    def.type === 'confirm'
+                    || (
+                        Number(def.order) > Number(fromDef.order)
+                        && Number(def.order) < Number(toDef.order)
+                    )
+                )
             ));
         }
 
@@ -15284,6 +16190,8 @@
                 x: Number(node.pos?.[0] || 0),
                 y: Number(node.pos?.[1] || 0),
                 collapsed: Boolean(node.properties?.workflowCollapsed),
+                previewMode: getWorkflowNodePreviewMode(node),
+                inspectorPreviewMode: getWorkflowInspectorPreviewMode(node),
                 config: node.properties?.workflowConfig || {}
             })).filter((node) => node.id && node.type);
             const nodeByLiteId = new Map((workflowState.graph?._nodes || []).map((node) => [node.id, node]));
@@ -15332,7 +16240,7 @@
             try {
                 const payload = JSON.parse(snapshot);
                 workflowState.historySuspended = true;
-                loadWorkflowGraphToCanvas(payload, { resetHistory: false });
+                loadWorkflowGraphToCanvas(payload, { resetHistory: false, fit: false });
                 workflowState.historySuspended = false;
                 workflowState.graph?.setDirtyCanvas(true, true);
                 return true;
@@ -15388,6 +16296,8 @@
                 node.properties.workflowId = item.id || `wf-node-${Date.now()}-${workflowState.nodeSeq++}`;
                 node.properties.workflowType = def.type;
                 node.properties.workflowConfig = item.config || {};
+                node.properties.workflowPreviewMode = normalizeWorkflowNodePreviewMode(item.previewMode || item.config?.previewMode || 'adaptive');
+                node.properties.workflowInspectorPreviewMode = normalizeWorkflowPreviewMode(item.inspectorPreviewMode || item.config?.inspectorPreviewMode || item.previewMode || 'adaptive');
                 if (def.type === 'input' && !node.properties.workflowConfig.inputGroupId) {
                     node.properties.workflowConfig = {
                         ...(node.properties.workflowConfig || {}),
@@ -15395,6 +16305,7 @@
                     };
                 }
                 node.properties.workflowCollapsed = Boolean(item.collapsed);
+                ensureWorkflowNodeDisplayTitle(node);
                 applyWorkflowNodeVisualLayout(node);
                 workflowState.graph.add(node);
                 liteNodesByWorkflowId.set(node.properties.workflowId, node);
@@ -15415,8 +16326,17 @@
             workflowState.toolbarHoverAction = '';
             syncWorkflowInputNodePreview();
             renderWorkflowInspector();
+            if (!workflowState.selectedNode) toggleWorkflowInspector(true);
             workflowState.historySuspended = previousHistorySuspended;
             if (options.resetHistory !== false) resetWorkflowHistory();
+            if (options.fit !== false) {
+                workflowState.shouldFitCanvasOnNextEditorFrame = true;
+                requestAnimationFrame(() => {
+                    resizeWorkflowCanvas();
+                    fitWorkflowCanvasToNodes();
+                    workflowState.shouldFitCanvasOnNextEditorFrame = false;
+                });
+            }
         }
 
         function syncWorkflowPresetFields() {
@@ -15476,12 +16396,48 @@
             document.getElementById('workflowHomeView')?.classList.toggle('template-hidden', mode !== 'home');
             document.getElementById('workflowEditorView')?.classList.toggle('template-hidden', mode !== 'editor');
             syncWorkflowRunAnimationLoop();
+            syncWorkflowDotFieldLoop();
             if (mode === 'editor') {
                 requestAnimationFrame(() => {
                     resizeWorkflowCanvas();
+                    if (workflowState.shouldFitCanvasOnNextEditorFrame) {
+                        workflowState.shouldFitCanvasOnNextEditorFrame = false;
+                        fitWorkflowCanvasToNodes();
+                    }
                     workflowState.graph?.setDirtyCanvas(true, true);
                     syncWorkflowRunAnimationLoop();
                 });
+            }
+        }
+
+        function hasWorkflowDotFieldActivity() {
+            if (workflowState.viewMode !== 'editor' || !workflowState.graph) return false;
+            const pointer = workflowState.dotFieldPointer || {};
+            if (Number(pointer.x || -9999) > -1000 && Number(pointer.y || -9999) > -1000) return true;
+            if (workflowState.dotFieldDraggingNode || workflowState.canvas?.node_dragged) return true;
+            if (getWorkflowRunningNodeIds().size > 0) return true;
+            return (workflowState.graph._nodes || []).some((node) => {
+                const status = getWorkflowNodeRuntimeStatus(node);
+                return status === 'running' || workflowState.selectedNode === node;
+            });
+        }
+
+        function syncWorkflowDotFieldLoop() {
+            const shouldAnimate = hasWorkflowDotFieldActivity();
+            if (shouldAnimate && !workflowState.dotFieldFrame) {
+                const tick = () => {
+                    if (!hasWorkflowDotFieldActivity()) {
+                        workflowState.dotFieldFrame = 0;
+                        workflowState.graph?.setDirtyCanvas(true, true);
+                        return;
+                    }
+                    workflowState.graph?.setDirtyCanvas(true, true);
+                    workflowState.dotFieldFrame = requestAnimationFrame(tick);
+                };
+                workflowState.dotFieldFrame = requestAnimationFrame(tick);
+            } else if (!shouldAnimate && workflowState.dotFieldFrame) {
+                cancelAnimationFrame(workflowState.dotFieldFrame);
+                workflowState.dotFieldFrame = 0;
             }
         }
 
@@ -15492,8 +16448,12 @@
                 workflowState.config.activePresetId = preset.id;
                 syncWorkflowPresetFields();
                 workflowState.selectedRunIds = workflowState.selectedRunIds.filter((id) => getWorkflowRunsForPreset(preset.id).some((run) => run.id === id));
+                workflowState.notifiedFailureKeys.clear();
+                workflowState.notifiedConfirmKeys.clear();
                 setWorkflowView('editor');
                 loadWorkflowGraphToCanvas(preset.graph);
+                workflowState.inspectorCollapsed = true;
+                syncWorkflowInspectorPanel();
             syncWorkflowInputNodePreview();
             renderWorkflowInspector();
             syncWorkflowInspectorPanel();
@@ -15643,6 +16603,92 @@
             }, 5200);
         }
 
+        function dismissWorkflowConfirmToast() {
+            const el = document.getElementById('workflowConfirmToast');
+            if (el) el.classList.remove('active');
+            try {
+                ipcRenderer.send('workflow-confirm-notice:dismiss');
+            } catch (_) {}
+            workflowState.confirmToastRunId = '';
+        }
+
+        function getWorkflowConfirmPreviousNode(run) {
+            const confirmNodeId = String(run?.currentNodeId || '').trim();
+            if (!confirmNodeId) return null;
+            const graph = workflowGraphToPayload();
+            const incoming = (graph.links || []).filter((link) => String(link.to || '') === confirmNodeId);
+            const doneIncoming = incoming
+                .map((link) => getWorkflowLiteNodeByWorkflowId(link.from))
+                .filter(Boolean)
+                .filter((node) => String(run?.nodeStates?.[String(node.properties?.workflowId || '')]?.status || '') === 'done');
+            return doneIncoming[doneIncoming.length - 1] || getWorkflowLiteNodeByWorkflowId(incoming[incoming.length - 1]?.from || '');
+        }
+
+        async function showWorkflowConfirmToast(run) {
+            if (!run) return;
+            workflowState.confirmToastRunId = String(run.id || '');
+            const previousNode = getWorkflowConfirmPreviousNode(run);
+            const previousTitle = previousNode?.title || getWorkflowNodeDef(previousNode?.properties?.workflowType)?.label || '上一个节点';
+            const message = `${run.name || '工作流任务'} 已暂停。请查看并核对「${previousTitle}」的输出内容。`;
+            try {
+                await ipcRenderer.invoke('workflow:show-confirm-notice', {
+                    runId: workflowState.confirmToastRunId,
+                    title: '需要人工确认',
+                    message
+                });
+            } catch (error) {
+                appendTemplateLog('warn', error.message || '外部人工确认提醒显示失败');
+            }
+        }
+
+        function notifyWorkflowManualConfirms(nextData, previousData = workflowState.data) {
+            const runs = Array.isArray(nextData?.runs) ? nextData.runs : [];
+            const previousRuns = Array.isArray(previousData?.runs) ? previousData.runs : [];
+            const previousById = new Map(previousRuns.map((run) => [String(run.id || ''), run]));
+            const currentNodeIds = getWorkflowNotificationNodeIds();
+            runs.forEach((run) => {
+                if (!isWorkflowRunInActivePreset(run)) return;
+                if (run.status !== 'paused' || run.currentNodeType !== 'confirm') return;
+                if (!currentNodeIds.has(String(run.currentNodeId || '').trim())) return;
+                const previousRun = previousById.get(String(run.id || '')) || null;
+                const wasAlreadyPaused = previousRun
+                    && previousRun.status === 'paused'
+                    && previousRun.currentNodeType === 'confirm'
+                    && String(previousRun.currentNodeId || '') === String(run.currentNodeId || '');
+                if (wasAlreadyPaused || !previousRun) return;
+                const state = run.nodeStates?.[run.currentNodeId] || {};
+                const key = `${run.id}:${run.currentNodeId}:${state.updatedAt || run.updatedAt || ''}`;
+                if (workflowState.notifiedConfirmKeys.has(key)) return;
+                workflowState.notifiedConfirmKeys.add(key);
+                showWorkflowConfirmToast(run);
+            });
+        }
+
+        async function viewWorkflowConfirmToastRun() {
+            const runId = String(workflowState.confirmToastRunId || '').trim();
+            const run = (workflowState.data?.runs || []).find((item) => String(item.id || '') === runId);
+            if (!run) {
+                dismissWorkflowConfirmToast();
+                return;
+            }
+            const previousNode = getWorkflowConfirmPreviousNode(run);
+            if (previousNode) {
+                switchTab('workflow');
+                setWorkflowView('editor');
+                selectWorkflowCanvasNode(previousNode);
+                workflowState.selectedRunIds = Array.from(new Set([...(workflowState.selectedRunIds || []), run.id]));
+                renderWorkflowRuns();
+                renderWorkflowInspector();
+            }
+            dismissWorkflowConfirmToast();
+        }
+
+        function handleWorkflowConfirmNoticeView(payload = {}) {
+            const runId = String(payload?.runId || '').trim();
+            if (runId) workflowState.confirmToastRunId = runId;
+            viewWorkflowConfirmToastRun();
+        }
+
         function syncWorkflowInspectorPanel() {
             const panel = document.getElementById('workflowSidePanel');
             const toggle = document.getElementById('workflowInspectorToggle');
@@ -15732,14 +16778,39 @@
             `;
         }
 
+        function getWorkflowNotificationGraphPayload() {
+            if (workflowState.viewMode === 'editor' && workflowState.graph) {
+                try {
+                    return workflowGraphToPayload();
+                } catch (_) {}
+            }
+            return getActiveWorkflowPreset()?.graph || { nodes: [], links: [] };
+        }
+
+        function getWorkflowNotificationNodeIds() {
+            const graph = getWorkflowNotificationGraphPayload();
+            return new Set((graph.nodes || []).map((node) => String(node.id || '').trim()).filter(Boolean));
+        }
+
+        function isWorkflowRunInActivePreset(run) {
+            const activePresetId = getActiveWorkflowPresetId();
+            const runPresetId = String(run?.workflowPresetId || '').trim();
+            return runPresetId === activePresetId || (!runPresetId && activePresetId === 'workflow-default');
+        }
+
         function notifyWorkflowFailures(nextData) {
             const runs = Array.isArray(nextData?.runs) ? nextData.runs : [];
+            const currentNodeIds = getWorkflowNotificationNodeIds();
             runs.forEach((run) => {
+                if (!isWorkflowRunInActivePreset(run)) return;
                 if (run.status !== 'failed') return;
                 const nodeStates = run.nodeStates && typeof run.nodeStates === 'object' ? run.nodeStates : {};
-                const failedEntry = Object.entries(nodeStates).find(([, state]) => state?.status === 'failed');
+                const failedEntry = Object.entries(nodeStates).find(([nodeId, state]) => (
+                    currentNodeIds.has(String(nodeId || '').trim()) && state?.status === 'failed'
+                ));
                 if (!failedEntry && !run.error) return;
                 const failedNodeId = failedEntry?.[0] || String(run.currentNodeId || '').trim();
+                if (!failedNodeId || !currentNodeIds.has(failedNodeId)) return;
                 const failedState = failedEntry?.[1] || {};
                 const key = `${run.id}:${failedNodeId || 'run'}:${failedState.updatedAt || run.updatedAt || ''}`;
                 if (workflowState.notifiedFailureKeys.has(key)) return;
@@ -15776,14 +16847,14 @@
             (workflowState.graph?._nodes || []).forEach((node) => {
                 if (node.properties?.workflowType === 'input') {
                     const runs = getWorkflowInputNodeRuns(node);
-                    const previewRuns = runs.slice(0, 3);
+                    const previewRuns = runs.slice(0, 24);
                     const thumbs = [];
                     let count = 0;
                     previewRuns.forEach((run) => {
-                        const images = getWorkflowRunPreviewImages(run, 6);
+                        const images = getWorkflowRunPreviewImages(run, 96);
                         count += getWorkflowRunImageCount(run);
                         images.forEach((imagePath) => {
-                            if (thumbs.length < 6) thumbs.push(imagePath);
+                            if (thumbs.length < 96) thumbs.push(imagePath);
                         });
                     });
                     const text = previewRuns.length
@@ -15798,23 +16869,7 @@
         function renderWorkflowInputPreviewGrid() {
             const host = document.getElementById('workflowInputPreviewGrid');
             if (!host) return;
-            const runs = getWorkflowVisiblePreviewRuns(getWorkflowInspectorInputRuns()).slice(0, 8);
-            const images = [];
-            runs.forEach((run) => {
-                getWorkflowRunPreviewImages(run, 4).forEach((imagePath) => {
-                    if (images.length < 16) images.push({ path: imagePath, run });
-                });
-            });
-            if (!images.length) {
-                host.innerHTML = '<div class="workflow-empty" style="min-height:92px;">暂无预览，先导入图片或文件夹。</div>';
-                return;
-            }
-            host.innerHTML = images.map((item) => `
-                <div class="workflow-run-preview-item" title="${escapeHtml(item.run.name)}">
-                    <div class="workflow-run-thumb single"><img src="${toFileUrl(item.path)}" alt="${escapeHtml(pathUtil.basename(item.path))}"></div>
-                    <div class="workflow-run-preview-name">${escapeHtml(pathUtil.basename(item.path))}</div>
-                </div>
-            `).join('');
+            host.outerHTML = renderWorkflowInspectorPreview(workflowState.selectedNode, 'input');
         }
 
         function renderWorkflowRuns() {
@@ -15837,8 +16892,9 @@
                 const checked = selected.has(run.id) ? 'checked' : '';
                 const progress = Math.max(0, Math.min(100, Number(run.progress || 0)));
                 const meta = compactWorkflowRuntimeMessage(run.error) || `${run.currentNodeType || '等待'} · ${progress}%`;
+                const actionLabel = run.currentNodeType === 'confirm' ? '确认' : '处理';
                 const action = run.status === 'paused'
-                    ? `<button class="btn btn-secondary" style="height:30px;font-size:12px;" type="button" onclick="event.stopPropagation();openWorkflowPausedNode('${run.id}')">处理</button>`
+                    ? `<button class="btn btn-secondary" style="height:30px;font-size:12px;" type="button" onclick="event.stopPropagation();openWorkflowPausedNode('${run.id}')">${actionLabel}</button>`
                     : `<span class="workflow-run-dot ${escapeHtml(run.status)}" title="${escapeHtml(run.status)}"></span>`;
                 return `
                     <div class="workflow-run-card ${checked ? 'active' : ''}" title="${escapeHtml(run.name)}">
@@ -15931,10 +16987,66 @@
             return importedCount;
         }
 
+        async function confirmWorkflowManualNode(run) {
+            const runId = String(run?.id || '').trim();
+            const nodeId = String(run?.currentNodeId || '').trim();
+            if (!runId || !nodeId) return;
+            try {
+                await saveWorkflowPreset();
+                const previousData = workflowState.data;
+                workflowState.data = await ipcRenderer.invoke('workflow:confirm-node', {
+                    graph: workflowGraphToPayload(),
+                    runId,
+                    nodeId
+                });
+                workflowState.selectedRunIds = Array.from(new Set([...(workflowState.selectedRunIds || []), runId]));
+                watchWorkflowRunFailure(runId);
+                notifyWorkflowFailures(workflowState.data);
+                notifyWorkflowManualConfirms(workflowState.data, previousData);
+                syncWorkflowRunAnimationLoop();
+                syncWorkflowDotFieldLoop();
+                renderWorkflowRuns();
+                renderWorkflowInspector();
+                dismissWorkflowConfirmToast();
+                updateWorkflowStatus('已确认，继续运行后续节点');
+            } catch (error) {
+                appendTemplateLog('error', error.message || '确认继续失败');
+                showWorkflowDockNotice(error.message || '确认继续失败', 'error');
+            }
+        }
+
+        function getWorkflowPausedConfirmRunForNode(node) {
+            const nodeId = String(node?.properties?.workflowId || '').trim();
+            if (!nodeId) return null;
+            const selected = new Set((workflowState.selectedRunIds || []).map((id) => String(id || '')));
+            const runs = getWorkflowRunsForPreset().filter((run) => (
+                run.status === 'paused'
+                && run.currentNodeType === 'confirm'
+                && String(run.currentNodeId || '') === nodeId
+            ));
+            return runs.find((run) => selected.has(String(run.id || ''))) || runs[0] || null;
+        }
+
+        async function confirmSelectedWorkflowNode() {
+            const node = workflowState.selectedNode;
+            const type = String(node?.properties?.workflowType || '').replace(/^imageflow\//, '');
+            if (type !== 'confirm') return;
+            const run = getWorkflowPausedConfirmRunForNode(node);
+            if (!run) {
+                showWorkflowDockNotice('当前人工确认节点没有待确认任务', 'warning');
+                return;
+            }
+            await confirmWorkflowManualNode(run);
+        }
+
         function openWorkflowPausedNode(runId) {
             const run = (workflowState.data?.runs || []).find((item) => item.id === runId);
             if (!run) return;
             const artifacts = run.artifacts || {};
+            if (run.currentNodeType === 'confirm') {
+                confirmWorkflowManualNode(run);
+                return;
+            }
             if (run.currentNodeType === 'slice') {
                 const paths = Array.isArray(artifacts.sliceInputPaths) ? artifacts.sliceInputPaths : [];
                 const result = addSliceTasksFromPaths(paths, { source: 'workflow', openFirst: true });
@@ -15965,6 +17077,7 @@
             }
             workflowState.graph?.setDirtyCanvas(true, true);
             syncWorkflowRunAnimationLoop();
+            syncWorkflowDotFieldLoop();
             renderWorkflowRuns();
         }
 
@@ -15977,6 +17090,7 @@
                 : Array.from(new Set([...(workflowState.selectedRunIds || []), ...runs.map((run) => run.id)]));
             workflowState.graph?.setDirtyCanvas(true, true);
             syncWorkflowRunAnimationLoop();
+            syncWorkflowDotFieldLoop();
             renderWorkflowRuns();
         }
 
@@ -15990,34 +17104,43 @@
             workflowState.data = await ipcRenderer.invoke('workflow:delete-runs', { runIds: deleteIds });
             workflowState.selectedRunIds = workflowState.selectedRunIds.filter((id) => !visibleIds.has(id));
             syncWorkflowRunAnimationLoop();
+            syncWorkflowDotFieldLoop();
             workflowState.graph?.setDirtyCanvas(true, true);
             renderWorkflowRuns();
         }
 
-        async function importWorkflowInputs(mode = 'files') {
+        async function importWorkflowInputs(mode = 'files', targetNode = workflowState.selectedNode) {
             try {
                 const channel = mode === 'folders' ? 'workflow:select-input-folders' : 'workflow:select-input-files';
-                const selectedNodeType = String(workflowState.selectedNode?.properties?.workflowType || '').replace(/^imageflow\//, '');
+                const selectedNodeType = String(targetNode?.properties?.workflowType || '').replace(/^imageflow\//, '');
                 const selectedInputNode = selectedNodeType === 'input'
-                    ? workflowState.selectedNode
+                    ? targetNode
                     : null;
+                if (!selectedInputNode) {
+                    showWorkflowDockNotice('请先选择导入图片/文件夹节点', 'warning');
+                    return;
+                }
                 const result = await ipcRenderer.invoke(channel, {
                     workflowPresetId: getActiveWorkflowPresetId(),
-                    sourceInputNodeId: String(selectedInputNode?.properties?.workflowConfig?.inputGroupId || selectedInputNode?.properties?.workflowId || '').trim()
+                    sourceInputNodeId: getWorkflowInputNodeSourceId(selectedInputNode)
                 });
                 if (result?.canceled) return;
                 workflowState.data = result;
                 const importedIds = (result.imported || []).map((run) => run.id);
                 await bindWorkflowRunsToInputNode(selectedInputNode, importedIds);
+                selectWorkflowCanvasNode(selectedInputNode);
                 workflowState.selectedRunIds = importedIds;
                 workflowState.runModalRunIds = importedIds.slice();
                 syncWorkflowRunAnimationLoop();
+                syncWorkflowDotFieldLoop();
                 syncWorkflowInputNodePreview();
                 renderWorkflowRuns();
                 updateWorkflowStatus(`已导入 ${result.imported?.length || 0} 个任务`);
             } catch (error) {
                 appendTemplateLog('error', error.message || '导入工作流输入失败');
                 await showNoticeDialog('导入失败', error.message || '导入工作流输入失败');
+            } finally {
+                resetWorkflowCanvasPointerStateAfterDialog();
             }
         }
 
@@ -16058,16 +17181,40 @@
             });
         }
 
+        function getWorkflowModalDefaultInputNode() {
+            const preset = (workflowState.config?.presets || []).find((item) => item.id === workflowState.runPresetId) || getActiveWorkflowPreset();
+            if (workflowState.viewMode === 'editor' && preset?.id === getActiveWorkflowPresetId()) {
+                const connected = getWorkflowConnectedInputNodes();
+                return connected.length === 1 ? connected[0] : null;
+            }
+            const graph = preset?.graph || { nodes: [], links: [] };
+            const linkedInputIds = new Set((graph.links || []).map((link) => String(link.from || '').trim()).filter(Boolean));
+            const inputNodes = (graph.nodes || []).filter((node) => node.type === 'input' && linkedInputIds.has(String(node.id || '').trim()));
+            return inputNodes.length === 1 ? inputNodes[0] : null;
+        }
+
         async function importWorkflowRunInputs(mode = 'files') {
             try {
                 const channel = mode === 'folders' ? 'workflow:select-input-folders' : 'workflow:select-input-files';
-                const result = await ipcRenderer.invoke(channel, { workflowPresetId: workflowState.runPresetId || getActiveWorkflowPresetId() });
+                const inputNode = getWorkflowModalDefaultInputNode();
+                if (!inputNode) {
+                    showWorkflowDockNotice('当前流程有多个或没有已连接的导入节点，请进入画布后在具体导入节点里导入', 'warning');
+                    return;
+                }
+                const result = await ipcRenderer.invoke(channel, {
+                    workflowPresetId: workflowState.runPresetId || getActiveWorkflowPresetId(),
+                    sourceInputNodeId: String(inputNode.properties?.workflowId || inputNode.id || '').trim()
+                });
                 if (result?.canceled) return;
                 workflowState.data = result;
                 const importedIds = (result.imported || []).map((run) => run.id);
+                if (inputNode.properties?.workflowType === 'input') {
+                    await bindWorkflowRunsToInputNode(inputNode, importedIds);
+                }
                 workflowState.runModalRunIds = Array.from(new Set([...(workflowState.runModalRunIds || []), ...importedIds]));
                 workflowState.selectedRunIds = workflowState.runModalRunIds.slice();
                 syncWorkflowRunAnimationLoop();
+                syncWorkflowDotFieldLoop();
                 renderWorkflowRunModalList();
                 renderWorkflowRuns();
             } catch (error) {
@@ -16164,11 +17311,6 @@
         async function runAllWorkflowChains() {
             try {
                 await saveWorkflowPreset();
-                const validation = await validateWorkflowNow();
-                if (!canRunWorkflowAfterValidation(validation)) {
-                    blockWorkflowRunForValidation(validation);
-                    return;
-                }
                 const inputNodes = getWorkflowConnectedInputNodes();
                 const targets = [];
                 inputNodes.forEach((node) => {
@@ -16188,6 +17330,7 @@
                     await runWorkflowNodeTarget(target.runId, target.nodeId);
                 }
                 syncWorkflowRunAnimationLoop();
+                syncWorkflowDotFieldLoop();
                 renderWorkflowRuns();
                 renderWorkflowHome();
                 updateWorkflowStatus(`已启动 ${targets.length} 条链路`);
@@ -16218,11 +17361,6 @@
         async function retryFailedWorkflowChains() {
             try {
                 await saveWorkflowPreset();
-                const validation = await validateWorkflowNow();
-                if (!canRunWorkflowAfterValidation(validation)) {
-                    blockWorkflowRunForValidation(validation);
-                    return;
-                }
                 const targets = getWorkflowFailedRetryTargets();
                 if (!targets.length) {
                     updateWorkflowStatus('没有失败链路需要重跑');
@@ -16236,6 +17374,7 @@
                     await runWorkflowNodeTarget(target.runId, target.nodeId);
                 }
                 syncWorkflowRunAnimationLoop();
+                syncWorkflowDotFieldLoop();
                 renderWorkflowRuns();
                 renderWorkflowHome();
                 updateWorkflowStatus(`已启动 ${targets.length} 条失败链路`);
@@ -16263,12 +17402,6 @@
                     await saveWorkflowPreset();
                     graph = workflowGraphToPayload();
                 }
-                const validation = await ipcRenderer.invoke('workflow:validate', { graph });
-                setWorkflowValidationIssues(validation);
-                if (!canRunWorkflowAfterValidation(validation)) {
-                    blockWorkflowRunForValidation(validation);
-                    return;
-                }
                 workflowState.data = await ipcRenderer.invoke('workflow:start', {
                     graph,
                     runIds
@@ -16277,6 +17410,7 @@
                 workflowState.selectedRunIds = runIds.slice();
                 runIds.forEach((runId) => watchWorkflowRunFailure(runId));
                 syncWorkflowRunAnimationLoop();
+                syncWorkflowDotFieldLoop();
                 closeWorkflowRunModal();
                 updateWorkflowStatus('工作流已开始运行');
                 renderWorkflowRuns();
@@ -16291,8 +17425,8 @@
             return node?.properties?.workflowConfig || {};
         }
 
-        function setWorkflowNodeConfigField(field, value) {
-            const node = workflowState.selectedNode;
+        function setWorkflowNodeConfigField(field, value, targetNode = workflowState.selectedNode) {
+            const node = targetNode || workflowState.selectedNode;
             if (!node) return;
             node.properties.workflowConfig = {
                 ...(node.properties.workflowConfig || {}),
@@ -16310,15 +17444,23 @@
             commitWorkflowHistory('已修改节点名称');
         }
 
-        async function selectWorkflowExportDir() {
+        async function selectWorkflowExportDir(targetNode = workflowState.selectedNode) {
             try {
+                const nodeType = String(targetNode?.properties?.workflowType || '').replace(/^imageflow\//, '');
+                if (nodeType !== 'export') {
+                    showWorkflowDockNotice('请先选择导出保存节点', 'warning');
+                    return;
+                }
                 const result = await ipcRenderer.invoke('workflow:select-export-dir');
                 if (result?.canceled || !result?.dir) return;
-                setWorkflowNodeConfigField('outputDir', result.dir);
+                setWorkflowNodeConfigField('outputDir', result.dir, targetNode);
+                selectWorkflowCanvasNode(targetNode);
                 renderWorkflowInspector();
             } catch (error) {
                 appendTemplateLog('error', error.message || '选择工作流导出目录失败');
                 showWorkflowDockNotice(error.message || '选择工作流导出目录失败', 'error');
+            } finally {
+                resetWorkflowCanvasPointerStateAfterDialog();
             }
         }
 
@@ -16377,8 +17519,8 @@
             if (type === 'input') {
                 const items = [];
                 getWorkflowVisiblePreviewRuns(getWorkflowInspectorInputRuns()).forEach((run) => {
-                    getWorkflowRunPreviewImages(run, 6).forEach((imagePath) => {
-                        if (items.length < 24) items.push({ path: imagePath, name: pathUtil.basename(imagePath) });
+                    getWorkflowRunPreviewImages(run, 999).forEach((imagePath) => {
+                        if (items.length < 96) items.push({ path: imagePath, name: pathUtil.basename(imagePath) });
                     });
                 });
                 return items;
@@ -16391,6 +17533,7 @@
                 const preview = getWorkflowTemplateNodePreviewData(node);
                 return (preview.imagePaths || []).map((imagePath) => ({ path: imagePath, name: pathUtil.basename(imagePath) }));
             }
+            if (type === 'confirm') return [];
             if (type === 'watermark') {
                 const preview = getWorkflowWatermarkNodePreviewData(node);
                 return preview.src ? [{ path: preview.src, name: preview.text || '水印预览' }] : [];
@@ -16402,17 +17545,132 @@
             return [];
         }
 
+        function getWorkflowPreviewModeOptions() {
+            return [
+                { value: 'single', label: '单图' },
+                { value: 'adaptive', label: '自适应' },
+                { value: 'list', label: '列表' }
+            ];
+        }
+
+        function normalizeWorkflowPreviewMode(mode) {
+            const value = String(mode || '').trim();
+            if (['masonry', 'grid', 'contain'].includes(value)) return 'adaptive';
+            if (value === 'large') return 'single';
+            return getWorkflowPreviewModeOptions().some((item) => item.value === value) ? value : 'adaptive';
+        }
+
+        function setWorkflowInspectorPreviewMode(mode) {
+            const node = workflowState.selectedNode;
+            const nextMode = normalizeWorkflowPreviewMode(mode);
+            if (node?.properties) {
+                node.properties.workflowInspectorPreviewMode = nextMode;
+                workflowState.graph?.setDirtyCanvas(true, true);
+                commitWorkflowHistory('已切换侧栏预览模式');
+            } else {
+                workflowState.inspectorPreviewMode = nextMode;
+                localStorage.setItem('imageflow.workflow.previewMode', workflowState.inspectorPreviewMode);
+            }
+            refreshWorkflowInspectorPreviewMode();
+        }
+
+        function cycleWorkflowInspectorPreviewMode(event) {
+            event?.preventDefault?.();
+            event?.currentTarget?.blur?.();
+            const options = getWorkflowPreviewModeOptions();
+            const current = getWorkflowInspectorPreviewMode(workflowState.selectedNode);
+            const index = Math.max(0, options.findIndex((item) => item.value === current));
+            const next = options[(index + 1) % options.length];
+            setWorkflowInspectorPreviewMode(next.value);
+            showWorkflowDockNotice(`侧栏预览：${next.label}`, 'info');
+        }
+
+        function syncWorkflowInspectorPreviewFromNode(node = workflowState.selectedNode) {
+            if (!node) return;
+            workflowState.inspectorPreviewMode = getWorkflowInspectorPreviewMode(node);
+        }
+
+        function renderWorkflowPreviewModeSvg(mode) {
+            const kind = getWorkflowPreviewIconKind(mode);
+            if (kind === 'adaptive') {
+                return `<svg viewBox="0 0 24 24"><rect x="4.5" y="4.5" width="6.4" height="6.4" rx="1.7"/><rect x="13.1" y="4.5" width="6.4" height="6.4" rx="1.7"/><rect x="4.5" y="13.1" width="6.4" height="6.4" rx="1.7"/><path d="M13.2 16.2h6.3"/><path d="m17.2 13.4 2.8 2.8-2.8 2.8"/></svg>`;
+            }
+            if (kind === 'single') {
+                return `<svg viewBox="0 0 24 24"><rect x="5.2" y="4.8" width="13.6" height="14.4" rx="2.4"/><path d="m7.6 15.4 3.2-3.2 2.5 2.4 1.7-1.8 2 2.5"/><circle cx="9.2" cy="8.7" r=".7" class="fill"/></svg>`;
+            }
+            if (kind === 'list') {
+                return `<svg viewBox="0 0 24 24"><path d="M4.7 5.2h5.2v5.2H4.7z"/><path d="M4.7 13.6h5.2v5.2H4.7z"/><path d="M13 6.4h6.3"/><path d="M13 9.2h4.4"/><path d="M13 14.8h6.3"/><path d="M13 17.6h4.4"/></svg>`;
+            }
+            return `<svg viewBox="0 0 24 24"><rect x="5.2" y="4.8" width="13.6" height="14.4" rx="2.4"/><path d="m7.6 15.4 3.2-3.2 2.5 2.4 1.7-1.8 2 2.5"/><circle cx="9.2" cy="8.7" r=".7" class="fill"/></svg>`;
+        }
+
+        function renderWorkflowPreviewModeSwitch() {
+            const activeMode = getWorkflowInspectorPreviewMode(workflowState.selectedNode);
+            return `
+                <div class="workflow-preview-mode-switch">
+                    ${getWorkflowPreviewModeOptions().map((item) => `
+                        <button class="workflow-preview-mode-btn ${item.value === activeMode ? 'active' : ''}" type="button" onclick="setWorkflowInspectorPreviewMode('${item.value}')">
+                            ${escapeHtml(item.label)}
+                        </button>
+                    `).join('')}
+                </div>
+            `;
+        }
+
+        function renderWorkflowInputRunCards(node) {
+            const runs = getWorkflowInputNodeRuns(node);
+            if (!runs.length) {
+                return '<div id="workflowInputPreviewGrid" class="workflow-empty" style="min-height:128px;">还没有导入内容。</div>';
+            }
+            const selected = new Set((workflowState.selectedRunIds || []).map((id) => String(id || '')));
+            return `
+                <div id="workflowInputPreviewGrid" class="workflow-run-list workflow-input-run-grid">
+                    ${runs.map((run) => {
+                        const runId = String(run.id || '');
+                        const checked = selected.has(runId);
+                        const progress = Math.max(0, Math.min(100, Number(run.progress || 0)));
+                        const meta = compactWorkflowRuntimeMessage(run.error) || `${run.currentNodeType || '等待'} · ${progress}%`;
+                        const actionLabel = run.currentNodeType === 'confirm' ? '确认' : '处理';
+                        const action = run.status === 'paused'
+                            ? `<button class="btn btn-secondary" style="height:30px;font-size:12px;" type="button" onclick="event.stopPropagation();openWorkflowPausedNode('${escapeHtml(runId)}')">${actionLabel}</button>`
+                            : `<span class="workflow-run-dot ${escapeHtml(run.status)}" title="${escapeHtml(run.status)}"></span>`;
+                        return `
+                            <div class="workflow-run-card ${checked ? 'active' : ''}" title="${escapeHtml(run.name)}" onclick="toggleWorkflowRun('${escapeHtml(runId)}')">
+                                <label class="workflow-run-check" onclick="event.stopPropagation();toggleWorkflowRun('${escapeHtml(runId)}')">
+                                    <input type="checkbox" ${checked ? 'checked' : ''}>
+                                </label>
+                                ${renderWorkflowRunThumb(run)}
+                                <div>
+                                    <div class="workflow-run-name">${escapeHtml(run.name)}</div>
+                                    <div class="workflow-run-meta" title="${escapeHtml(meta)}">${escapeHtml(run.sourceType === 'folder' ? `文件夹 · ${getWorkflowRunImageCount(run)} 张图` : '图片')} · ${escapeHtml(meta)}</div>
+                                    <div class="workflow-progress"><span style="width:${progress}%"></span></div>
+                                </div>
+                                ${action}
+                            </div>
+                        `;
+                    }).join('')}
+                </div>
+            `;
+        }
+
         function renderWorkflowInspectorPreview(node, type) {
+            if (type === 'input') {
+                return renderWorkflowInputRunCards(node);
+            }
             const items = getWorkflowInspectorPreviewItems(node, type);
             const visual = getWorkflowNodeRunVisualState(node);
+            const previewId = type === 'input' ? 'workflowInputPreviewGrid' : 'workflowInspectorPreviewGrid';
             if (!items.length) {
                 const text = isWorkflowAiImageNode(type) && visual.status === 'running'
                     ? (type === 'extract' ? 'AI 正在提取图案...' : 'AI 正在裂变印花...')
                     : '运行后显示预览';
-                return `<div class="workflow-empty" style="min-height:128px;">${escapeHtml(text)}</div>`;
+                return `<div id="${previewId}" class="workflow-empty" style="min-height:128px;">${escapeHtml(text)}</div>`;
             }
+            const previewMode = getWorkflowInspectorPreviewMode(node);
+            const adaptiveGrid = previewMode === 'adaptive' ? getWorkflowAdaptivePreviewGrid(items.length) : null;
+            const style = adaptiveGrid ? ` style="grid-template-columns: repeat(${adaptiveGrid.columns}, minmax(0, 1fr));"` : '';
             return `
-                <div class="workflow-inspector-preview-grid">
+                <div id="${previewId}" class="workflow-inspector-preview-grid mode-${previewMode}"${style}>
                     ${items.map((item) => {
                         const encodedPath = encodeURIComponent(item.path).replace(/'/g, '%27');
                         return `
@@ -16424,6 +17682,36 @@
                     }).join('')}
                 </div>
             `;
+        }
+
+        function refreshWorkflowInspectorPreviewMode() {
+            const node = workflowState.selectedNode;
+            if (!node) {
+                renderWorkflowInspector();
+                return;
+            }
+            const type = String(node.properties?.workflowType || 'extract').replace(/^imageflow\//, '');
+            const previewId = type === 'input' ? 'workflowInputPreviewGrid' : 'workflowInspectorPreviewGrid';
+            const host = document.getElementById(previewId);
+            if (!host) {
+                renderWorkflowInspector();
+                return;
+            }
+            const sideBody = document.getElementById('workflowInspector');
+            const preservedScrollTop = sideBody ? sideBody.scrollTop : 0;
+            host.outerHTML = renderWorkflowInspectorPreview(node, type);
+            const mode = getWorkflowInspectorPreviewMode(node);
+            const button = document.querySelector('[data-preview-mode-toggle="inspector"]');
+            if (button) {
+                button.dataset.label = `侧栏预览：${getWorkflowPreviewModeLabel(mode, 'inspector')}`;
+                button.innerHTML = renderWorkflowPreviewModeSvg(mode);
+            }
+            if (sideBody) {
+                sideBody.scrollTop = preservedScrollTop;
+                requestAnimationFrame(() => {
+                    sideBody.scrollTop = preservedScrollTop;
+                });
+            }
         }
 
         function renderWorkflowInspectorLogs(node) {
@@ -16484,7 +17772,7 @@
         function getWorkflowNodeModuleContext(node, limit = 24) {
             const nodeId = String(node?.properties?.workflowId || '').trim();
             const incomingIds = new Set(getWorkflowDirectIncomingWorkflowIds(node));
-            const runs = getWorkflowPreviewRuns(limit);
+            const runs = getWorkflowPreviewRunsForNode(node, limit);
             const entries = runs.map((run) => {
                 const nodeArtifacts = run?.artifacts?.nodeArtifacts || {};
                 return {
@@ -16673,7 +17961,25 @@
             }
         }
 
+        function importWorkflowInputsFromInspector() {
+            const mode = String(workflowState.selectedNode?.properties?.workflowConfig?.mode || 'image-folder');
+            return importWorkflowInputs(mode === 'folder' ? 'folders' : 'files', workflowState.selectedNode);
+        }
+
         function renderWorkflowInspectorActions(type) {
+            if (type === 'confirm') {
+                const run = getWorkflowPausedConfirmRunForNode(workflowState.selectedNode);
+                const disabled = run ? '' : 'disabled';
+                const label = run ? '确认继续' : '暂无待确认';
+                return `
+                    <div class="workflow-inspector-actions confirm-actions">
+                        <button class="workflow-inspector-confirm-btn" type="button" ${disabled} onclick="confirmSelectedWorkflowNode()" aria-label="${escapeHtml(label)}">
+                            <svg viewBox="0 0 24 24"><path d="M5 12.4 9.2 16.6 19 6.8"/></svg>
+                            <span>${escapeHtml(label)}</span>
+                        </button>
+                    </div>
+                `;
+            }
             const moduleButton = ['slice', 'template', 'watermark', 'publish', 'extract', 'variation'].includes(type)
                 ? `<button class="workflow-inspector-icon-btn" type="button" data-label="进入模块" onclick="openWorkflowNodeModuleEntry('${escapeHtml(type)}')" aria-label="进入模块">
                     <svg viewBox="0 0 24 24"><path d="M8.5 5.5h-3v13h13v-3"/><path d="M12 5.5h6.5V12"/><path d="m10.5 13.5 8-8"/></svg>
@@ -16681,11 +17987,8 @@
                 : '';
             const importButtons = type === 'input'
                 ? `
-                    <button class="workflow-inspector-icon-btn" type="button" data-label="导入图片" onclick="importWorkflowInputs('files')" aria-label="导入图片">
-                        <svg viewBox="0 0 24 24"><path d="M5 19h14V5H5z"/><path d="m8 15 2.5-3 2 2.2 1.5-1.7 2 2.5"/><path d="M8.5 8.5h.01"/></svg>
-                    </button>
-                    <button class="workflow-inspector-icon-btn" type="button" data-label="导入文件夹" onclick="importWorkflowInputs('folders')" aria-label="导入文件夹">
-                        <svg viewBox="0 0 24 24"><path d="M4 7.5h6l1.6 2H20v8.5H4z"/><path d="M4 7.5V6h5.2l1.5 1.5"/></svg>
+                    <button class="workflow-inspector-icon-btn" type="button" data-label="导入" onclick="importWorkflowInputsFromInspector()" aria-label="导入">
+                        <svg viewBox="0 0 24 24"><path d="M4.4 7.3h5.8l1.6 2h7.8v8.9H4.4z"/><path d="M4.4 7.3V5.8h5l1.4 1.5"/><path d="M12 12.1v4.3"/><path d="m9.8 14.2 2.2-2.2 2.2 2.2"/></svg>
                     </button>
                 `
                 : '';
@@ -16694,6 +17997,19 @@
                     <svg viewBox="0 0 24 24"><path d="M4 7.5h6l1.6 2H20v8.5H4z"/><path d="M12 13.2v4"/><path d="m9.8 15.4 2.2 2.2 2.2-2.2"/></svg>
                 </button>`
                 : '';
+            const previewButton = isWorkflowNodePreviewModeAvailable(type)
+                ? `<button class="workflow-inspector-icon-btn" type="button" data-preview-mode-toggle="inspector" data-label="侧栏预览：${escapeHtml(getWorkflowPreviewModeLabel(getWorkflowInspectorPreviewMode(workflowState.selectedNode), 'inspector'))}" onmousedown="event.preventDefault()" onclick="cycleWorkflowInspectorPreviewMode(event)" aria-label="切换侧栏预览">
+                    ${renderWorkflowPreviewModeSvg(getWorkflowInspectorPreviewMode(workflowState.selectedNode))}
+                </button>`
+                : '';
+            if (type === 'input') {
+                return `
+                    <div class="workflow-inspector-actions">
+                        ${importButtons}
+                        ${previewButton}
+                    </div>
+                `;
+            }
             return `
                 <div class="workflow-inspector-actions">
                     <button class="workflow-inspector-icon-btn primary" type="button" data-label="运行节点" onclick="retryWorkflowNodeFromCanvas(workflowState.selectedNode,{fresh:true})" aria-label="运行节点">
@@ -16705,16 +18021,14 @@
                     ${importButtons}
                     ${moduleButton}
                     ${exportButton}
+                    ${previewButton}
                 </div>
             `;
         }
 
         function renderWorkflowInspectorConfig(type, cfg) {
             if (type === 'input') {
-                return `
-                    ${renderWorkflowInspectorSelect('输入规则', 'workflowInspectorInputMode', type, 'mode', cfg.mode || 'image-folder')}
-                    <div class="workflow-hint">该节点只承载自己的导入内容，拖拽图片或文件夹到节点也会绑定到这个输入节点。</div>
-                `;
+                return '';
             }
             if (type === 'extract') {
                 return `
@@ -16744,6 +18058,11 @@
                 return `
                     ${renderWorkflowInspectorSelect('模板', 'workflowInspectorTemplate', type, 'template', selected || '')}
                     <div class="workflow-form-row"><label>参数预设</label><input class="form-input" type="text" value="${escapeHtml(cfg.parameterPresetId || '')}" placeholder="为空则使用智能模板当前参数" oninput="setWorkflowNodeConfigField('parameterPresetId', this.value)"></div>
+                `;
+            }
+            if (type === 'confirm') {
+                return `
+                    <div class="workflow-hint">流程运行到这里会暂停，并弹出人工核对提醒。点击“查看”核对上一个节点输出后，再在任务卡片点击“确认”继续。</div>
                 `;
             }
             if (type === 'watermark') {
@@ -16780,6 +18099,37 @@
             `);
         }
 
+        function renderWorkflowConfirmInspector(node, visual, duration) {
+            const run = getWorkflowPausedConfirmRunForNode(node) || visual.run || null;
+            const previousNode = run ? getWorkflowConfirmPreviousNode(run) : null;
+            const fallbackLink = !previousNode ? getWorkflowIncomingLinks(node)[0] : null;
+            const fallbackNode = fallbackLink ? workflowState.graph?.getNodeById(fallbackLink.origin_id) : null;
+            const previousTitle = previousNode?.title || fallbackNode?.title || '未连接上游节点';
+            const taskName = run?.name || '暂无暂停任务';
+            const isPaused = visual.status === 'paused' || run?.status === 'paused';
+            const message = isPaused
+                ? '流程已停在这里。核对上游输出无误后，点击底部确认继续。'
+                : '运行到这里会暂停，并在屏幕右下角弹出外部提醒。';
+            return `
+                <div class="workflow-inspector-workbench confirm-workbench">
+                    <div class="workflow-inspector-hero confirm-hero">
+                        <div class="workflow-inspector-title-row">
+                            <div class="workflow-hint">${duration ? `耗时 ${escapeHtml(duration)}` : '人工核对节点'}</div>
+                            <span class="workflow-inspector-status ${escapeHtml(visual.status)}">${escapeHtml(getWorkflowStatusLabel(visual.status))}</span>
+                        </div>
+                    </div>
+                    ${renderWorkflowInspectorSection('确认信息', `
+                        <div class="workflow-confirm-info-card">
+                            <div class="workflow-confirm-info-title">${escapeHtml(message)}</div>
+                            <div class="workflow-confirm-info-row"><span>上游</span><b>${escapeHtml(previousTitle)}</b></div>
+                            <div class="workflow-confirm-info-row"><span>任务</span><b>${escapeHtml(taskName)}</b></div>
+                        </div>
+                    `)}
+                    ${renderWorkflowInspectorActions('confirm')}
+                </div>
+            `;
+        }
+
         function renderWorkflowInspector() {
             const host = document.getElementById('workflowInspector');
             const title = document.getElementById('workflowInspectorTitle');
@@ -16787,12 +18137,9 @@
             const node = workflowState.selectedNode;
             if (!host) return;
             if (!node) {
-                if (title) title.textContent = '工作流概览';
-                if (hint) hint.textContent = '未选择';
-                host.innerHTML = `
-                    <div class="workflow-empty">右键画布添加节点，点击节点后配置参数。</div>
-                    <div class="workflow-hint">强制顺序：导入图片/文件夹 → 提取图案 → 印花裂变 → 智能切片 → 智能模板 → 智能水印 → 产品发布。裂变和模板允许分支。</div>
-                `;
+                if (title) title.textContent = '节点设置';
+                if (hint) hint.textContent = '';
+                host.innerHTML = '<div class="workflow-empty">选择节点后显示设置。</div>';
                 return;
             }
             const type = String(node.properties?.workflowType || 'extract').replace(/^imageflow\//, '');
@@ -16800,22 +18147,29 @@
             const cfg = getWorkflowNodeConfig(node);
             const visual = getWorkflowNodeRunVisualState(node);
             const duration = getWorkflowNodeDurationText(node);
+            syncWorkflowInspectorPreviewFromNode(node);
             if (title) title.textContent = node.title || def.label;
-            if (hint) hint.textContent = def.branchable ? '可分支' : '单线';
-            const configSection = renderWorkflowInspectorSection('配置', `
-                ${renderWorkflowInspectorConfig(type, cfg)}
-            `);
+            if (hint) hint.textContent = '';
+            if (type === 'confirm') {
+                if (hint) hint.textContent = '';
+                host.innerHTML = renderWorkflowConfirmInspector(node, visual, duration);
+                return;
+            }
+            const configHtml = renderWorkflowInspectorConfig(type, cfg);
+            const configSection = configHtml ? renderWorkflowInspectorSection('配置', configHtml) : '';
             const inputListSection = type === 'input'
                 ? renderWorkflowInspectorSection('导入内容', `
-                    <div class="workflow-inspector-action-row">
-                        <span id="workflowRunStats" class="task-bulk-hint"></span>
-                        <div class="task-bulk-actions">
-                            <button class="btn btn-secondary" type="button" onclick="toggleAllWorkflowRuns()">全选</button>
-                            <button class="btn btn-secondary" type="button" onclick="deleteSelectedWorkflowRuns()">删除</button>
+                    <div class="workflow-input-content">
+                        <div class="workflow-inspector-action-row">
+                            <span id="workflowRunStats" class="task-bulk-hint"></span>
+                            <div class="task-bulk-actions">
+                                <button class="btn btn-secondary" type="button" onclick="toggleAllWorkflowRuns()">全选</button>
+                                <button class="btn btn-secondary" type="button" onclick="deleteSelectedWorkflowRuns()">删除</button>
+                            </div>
                         </div>
-                    </div>
-                    <div id="workflowRunList" class="workflow-run-list">
-                        <div class="workflow-empty">还没有导入内容。</div>
+                        <div class="workflow-input-preview-wrap">
+                            ${renderWorkflowInspectorPreview(node, type)}
+                        </div>
                     </div>
                 `)
                 : '';
@@ -16828,7 +18182,7 @@
                         </div>
                     </div>
                     ${configSection}
-                    ${renderWorkflowInspectorSection(type === 'input' ? '节点预览' : '结果预览', type === 'input' ? '<div id="workflowInputPreviewGrid" class="workflow-run-preview-grid"></div>' : renderWorkflowInspectorPreview(node, type))}
+                    ${type === 'input' ? '' : renderWorkflowInspectorSection('结果预览', renderWorkflowInspectorPreview(node, type))}
                     ${renderWorkflowPublishTitlePreview(node)}
                     ${inputListSection}
                     ${renderWorkflowInspectorSection('当前节点日志', renderWorkflowInspectorLogs(node))}
@@ -16861,12 +18215,21 @@
                 setWorkflowView('home');
                 renderWorkflowInspector();
                 syncWorkflowInspectorPanel();
+                if (!workflowState.confirmNoticeListenerReady) {
+                    workflowState.confirmNoticeListenerReady = true;
+                    ipcRenderer.on('workflow:confirm-notice-view', (_, payload) => {
+                        handleWorkflowConfirmNoticeView(payload || {});
+                    });
+                }
                 ipcRenderer.on('workflow:data', (_, nextData) => {
+                    const previousData = workflowState.data;
                     workflowState.data = nextData;
                     notifyWorkflowFailures(nextData);
-                    workflowState.selectedRunIds = workflowState.selectedRunIds.filter((id) => (nextData.runs || []).some((run) => run.id === id));
-                    workflowState.runModalRunIds = workflowState.runModalRunIds.filter((id) => (nextData.runs || []).some((run) => run.id === id));
+                    notifyWorkflowManualConfirms(nextData, previousData);
+                    workflowState.selectedRunIds = workflowState.selectedRunIds.filter((id) => (nextData.runs || []).some((run) => run.id === id && isWorkflowRunInActivePreset(run)));
+                    workflowState.runModalRunIds = workflowState.runModalRunIds.filter((id) => (nextData.runs || []).some((run) => run.id === id && isWorkflowRunInActivePreset(run)));
                     syncWorkflowRunAnimationLoop();
+                    syncWorkflowDotFieldLoop();
                     syncWorkflowInputNodePreview();
                     workflowState.graph?.setDirtyCanvas(true, true);
                     renderWorkflowRuns();
